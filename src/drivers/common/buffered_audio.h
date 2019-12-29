@@ -1,0 +1,31 @@
+#pragma once
+
+#include "circular_buffer.h"
+
+#include <vector>
+#include <cstdint>
+
+namespace drivers {
+
+class buffered_audio {
+public:
+    virtual ~buffered_audio();
+
+    bool init(bool mono, double sample_rate, double fps);
+    void deinit();
+    void write_samples(const int16_t *data, size_t count);
+    void read_samples(int16_t *data, size_t count);
+
+protected:
+    virtual bool open_audio(unsigned) = 0;
+    virtual void close_audio() = 0;
+
+protected:
+    bool mono_audio = false;
+    unsigned output_sample_rate = 0;
+
+private:
+    circular_buffer<int16_t> buffer;
+};
+
+}
