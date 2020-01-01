@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     }
     setvbuf(stdout, 0, _IONBF, 0);
     setvbuf(stderr, 0, _IONBF, 0);
-    auto *impl = drivers::load_core<drivers::sdl1_impl>(argv[1]);
+    auto impl = drivers::load_core<drivers::sdl1_impl>(argv[1]);
     if (!impl) {
         fprintf(stderr, "unable to load core!\n");
         return 1;

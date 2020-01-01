@@ -12,12 +12,13 @@ extern "C" typedef struct retro_core_t retro_core_t;
 namespace drivers {
 
 class buffered_audio;
+class video_base;
 class throttle;
 
 /* base class for all drivers */
 class driver_base {
     template<class T>
-    friend driver_base *load_core(const std::string &path);
+    friend std::unique_ptr<driver_base> load_core(const std::string &path);
 
 public:
     /* variable struct */
@@ -60,6 +61,7 @@ public:
 
     inline const std::string &get_system_dir() { return system_dir; }
     inline throttle *get_frame_throttle() { return frame_throttle.get(); }
+    inline video_base *get_video() { return video.get(); }
     inline buffered_audio *get_audio() { return audio.get(); }
 
 private:
@@ -78,12 +80,8 @@ protected:
     /* frame runner for the core */
     virtual bool run_frame() = 0;
 
-    /* set when geometry or pixel_format is updated */
-    virtual void geometry_updated() = 0;
-
 public:
     /* virtual method for callback use */
-    virtual void video_refresh(const void *data, unsigned width, unsigned height, size_t pitch) = 0;
     virtual void input_poll() = 0;
     virtual int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id);
 
@@ -124,6 +122,9 @@ protected:
     /* frame throttle */
     std::unique_ptr<throttle> frame_throttle;
 
+    /* video_base for video output */
+    std::unique_ptr<video_base> video;
+
     /* buffered_audio for audio input */
     std::unique_ptr<buffered_audio> audio;
 
@@ -140,14 +141,14 @@ private:
 };
 
 template<class T>
-inline driver_base *load_core(const std::string &path) {
+inline std::unique_ptr<driver_base> load_core(const std::string &path) {
     auto *c = new(std::nothrow) T;
     if (c == nullptr) return nullptr;
     if (!c->load(path)) {
         delete c;
         return nullptr;
     }
-    return c;
+    return std::unique_ptr<driver_base>(c);
 }
 
 }

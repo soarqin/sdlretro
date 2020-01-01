@@ -1,5 +1,6 @@
 #include "sdl1_impl.h"
 
+#include "sdl1_video.h"
 #include "sdl1_audio.h"
 #include "throttle.h"
 
@@ -17,11 +18,13 @@ bool sdl1_impl::init() {
         return false;
     }
     SDL_WM_SetCaption("SDLRetro", nullptr);
+    video = std::make_unique<sdl1_video>();
     audio = std::make_unique<sdl1_audio>();
-    return SDL_SetVideoMode(640, 480, 16, SDL_SWSURFACE | SDL_DOUBLEBUF) != nullptr;
+    return video->init();
 }
 
 void sdl1_impl::deinit() {
+    video->deinit();
     SDL_Quit();
 }
 
@@ -34,39 +37,12 @@ bool sdl1_impl::run_frame() {
             default: break;
         }
     }
-    return true;
-}
-
-void sdl1_impl::geometry_updated() {
-    if (base_width != 0 && base_height != 0)
-        SDL_SetVideoMode(base_width, base_height, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
-    else
-        SDL_SetVideoMode(640, 480, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
-}
-
-void sdl1_impl::video_refresh(const void *data, unsigned width, unsigned height, size_t pitch) {
     uint64_t usecs = 0;
     do {
         usleep(usecs);
         usecs = frame_throttle->check_wait();
     } while(usecs);
-
-    if (!data) return;
-
-    auto *surface = SDL_GetVideoSurface();
-    bool lock = SDL_MUSTLOCK(surface);
-    if (lock) SDL_LockSurface(surface);
-    auto *pixels = static_cast<uint8_t*>(surface->pixels);
-    const auto *input = static_cast<const uint8_t*>(data);
-    int output_pitch = surface->pitch;
-    int h = static_cast<int>(height);
-    for (; h; h--) {
-        memcpy(pixels, input, width * 2);
-        pixels += output_pitch;
-        input += pitch;
-    }
-    if (lock) SDL_UnlockSurface(surface);
-    SDL_Flip(surface);
+    return true;
 }
 
 void sdl1_impl::input_poll() {

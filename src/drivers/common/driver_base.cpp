@@ -2,6 +2,7 @@
 
 #include "logger.h"
 
+#include "video_base.h"
 #include "buffered_audio.h"
 #include "throttle.h"
 
@@ -46,7 +47,7 @@ void RETRO_CALLCONV log_printf(enum retro_log_level level, const char *fmt, ...)
 }
 
 static void RETRO_CALLCONV retro_video_refresh_cb(const void *data, unsigned width, unsigned height, size_t pitch) {
-    current_driver->video_refresh(data, width, height, pitch);
+    current_driver->get_video()->render(data, width, height, pitch);
 }
 
 static void RETRO_CALLCONV retro_audio_sample_cb(int16_t left, int16_t right) {
@@ -91,10 +92,11 @@ void driver_base::load_game(const std::string &path) {
     max_height = av_info.geometry.max_height;
     aspect_ratio = av_info.geometry.aspect_ratio;
 
+    // TODO: load mono from config
     audio->init(false, av_info.timing.sample_rate, av_info.timing.fps);
     frame_throttle->reset(av_info.timing.fps);
 
-    geometry_updated();
+    video->resolution_changed(base_width, base_height, 16);
 }
 
 void driver_base::unload_game() {

@@ -5,7 +5,10 @@ add_library(driver_sdl1 STATIC
     include/sdl1_impl.h
 
     sdl1_audio.cpp
-    sdl1_audio.h)
+    sdl1_audio.h
+    sdl1_video.cpp
+    sdl1_video.h
+    )
 
 target_compile_definitions(driver_sdl1 PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(driver_sdl1 PUBLIC include)

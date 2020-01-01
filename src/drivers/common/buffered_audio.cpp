@@ -18,6 +18,7 @@ inline unsigned pullup(unsigned rate) {
 }
 
 bool buffered_audio::init(bool mono, double sample_rate, double fps) {
+    mono_audio = mono;
     output_sample_rate = lround(sample_rate);
     auto buffer_size = pullup(lround(output_sample_rate / fps));
     buffer.resize(buffer_size * 4);
@@ -31,7 +32,18 @@ void buffered_audio::deinit() {
 
 void buffered_audio::write_samples(const int16_t *data, size_t count) {
     if (!count) return;
-    buffer.push(data, count);
+    if (mono_audio) {
+        int16_t *monodata = new int16_t[count / 2];
+        int16_t *ptr = monodata;
+        for (size_t sz = count; sz; sz -= 2) {
+            *ptr++ = (int16_t)(((int)data[0] + data[1]) / 2);
+            data += 2;
+        }
+        buffer.push(monodata, count / 2);
+        delete[] monodata;
+    } else {
+        buffer.push(data, count);
+    }
 }
 
 void buffered_audio::read_samples(int16_t *data, size_t count) {

@@ -16,7 +16,7 @@ bool sdl1_audio::open_audio(unsigned buffer_size) {
     spec.callback = audio_callback;
     spec.freq = static_cast<int>(output_sample_rate);
     spec.format = AUDIO_S16SYS;
-    spec.channels = 2;
+    spec.channels = mono_audio ? 1 : 2;
     spec.samples = buffer_size;
     spec.userdata = this;
     if (SDL_OpenAudio(&spec, &obtained) != 0) return false;

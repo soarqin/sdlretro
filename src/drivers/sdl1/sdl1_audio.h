@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/buffered_audio.h"
+#include "buffered_audio.h"
 
 namespace drivers {
 
