@@ -11,7 +11,7 @@ static void audio_callback(void *userdata, Uint8 *stream, int len) {
     audio->read_samples(reinterpret_cast<int16_t*>(stream), len / 2);
 }
 
-bool sdl1_audio::open_audio(unsigned buffer_size) {
+bool sdl1_audio::open(unsigned buffer_size) {
     SDL_AudioSpec spec = {}, obtained = {};
     spec.callback = audio_callback;
     spec.freq = static_cast<int>(output_sample_rate);
@@ -26,8 +26,12 @@ bool sdl1_audio::open_audio(unsigned buffer_size) {
     return true;
 }
 
-void sdl1_audio::close_audio() {
+void sdl1_audio::close() {
     SDL_CloseAudio();
+}
+
+void sdl1_audio::pause(bool b) {
+    SDL_PauseAudio(b);
 }
 
 }

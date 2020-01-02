@@ -2,6 +2,7 @@
 
 #include "sdl1_video.h"
 #include "sdl1_audio.h"
+#include "sdl1_input.h"
 #include "throttle.h"
 
 #include <core.h>
@@ -13,6 +14,10 @@
 
 namespace drivers {
 
+sdl1_impl::~sdl1_impl() {
+    deinit();
+}
+
 bool sdl1_impl::init() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE) != 0) {
         return false;
@@ -20,11 +25,15 @@ bool sdl1_impl::init() {
     SDL_WM_SetCaption("SDLRetro", nullptr);
     video = std::make_unique<sdl1_video>();
     audio = std::make_unique<sdl1_audio>();
-    return video->init();
+    input = std::make_unique<sdl1_input>();
+    return true;
 }
 
 void sdl1_impl::deinit() {
-    video->deinit();
+    if (video)
+        video->deinit();
+    if (audio)
+        audio->deinit();
     SDL_Quit();
 }
 
@@ -43,29 +52,6 @@ bool sdl1_impl::run_frame() {
         usecs = frame_throttle->check_wait();
     } while(usecs);
     return true;
-}
-
-void sdl1_impl::input_poll() {
-    int numkeys;
-    uint8_t *keys = SDL_GetKeyState(&numkeys);
-    uint16_t state = 0;
-    if (keys[SDLK_w]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_UP;
-    if (keys[SDLK_a]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_LEFT;
-    if (keys[SDLK_s]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_DOWN;
-    if (keys[SDLK_d]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_RIGHT;
-    if (keys[SDLK_i]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_X;
-    if (keys[SDLK_j]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_Y;
-    if (keys[SDLK_k]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_B;
-    if (keys[SDLK_l]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_A;
-    if (keys[SDLK_c]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_SELECT;
-    if (keys[SDLK_v]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_START;
-    if (keys[SDLK_q]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_L;
-    if (keys[SDLK_e]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_R;
-    if (keys[SDLK_1]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_L2;
-    if (keys[SDLK_3]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_R2;
-    if (keys[SDLK_z]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_L3;
-    if (keys[SDLK_x]) state |= 1U << RETRO_DEVICE_ID_JOYPAD_R3;
-    pad_states = static_cast<int16_t>(state);
 }
 
 }

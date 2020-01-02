@@ -2,12 +2,9 @@
 
 #include <memory.h>
 #include <cmath>
+#include <cstdlib>
 
 namespace drivers {
-
-buffered_audio::~buffered_audio() {
-    deinit();
-}
 
 inline unsigned pullup(unsigned rate) {
     rate |= rate >> 1U;
@@ -22,25 +19,29 @@ bool buffered_audio::init(bool mono, double sample_rate, double fps) {
     output_sample_rate = lround(sample_rate);
     auto buffer_size = pullup(lround(output_sample_rate / fps));
     buffer.resize(buffer_size * 4);
-    return open_audio(buffer_size);
+    return open(buffer_size);
 }
 
 void buffered_audio::deinit() {
-    close_audio();
+    close();
     buffer.clear();
 }
 
 void buffered_audio::write_samples(const int16_t *data, size_t count) {
     if (!count) return;
     if (mono_audio) {
-        int16_t *monodata = new int16_t[count / 2];
-        int16_t *ptr = monodata;
-        for (size_t sz = count; sz; sz -= 2) {
-            *ptr++ = (int16_t)(((int)data[0] + data[1]) / 2);
-            data += 2;
-        }
-        buffer.push(monodata, count / 2);
-        delete[] monodata;
+        size_t samples = count / 2;
+        int16_t *monodata = (int16_t*)alloca(128 * sizeof(int16_t));
+        do {
+            size_t sz = samples > 128 ? 128 : samples;
+            int16_t *ptr = monodata;
+            for (size_t z = sz; z; z--) {
+                *ptr++ = (int16_t)(((int)data[0] + data[1])/2);
+                data += 2;
+            }
+            buffer.push(monodata, sz);
+            samples -= sz;
+        } while(samples);
     } else {
         buffer.push(data, count);
     }

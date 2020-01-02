@@ -21,9 +21,21 @@ struct input_port_t {
     std::vector<input_button_t> buttons;
 };
 
-class input {
+class input_base {
 public:
+    virtual ~input_base() = default;
+
     void add_button(unsigned port, unsigned device, unsigned index, unsigned id, const std::string &desc);
+
+    virtual void init() = 0;
+    virtual void deinit() = 0;
+
+    /* virtual method for callback use */
+    virtual void input_poll() = 0;
+    virtual int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id);
+
+protected:
+    int16_t pad_states = 0;
 
 private:
     std::vector<input_port_t> ports;

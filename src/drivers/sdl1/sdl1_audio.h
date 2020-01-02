@@ -9,8 +9,11 @@ public:
     using buffered_audio::buffered_audio;
 
 protected:
-    bool open_audio(unsigned buffer_size) override;
-    void close_audio() override;
+    bool open(unsigned buffer_size) override;
+    void close() override;
+
+public:
+    void pause(bool b) override;
 };
 
 }

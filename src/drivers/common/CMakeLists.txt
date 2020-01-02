@@ -1,13 +1,13 @@
 add_library(driver_common STATIC
     buffered_audio.cpp
     driver_base.cpp
-    input.cpp
+    input_base.cpp
     throttle.cpp
     util.cpp
     include/buffered_audio.h
     include/circular_buffer.h
     include/driver_base.h
-    include/input.h
+    include/input_base.h
     include/throttle.h
     include/util.h
     include/video_base.h

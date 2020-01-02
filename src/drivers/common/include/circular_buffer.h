@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory.h>
 #include <memory>
 
 template <class T> class circular_buffer {
@@ -31,6 +32,7 @@ public:
     void resize(size_t size) {
         max_size = size;
         buffer = std::make_unique<T[]>(size);
+        memset(buffer.get(), size * sizeof(T), 0);
     }
 
     // Clear buffer
@@ -122,5 +124,10 @@ public:
         if (tail >= head)
             return tail - head;
         return max_size - head - tail;
+    }
+
+    // Return total space of this circular buffer.
+    size_t total() {
+        return max_size;
     }
 };

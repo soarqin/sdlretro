@@ -1,7 +1,5 @@
 #pragma once
 
-#include "input.h"
-
 #include <string>
 #include <map>
 #include <vector>
@@ -11,8 +9,9 @@ extern "C" typedef struct retro_core_t retro_core_t;
 
 namespace drivers {
 
-class buffered_audio;
 class video_base;
+class buffered_audio;
+class input_base;
 class throttle;
 
 /* base class for all drivers */
@@ -63,6 +62,7 @@ public:
     inline throttle *get_frame_throttle() { return frame_throttle.get(); }
     inline video_base *get_video() { return video.get(); }
     inline buffered_audio *get_audio() { return audio.get(); }
+    inline input_base *get_input() { return input.get(); }
 
 private:
     /* load core from path */
@@ -79,11 +79,6 @@ protected:
 
     /* frame runner for the core */
     virtual bool run_frame() = 0;
-
-public:
-    /* virtual method for callback use */
-    virtual void input_poll() = 0;
-    virtual int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id);
 
 protected:
     /* core struct, check libretro/include/core.h */
@@ -115,10 +110,6 @@ protected:
                                  * A frontend could override this setting,
                                  * if desired. */
 
-    /* input related variables */
-    input pads;
-    int16_t pad_states = 0;
-
     /* frame throttle */
     std::unique_ptr<throttle> frame_throttle;
 
@@ -127,6 +118,9 @@ protected:
 
     /* buffered_audio for audio input */
     std::unique_ptr<buffered_audio> audio;
+
+    /* input_base for contoller input */
+    std::unique_ptr<input_base> input;
 
 private:
     /* game data */

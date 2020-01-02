@@ -4,6 +4,7 @@
 
 #include "video_base.h"
 #include "buffered_audio.h"
+#include "input_base.h"
 #include "throttle.h"
 
 #include <core.h>
@@ -61,11 +62,11 @@ static size_t RETRO_CALLCONV retro_audio_sample_batch_cb(const int16_t *data, si
 }
 
 static void RETRO_CALLCONV retro_input_poll_cb() {
-    current_driver->input_poll();
+    current_driver->get_input()->input_poll();
 }
 
 static int16_t RETRO_CALLCONV retro_input_state_cb(unsigned port, unsigned device, unsigned index, unsigned id) {
-    return current_driver->input_state(port, device, index, id);
+    return current_driver->get_input()->input_state(port, device, index, id);
 }
 
 void driver_base::load_game(const std::string &path) {
@@ -94,6 +95,7 @@ void driver_base::load_game(const std::string &path) {
 
     // TODO: load mono from config
     audio->init(false, av_info.timing.sample_rate, av_info.timing.fps);
+    input->init();
     frame_throttle->reset(av_info.timing.fps);
 
     video->resolution_changed(base_width, base_height, 16);
@@ -101,6 +103,8 @@ void driver_base::load_game(const std::string &path) {
 
 void driver_base::unload_game() {
     core->retro_unload_game();
+    audio->deinit();
+    input->deinit();
 }
 
 void driver_base::reset() {
@@ -149,7 +153,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: {
             const auto *inp = (const retro_input_descriptor*)data;
             while (inp->description != nullptr) {
-                pads.add_button(inp->port, inp->device, inp->index, inp->id, inp->description);
+                input->add_button(inp->port, inp->device, inp->index, inp->id, inp->description);
                 ++inp;
             }
             return true;
@@ -332,6 +336,11 @@ bool driver_base::init_internal() {
         core->retro_deinit();
         return false;
     }
+    if (!video->init()) {
+        core->retro_deinit();
+        deinit();
+        return false;
+    }
 
     inited = true;
     return true;
@@ -339,8 +348,6 @@ bool driver_base::init_internal() {
 
 void driver_base::deinit_internal() {
     if (!inited) return;
-
-    deinit();
 
     core->retro_deinit();
 
@@ -364,11 +371,6 @@ void driver_base::deinit_internal() {
     inited = false;
 }
 
-int16_t driver_base::input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
-    if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-        return pad_states;
-    return pad_states & (1 << id);
-}
 driver_base::driver_base() {
     frame_throttle = std::make_unique<throttle>();
 }
