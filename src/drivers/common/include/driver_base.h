@@ -76,6 +76,7 @@ protected:
     /* virtual methods for cores init/deinit */
     virtual bool init() = 0;
     virtual void deinit() = 0;
+    virtual void unload() = 0;
 
     /* frame runner for the core */
     virtual bool run_frame() = 0;

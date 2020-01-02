@@ -10,12 +10,11 @@ enum :unsigned {
     DEFAULT_HEIGHT = 480,
 };
 
-bool sdl1_video::init() {
+sdl1_video::sdl1_video() {
     screen = SDL_SetVideoMode(DEFAULT_WIDTH, DEFAULT_HEIGHT, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
-    return screen != nullptr;
 }
 
-void sdl1_video::deinit() {
+sdl1_video::~sdl1_video() {
     if (screen) {
         SDL_FreeSurface(screen);
         screen = nullptr;

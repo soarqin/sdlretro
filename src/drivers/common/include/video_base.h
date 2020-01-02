@@ -8,8 +8,6 @@ class video_base {
 public:
     virtual ~video_base() = default;
 
-    virtual bool init() = 0;
-    virtual void deinit() = 0;
     virtual bool resolution_changed(unsigned width, unsigned height, unsigned bpp) = 0;
     virtual void render(const void *data, unsigned width, unsigned height, size_t pitch) = 0;
 

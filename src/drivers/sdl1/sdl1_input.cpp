@@ -6,7 +6,7 @@
 
 namespace drivers {
 
-void sdl1_input::init() {
+sdl1_input::sdl1_input() {
     keymap = {
         SDLK_k, // RETRO_DEVICE_ID_JOYPAD_B
         SDLK_j, // RETRO_DEVICE_ID_JOYPAD_Y
@@ -25,9 +25,6 @@ void sdl1_input::init() {
         SDLK_z, // RETRO_DEVICE_ID_JOYPAD_L3
         SDLK_x, // RETRO_DEVICE_ID_JOYPAD_R3
     };
-}
-
-void sdl1_input::deinit() {
 }
 
 void sdl1_input::input_poll() {

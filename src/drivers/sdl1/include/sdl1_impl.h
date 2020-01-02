@@ -11,9 +11,10 @@ public:
     ~sdl1_impl() override;
 
 protected:
-    bool init() override;
+    bool init() final;
     void deinit() final;
-    bool run_frame() override;
+    void unload() final;
+    bool run_frame() final;
 };
 
 }

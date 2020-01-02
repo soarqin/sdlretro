@@ -23,7 +23,7 @@ core_manager::core_manager(const std::string &dir) {
     HANDLE hFile = FindFirstFileW(findpath, &data);
     if (hFile != INVALID_HANDLE_VALUE) {
         do {
-            wchar_t fullpath[MAX_PATH];
+            wchar_t fullpath[MAX_PATH] = {};
             lstrcpyW(fullpath, path);
             PathAppendW(fullpath, data.cFileName);
             HMODULE mod = LoadLibraryW(fullpath);
@@ -37,7 +37,7 @@ core_manager::core_manager(const std::string &dir) {
             retro_system_info info = {};
             sysinfo(&info);
 
-            char filename[MAX_PATH * 3];
+            char filename[MAX_PATH * 3] = {};
             WideCharToMultiByte(CP_UTF8, 0, fullpath, lstrlenW(fullpath), filename, MAX_PATH * 3, nullptr, nullptr);
 
             core_info coreinfo = {filename, info.library_name, info.library_version};
@@ -93,8 +93,8 @@ core_manager::core_manager(const std::string &dir) {
 std::vector<core_info> core_manager::match_cores_by_extension(const std::string &ext) {
     std::vector<core_info> core_list;
     for (const auto &c: cores) {
-        for (const auto &ext: c.extensions) {
-            if (strcasecmp(ext.c_str(), ext.c_str()) == 0) {
+        for (const auto &extension: c.extensions) {
+            if (strcasecmp(extension.c_str(), ext.c_str()) == 0) {
                 core_list.push_back(c);
                 break;
             }

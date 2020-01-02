@@ -30,11 +30,10 @@ bool sdl1_impl::init() {
 }
 
 void sdl1_impl::deinit() {
-    if (video)
-        video->deinit();
-    if (audio)
-        audio->deinit();
     SDL_Quit();
+}
+
+void sdl1_impl::unload() {
 }
 
 bool sdl1_impl::run_frame() {

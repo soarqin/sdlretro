@@ -94,8 +94,7 @@ void driver_base::load_game(const std::string &path) {
     aspect_ratio = av_info.geometry.aspect_ratio;
 
     // TODO: load mono from config
-    audio->init(false, av_info.timing.sample_rate, av_info.timing.fps);
-    input->init();
+    audio->start(false, av_info.timing.sample_rate, av_info.timing.fps);
     frame_throttle->reset(av_info.timing.fps);
 
     video->resolution_changed(base_width, base_height, 16);
@@ -103,8 +102,8 @@ void driver_base::load_game(const std::string &path) {
 
 void driver_base::unload_game() {
     core->retro_unload_game();
-    audio->deinit();
-    input->deinit();
+    audio->stop();
+    unload();
 }
 
 void driver_base::reset() {
@@ -318,6 +317,10 @@ bool driver_base::load(const std::string &path) {
 bool driver_base::init_internal() {
     if (inited) return true;
 
+    if (!init()) {
+        return false;
+    }
+
     core->retro_set_environment(retro_environment_cb);
 
     retro_system_info info = {};
@@ -331,16 +334,6 @@ bool driver_base::init_internal() {
     core->retro_set_audio_sample_batch(retro_audio_sample_batch_cb);
     core->retro_set_input_poll(retro_input_poll_cb);
     core->retro_set_input_state(retro_input_state_cb);
-
-    if (!init()) {
-        core->retro_deinit();
-        return false;
-    }
-    if (!video->init()) {
-        core->retro_deinit();
-        deinit();
-        return false;
-    }
 
     inited = true;
     return true;

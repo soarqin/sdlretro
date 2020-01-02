@@ -8,8 +8,7 @@ namespace drivers {
 
 class sdl1_input: public input_base {
 public:
-    void init() override;
-    void deinit() override;
+    sdl1_input();
 
     void input_poll() override;
 

@@ -11,8 +11,9 @@ class buffered_audio {
 public:
     virtual ~buffered_audio() = default;
 
-    bool init(bool mono, double sample_rate, double fps);
-    void deinit();
+    bool start(bool mono, double sample_rate, double fps);
+    void stop();
+
     void write_samples(const int16_t *data, size_t count);
     void read_samples(int16_t *data, size_t count);
 
