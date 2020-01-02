@@ -55,6 +55,7 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
         auto s = scale;
         auto subp = pitch / 2 - width;
         auto subd = output_pitch - s;
+        output_pitch *= scale - 1;
         for (; h; h--) {
             for (unsigned z = width; z; z--) {
                 auto pix = *input++;
