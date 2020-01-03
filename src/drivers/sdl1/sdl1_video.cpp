@@ -18,13 +18,6 @@ sdl1_video::sdl1_video() {
     screen = SDL_SetVideoMode(DEFAULT_WIDTH, DEFAULT_HEIGHT, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
 }
 
-sdl1_video::~sdl1_video() {
-    if (screen) {
-        SDL_FreeSurface(screen);
-        screen = nullptr;
-    }
-}
-
 bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bpp) {
     if (screen) {
         SDL_FreeSurface(screen);

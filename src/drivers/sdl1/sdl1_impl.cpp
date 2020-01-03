@@ -3,6 +3,7 @@
 #include "sdl1_video.h"
 #include "sdl1_audio.h"
 #include "sdl1_input.h"
+#include "sdl1_font.h"
 #include "throttle.h"
 
 #include <core.h>
