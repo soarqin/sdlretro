@@ -47,7 +47,7 @@ public:
     virtual void run();
 
     /* load game from file with given path */
-    void load_game(const std::string &path);
+    bool load_game(const std::string &path);
 
     /* unload game */
     void unload_game();
@@ -71,6 +71,9 @@ private:
     /* internal init/deinit */
     bool init_internal();
     void deinit_internal();
+
+    /* check sram/rtc and save to file if changed */
+    void check_save_ram();
 
 protected:
     /* virtual methods for cores init/deinit */
@@ -124,8 +127,23 @@ protected:
     std::unique_ptr<input_base> input;
 
 private:
+    /* game file path and base name(remove dir and ext part from game path) */
+    std::string game_path;
+    std::string game_base_name;
+
+    /* game save/rtc path */
+    std::string game_save_path;
+    std::string game_rtc_path;
+
     /* game data */
     std::string game_data;
+
+    /* save&rtc data */
+    std::vector<uint8_t> save_data;
+    std::vector<uint8_t> rtc_data;
+
+    /* frame countdown for save check */
+    uint32_t save_check_countdown = 0;
 
     /* variables */
     std::map<std::string, variable_t> variables;

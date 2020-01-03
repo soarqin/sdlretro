@@ -18,6 +18,10 @@ namespace drivers {
 
 driver_base *current_driver = nullptr;
 
+driver_base::driver_base() {
+    frame_throttle = std::make_unique<throttle>();
+}
+
 driver_base::~driver_base() {
     deinit_internal();
 
@@ -32,6 +36,13 @@ driver_base::~driver_base() {
 void driver_base::run() {
     for (;;) {
         if (!run_frame()) break;
+        if (!save_check_countdown) {
+            check_save_ram();
+            /* TODO: use fps * config.countdown */
+            save_check_countdown = 60 * 10;
+        } else {
+            save_check_countdown--;
+        }
         core->retro_run();
     }
 }
@@ -69,20 +80,66 @@ static int16_t RETRO_CALLCONV retro_input_state_cb(unsigned port, unsigned devic
     return current_driver->get_input()->input_state(port, device, index, id);
 }
 
-void driver_base::load_game(const std::string &path) {
+inline void read_file(const std::string filename, std::vector<uint8_t> &data) {
+    std::ifstream ifs(filename, std::ios_base::binary | std::ios_base::in);
+    if (!ifs.good()) return;
+    ifs.seekg(0, std::ios_base::end);
+    size_t sz = ifs.tellg();
+    if (sz) {
+        data.resize(sz);
+        ifs.seekg(0, std::ios_base::beg);
+        ifs.read((char *)data.data(), sz);
+    }
+    ifs.close();
+}
+
+bool driver_base::load_game(const std::string &path) {
     retro_game_info info = {};
     info.path = path.c_str();
     if (!need_fullpath) {
         std::ifstream ifs(path, std::ios_base::binary | std::ios_base::in);
+        if (!ifs.good()) {
+            fprintf(stderr, "Unable to load %s\n", path.c_str());
+            return false;
+        }
         ifs.seekg(0, std::ios_base::end);
         game_data.resize(ifs.tellg());
         ifs.seekg(0, std::ios_base::beg);
         ifs.read(&game_data[0], game_data.size());
+        ifs.close();
         info.data = &game_data[0];
         info.size = game_data.size();
     }
     if (!core->retro_load_game(&info)) {
         fprintf(stderr, "Unable to load %s\n", path.c_str());
+        return false;
+    }
+
+    game_path = path;
+    auto pos = game_path.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        game_base_name = game_path.substr(pos + 1);
+    } else {
+        game_base_name = game_path;
+    }
+    pos = game_base_name.find_last_of('.');
+    if (pos != std::string::npos)
+        game_base_name.erase(pos);
+    game_save_path = (save_dir.empty() ? "" : (save_dir + '/')) + game_base_name + ".sav";
+    game_rtc_path = (save_dir.empty() ? "" : (save_dir + '/')) + game_base_name + ".rtc";
+
+    read_file(game_save_path, save_data);
+    read_file(game_rtc_path, rtc_data);
+
+    if (!save_data.empty()) {
+        size_t sz = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+        if (sz > save_data.size()) sz = save_data.size();
+        if (sz) memcpy(core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM), save_data.data(), sz);
+    }
+    if (!rtc_data.empty()) {
+        size_t sz = core->retro_get_memory_size(RETRO_MEMORY_RTC);
+        if (sz > rtc_data.size()) sz = rtc_data.size();
+        if (sz) memcpy(core->retro_get_memory_data(RETRO_MEMORY_RTC), rtc_data.data(), sz);
     }
 
     retro_system_av_info av_info = {};
@@ -98,9 +155,17 @@ void driver_base::load_game(const std::string &path) {
     frame_throttle->reset(av_info.timing.fps);
 
     video->resolution_changed(base_width, base_height, 16);
+
+    return true;
 }
 
 void driver_base::unload_game() {
+    game_path.clear();
+    game_base_name.clear();
+    game_save_path.clear();
+    game_rtc_path.clear();
+    save_data.clear();
+    rtc_data.clear();
     core->retro_unload_game();
     audio->stop();
     unload();
@@ -364,8 +429,28 @@ void driver_base::deinit_internal() {
     inited = false;
 }
 
-driver_base::driver_base() {
-    frame_throttle = std::make_unique<throttle>();
+void driver_base::check_save_ram() {
+    // TODO: use progressive check for large sram?
+    size_t sram_size = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+    if (sram_size) {
+        void *sram = core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+        if (sram_size != save_data.size() || memcmp(sram, save_data.data(), sram_size) != 0) {
+            std::ofstream ofs(game_save_path, std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
+            ofs.write((const char*)sram, sram_size);
+            ofs.close();
+            save_data.assign((uint8_t*)sram, (uint8_t*)sram + sram_size);
+        }
+    }
+    size_t rtc_size = core->retro_get_memory_size(RETRO_MEMORY_RTC);
+    if (rtc_size) {
+        void *rtc = core->retro_get_memory_data(RETRO_MEMORY_RTC);
+        if (rtc_size != rtc_data.size() || memcmp(rtc, rtc_data.data(), rtc_size) != 0) {
+            std::ofstream ofs(game_rtc_path, std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
+            ofs.write((const char*)rtc, rtc_size);
+            ofs.close();
+            rtc_data.assign((uint8_t*)rtc, (uint8_t*)rtc + rtc_size);
+        }
+    }
 }
 
 }
