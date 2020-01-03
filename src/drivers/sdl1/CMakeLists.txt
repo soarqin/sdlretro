@@ -8,7 +8,11 @@ add_library(driver_sdl1 STATIC
     sdl1_audio.h
     sdl1_video.cpp
     sdl1_video.h
-    sdl1_input.cpp sdl1_input.h)
+    sdl1_input.cpp
+    sdl1_input.h
+    sdl1_font.cpp
+    sdl1_font.h
+    )
 
 target_compile_definitions(driver_sdl1 PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(driver_sdl1 PUBLIC include)

@@ -1,5 +1,9 @@
 #include "sdl1_video.h"
 
+#include "sdl1_font.h"
+
+#include "bmfont.inl"
+
 #include <SDL.h>
 
 namespace drivers {
