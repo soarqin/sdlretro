@@ -45,8 +45,8 @@ void sdl1_font::render(SDL_Surface *surface, int x, int y, const char *text, boo
                 break;
         }
         uint16_t *outptr = static_cast<uint16_t*>(surface->pixels) + stride * (y + font_size + fd->iy0) + x + fd->ix0;
-        uint8_t *input = &rectpack_data[fd->rpidx]->pixels[fd->rpy * RECTPACK_WIDTH + fd->rpx];
-        int iw = RECTPACK_WIDTH - fd->w;
+        const uint8_t *input = get_rect_pack_data(fd->rpidx, fd->rpx, fd->rpy);
+        int iw = get_rect_pack_width() - fd->w;
         int ow = stride - fd->w;
         for (int j = fd->h; j; j--) {
             for (int i = fd->w; i; i--) {

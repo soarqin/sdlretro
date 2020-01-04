@@ -9,29 +9,29 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: sdlretro <rom file> [<core file>]");
         return 1;
     }
-    setvbuf(stdout, 0, _IONBF, 0);
-    setvbuf(stderr, 0, _IONBF, 0);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stderr, nullptr, _IONBF, 0);
 
     std::string core_file;
+    drivers::core_manager coreman(".", ".");
     if (argc < 3) {
-        drivers::core_manager coreman(".");
         const char *ptr = strrchr(argv[1], '.');
         if (ptr == nullptr) {
-            fprintf(stderr, "cannot find core for file w/o extension!\n");
+            fprintf(stderr, "Cannot find core for file w/o extension!\n");
             return 1;
         }
         auto core_list = coreman.match_cores_by_extension(ptr + 1);
         if (core_list.empty()) {
-            fprintf(stderr, "cannot find core for file extension %s\n", ptr + 1);
+            fprintf(stderr, "Cannot find core for file extension %s\n", ptr + 1);
             return 1;
         }
         core_file = core_list[0].filepath;
     } else {
         core_file = argv[2];
     }
-    auto impl = drivers::load_core<drivers::sdl1_impl>(core_file);
+    auto impl = coreman.load_core<drivers::sdl1_impl>(core_file);
     if (!impl) {
-        fprintf(stderr, "unable to load core!\n");
+        fprintf(stderr, "Unable to load core!\n");
         return 1;
     }
     impl->load_game(argv[1]);

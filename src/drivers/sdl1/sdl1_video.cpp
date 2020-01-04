@@ -2,20 +2,18 @@
 
 #include "sdl1_font.h"
 
+#include "cfg.h"
+
 #include "bmfont.inl"
 
 #include <SDL.h>
 
 namespace drivers {
 
-// TODO: load default resolution from config
-enum :unsigned {
-    DEFAULT_WIDTH = 640,
-    DEFAULT_HEIGHT = 480,
-};
-
 sdl1_video::sdl1_video() {
-    screen = SDL_SetVideoMode(DEFAULT_WIDTH, DEFAULT_HEIGHT, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    uint32_t w, h;
+    std::tie(w, h) = g_cfg.get_resolution();
+    screen = SDL_SetVideoMode(w, h, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
 }
 
 bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bpp) {
@@ -23,10 +21,14 @@ bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bp
         SDL_FreeSurface(screen);
         screen = nullptr;
     }
-    if (width != 0 && height != 0)
-        screen = SDL_SetVideoMode(width * scale, height * scale, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
-    else
-        screen = SDL_SetVideoMode(DEFAULT_WIDTH, DEFAULT_HEIGHT, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    if (width != 0 && height != 0) {
+        auto scale = g_cfg.get_scale();
+        screen = SDL_SetVideoMode(width*scale, height*scale, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    } else {
+        uint32_t w, h;
+        std::tie(w, h) = g_cfg.get_resolution();
+        screen = SDL_SetVideoMode(w, h, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    }
     return screen != nullptr;
 }
 
@@ -36,6 +38,7 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
     bool lock = SDL_MUSTLOCK(screen);
     if (lock) SDL_LockSurface(screen);
     int h = static_cast<int>(height);
+    auto scale = g_cfg.get_scale();
     if (scale == 1) {
         auto *pixels = static_cast<uint8_t*>(screen->pixels);
         const auto *input = static_cast<const uint8_t*>(data);

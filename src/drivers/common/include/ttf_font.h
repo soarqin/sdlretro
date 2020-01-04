@@ -1,7 +1,5 @@
 #pragma once
 
-#include "stb_rect_pack.h"
-
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -21,9 +19,6 @@ struct rect_pack_data;
 
 class ttf_font {
 protected:
-    enum {
-        RECTPACK_WIDTH = 1024
-    };
     struct font_data {
         int16_t rpx, rpy;
         uint8_t rpidx;
@@ -41,11 +36,6 @@ protected:
         FT_Face face = nullptr;
 #endif
     };
-    struct rect_pack_data {
-        stbrp_context context;
-        stbrp_node nodes[RECTPACK_WIDTH];
-        uint8_t pixels[RECTPACK_WIDTH * RECTPACK_WIDTH];
-    };
 public:
     ttf_font();
     virtual ~ttf_font();
@@ -58,16 +48,18 @@ private:
 protected:
     const font_data *make_cache(uint16_t);
     static uint32_t utf8_to_ucs4(const char *&text);
+    const uint8_t *get_rect_pack_data(uint8_t idx, int16_t x, int16_t y);
+    uint16_t get_rect_pack_width();
 
 protected:
     std::string ttf_filename;
     int font_size = 16;
     std::vector<font_info> fonts;
     std::unordered_map<uint16_t, font_data> font_cache;
-    std::vector<rect_pack_data*> rectpack_data;
     uint8_t mono_width = 0;
 
 private:
+    std::vector<rect_pack_data*> rectpack_data;
 #ifndef USE_STB_TRUETYPE
     FT_Library ft_lib;
 #endif

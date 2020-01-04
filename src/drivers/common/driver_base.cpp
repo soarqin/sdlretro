@@ -1,6 +1,7 @@
 #include "driver_base.h"
 
 #include "logger.h"
+#include "cfg.h"
 
 #include "video_base.h"
 #include "buffered_audio.h"
@@ -9,10 +10,10 @@
 
 #include <core.h>
 
-#include <fstream>
-
 #include <cstring>
+#include <cmath>
 #include <memory>
+#include <fstream>
 
 namespace drivers {
 
@@ -33,15 +34,21 @@ driver_base::~driver_base() {
     current_driver = nullptr;
 }
 
+void driver_base::set_dirs(const std::string &static_root, const std::string &config_root) {
+    system_dir = static_root + "/system";
+    save_dir = config_root + "/saves";
+}
+
 void driver_base::run() {
-    for (;;) {
-        if (!run_frame()) break;
-        if (!save_check_countdown) {
-            check_save_ram();
-            /* TODO: use fps * config.countdown */
-            save_check_countdown = 60 * 10;
-        } else {
-            save_check_countdown--;
+    while (run_frame()) {
+        auto check = g_cfg.get_save_check();
+        if (check) {
+            if (!save_check_countdown) {
+                check_save_ram();
+                save_check_countdown = lround(check * fps);
+            } else {
+                save_check_countdown--;
+            }
         }
         core->retro_run();
     }
@@ -80,17 +87,20 @@ static int16_t RETRO_CALLCONV retro_input_state_cb(unsigned port, unsigned devic
     return current_driver->get_input()->input_state(port, device, index, id);
 }
 
-inline void read_file(const std::string filename, std::vector<uint8_t> &data) {
+inline bool read_file(const std::string filename, std::vector<uint8_t> &data) {
     std::ifstream ifs(filename, std::ios_base::binary | std::ios_base::in);
-    if (!ifs.good()) return;
+    if (!ifs.good()) return false;
     ifs.seekg(0, std::ios_base::end);
     size_t sz = ifs.tellg();
-    if (sz) {
-        data.resize(sz);
-        ifs.seekg(0, std::ios_base::beg);
-        ifs.read((char *)data.data(), sz);
+    if (!sz) {
+        ifs.close();
+        return false;
     }
+    data.resize(sz);
+    ifs.seekg(0, std::ios_base::beg);
+    ifs.read((char *)data.data(), sz);
     ifs.close();
+    return true;
 }
 
 bool driver_base::load_game(const std::string &path) {
@@ -99,7 +109,7 @@ bool driver_base::load_game(const std::string &path) {
     if (!need_fullpath) {
         std::ifstream ifs(path, std::ios_base::binary | std::ios_base::in);
         if (!ifs.good()) {
-            fprintf(stderr, "Unable to load %s\n", path.c_str());
+            logger(LOG_ERROR) << "Unable to load " << path << std::endl;
             return false;
         }
         ifs.seekg(0, std::ios_base::end);
@@ -111,7 +121,7 @@ bool driver_base::load_game(const std::string &path) {
         info.size = game_data.size();
     }
     if (!core->retro_load_game(&info)) {
-        fprintf(stderr, "Unable to load %s\n", path.c_str());
+        logger(LOG_ERROR) << "Unable to load " << path << std::endl;
         return false;
     }
 
@@ -149,9 +159,9 @@ bool driver_base::load_game(const std::string &path) {
     max_width = av_info.geometry.max_width;
     max_height = av_info.geometry.max_height;
     aspect_ratio = av_info.geometry.aspect_ratio;
+    fps = av_info.timing.fps;
 
-    // TODO: load mono from config
-    audio->start(false, av_info.timing.sample_rate, av_info.timing.fps);
+    audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, av_info.timing.fps);
     frame_throttle->reset(av_info.timing.fps);
 
     video->resolution_changed(base_width, base_height, 16);
@@ -271,7 +281,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             support_no_game = *(bool*)data;
             break;
         case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
-            *(const char**)data = libretro_dir.empty() ? nullptr : libretro_dir.c_str();
+            *(const char**)data = nullptr;
             return true;
         case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
         case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
@@ -365,7 +375,11 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         default:
             break;
     }
-    fprintf(stdout, "Unhandled env: %d\n", cmd & 0xFFFF);
+    if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) {
+        logger(LOG_INFO) << "Unhandled env: " << (cmd & 0xFFFFU) << "(EXPERIMENTAL)" << std::endl;
+    } else {
+        logger(LOG_INFO) << "Unhandled env: " << cmd << std::endl;
+    }
     return false;
 }
 

@@ -16,8 +16,7 @@ class throttle;
 
 /* base class for all drivers */
 class driver_base {
-    template<class T>
-    friend std::unique_ptr<driver_base> load_core(const std::string &path);
+    friend class core_manager;
 
 public:
     /* variable struct */
@@ -42,6 +41,9 @@ protected:
 public:
     /* construct with shared object file path for driver core */
     virtual ~driver_base();
+
+    /* set static root folder and config root folder */
+    void set_dirs(const std::string &static_root, const std::string &config_root);
 
     /* enter core main loop */
     virtual void run();
@@ -90,7 +92,6 @@ protected:
 
     /* various directories, as described in libretro env def */
     std::string system_dir;
-    std::string libretro_dir;
     std::string save_dir;
 
     /* need_fullpath in retro_system_info, for game loading use */
@@ -113,6 +114,7 @@ protected:
                                  * of base_width / base_height is assumed.
                                  * A frontend could override this setting,
                                  * if desired. */
+    double   fps = 0.;
 
     /* frame throttle */
     std::unique_ptr<throttle> frame_throttle;
@@ -152,16 +154,5 @@ private:
     /* core is inited */
     bool inited = false;
 };
-
-template<class T>
-inline std::unique_ptr<driver_base> load_core(const std::string &path) {
-    auto *c = new(std::nothrow) T;
-    if (c == nullptr) return nullptr;
-    if (!c->load(path)) {
-        delete c;
-        return nullptr;
-    }
-    return std::unique_ptr<driver_base>(c);
-}
 
 }

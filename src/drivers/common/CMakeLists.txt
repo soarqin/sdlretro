@@ -1,6 +1,10 @@
 find_package(FreeType REQUIRED)
 
 add_library(driver_common STATIC
+    # config
+    cfg.cpp
+    include/cfg.h
+
     # core files
     core_manager.cpp
     include/core_manager.h
@@ -23,10 +27,14 @@ add_library(driver_common STATIC
     util.cpp
     include/util.h
     logger.cpp
-    logger.h
+    include/logger.h
+
+    # external libs
+    external/json.hpp
     )
 
-target_include_directories(driver_common PUBLIC include ${FREETYPE_INCLUDE_DIRS})
+target_include_directories(driver_common PRIVATE external ${FREETYPE_INCLUDE_DIRS})
+target_include_directories(driver_common PUBLIC include)
 target_link_libraries(driver_common PUBLIC libretro ${FREETYPE_LIBRARIES})
 if(WIN32)
     target_link_libraries(driver_common PUBLIC shlwapi)

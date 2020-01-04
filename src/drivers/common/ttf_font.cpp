@@ -16,6 +16,16 @@
 
 namespace drivers {
 
+enum :uint16_t {
+    RECTPACK_WIDTH = 1024
+};
+
+struct rect_pack_data {
+    stbrp_context context;
+    stbrp_node nodes[RECTPACK_WIDTH];
+    uint8_t pixels[RECTPACK_WIDTH * RECTPACK_WIDTH];
+};
+
 ttf_font::ttf_font() {
 #ifndef USE_STB_TRUETYPE
     FT_Init_FreeType(&ft_lib);
@@ -232,6 +242,13 @@ void ttf_font::new_rect_pack() {
     auto *rpd = new rect_pack_data;
     stbrp_init_target(&rpd->context, RECTPACK_WIDTH, RECTPACK_WIDTH, rpd->nodes, RECTPACK_WIDTH);
     rectpack_data.push_back(rpd);
+}
+
+const uint8_t *ttf_font::get_rect_pack_data(uint8_t idx, int16_t x, int16_t y) {
+    return &rectpack_data[idx]->pixels[y * RECTPACK_WIDTH + x];
+}
+uint16_t ttf_font::get_rect_pack_width() {
+    return RECTPACK_WIDTH;
 }
 
 }
