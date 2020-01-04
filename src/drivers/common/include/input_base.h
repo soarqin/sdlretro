@@ -6,12 +6,12 @@
 namespace drivers {
 
 struct input_button_t {
-    bool available = false;
+    bool available;
 
-    unsigned port = 0;
-    unsigned device = 0;
-    unsigned index = 0;
-    unsigned id = 0;
+    unsigned port;
+    unsigned device;
+    unsigned index;
+    unsigned id;
 
     std::string description;
 };

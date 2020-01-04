@@ -13,7 +13,11 @@ int main(int argc, char *argv[]) {
     setvbuf(stderr, nullptr, _IONBF, 0);
 
     std::string core_file;
+#ifdef GCW_ZERO
+    drivers::core_manager coreman(".", "/usr/local/home/.sdlretro");
+#else
     drivers::core_manager coreman(".", ".");
+#endif
     if (argc < 3) {
         const char *ptr = strrchr(argv[1], '.');
         if (ptr == nullptr) {

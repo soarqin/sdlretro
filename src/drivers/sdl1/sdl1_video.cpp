@@ -10,10 +10,22 @@
 
 namespace drivers {
 
+const int sdl_video_flags =
+#ifdef GCW_ZERO
+    SDL_FULLSCREEN |
+#endif
+    SDL_SWSURFACE |
+#ifdef SDL_TRIPLEBUF
+    SDL_TRIPLEBUF
+#else
+    SDL_DOUBLEBUF
+#endif
+    ;
+
 sdl1_video::sdl1_video() {
     uint32_t w, h;
     std::tie(w, h) = g_cfg.get_resolution();
-    screen = SDL_SetVideoMode(w, h, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    screen = SDL_SetVideoMode(w, h, 16, sdl_video_flags);
 }
 
 bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bpp) {
@@ -25,11 +37,11 @@ bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bp
     curr_height = height;
     if (width != 0 && height != 0) {
         auto scale = g_cfg.get_scale();
-        screen = SDL_SetVideoMode(width*scale, height*scale, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+        screen = SDL_SetVideoMode(width*scale, height*scale, 16, sdl_video_flags);
     } else {
         uint32_t w, h;
         std::tie(w, h) = g_cfg.get_resolution();
-        screen = SDL_SetVideoMode(w, h, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
+        screen = SDL_SetVideoMode(w, h, 16, sdl_video_flags);
     }
     return screen != nullptr;
 }
