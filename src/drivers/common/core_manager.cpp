@@ -1,6 +1,8 @@
 #include "core_manager.h"
 
 #include "cfg.h"
+#include "logger.h"
+#include "util.h"
 
 #include <libretro.h>
 
@@ -11,15 +13,18 @@
 #include <dirent.h>
 #include <dlfcn.h>
 #endif
-#include <string.h>
+#include <cstring>
 
 namespace drivers {
 
 core_manager::core_manager(const std::string &static_root, const std::string &config_root) {
+    util_mkdir(config_root.c_str());
     g_cfg.set_filename(config_root + "/sdlretro.json");
     static_root_dir = static_root;
     config_root_dir = config_root;
-    core_dirs.push_back(config_root + "/cores");
+    auto config_core_dir = config_root + "/cores";
+    util_mkdir(config_core_dir.c_str());
+    core_dirs.push_back(config_core_dir);
     if (static_root != config_root)
         core_dirs.push_back(static_root + "/cores");
     g_cfg.load();
@@ -27,7 +32,7 @@ core_manager::core_manager(const std::string &static_root, const std::string &co
     for (const auto &core_dir: core_dirs) {
 #ifdef _WIN32
         wchar_t path[MAX_PATH] = {}, findpath[MAX_PATH];
-        MultiByteToWideChar(CP_UTF8, 0, core_dir.c_str(), core_dir.length(), path, MAX_PATH);
+        MultiByteToWideChar(CP_UTF8, 0, core_dir.c_str(), -1, path, MAX_PATH);
         lstrcpyW(findpath, path);
         PathAppendW(findpath, L"\\*.dll");
         WIN32_FIND_DATAW data = {};
@@ -49,7 +54,7 @@ core_manager::core_manager(const std::string &static_root, const std::string &co
                 sysinfo(&info);
 
                 char filename[MAX_PATH*3] = {};
-                WideCharToMultiByte(CP_UTF8, 0, fullpath, lstrlenW(fullpath), filename, MAX_PATH*3, nullptr, nullptr);
+                WideCharToMultiByte(CP_UTF8, 0, fullpath, -1, filename, MAX_PATH*3, nullptr, nullptr);
 
                 core_info coreinfo = {filename, info.library_name, info.library_version};
                 std::string exts = info.valid_extensions;

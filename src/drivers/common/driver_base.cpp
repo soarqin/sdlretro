@@ -7,6 +7,7 @@
 #include "buffered_audio.h"
 #include "input_base.h"
 #include "throttle.h"
+#include "util.h"
 
 #include <core.h>
 
@@ -35,8 +36,10 @@ driver_base::~driver_base() {
 }
 
 void driver_base::set_dirs(const std::string &static_root, const std::string &config_root) {
-    system_dir = static_root + "/system";
+    system_dir = config_root + "/system";
+    util_mkdir(system_dir.c_str());
     save_dir = config_root + "/saves";
+    util_mkdir(save_dir.c_str());
 }
 
 void driver_base::run() {
