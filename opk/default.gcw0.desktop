@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=SDLRetro
+Comment=SDL Frontend for libretro
+Exec=sdlretro %f
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=sdlretro_icon
+Categories=emulators;
+X-OD-NeedsDownscaling=true
