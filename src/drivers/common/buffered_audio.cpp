@@ -18,7 +18,7 @@ bool buffered_audio::start(bool mono, double sample_rate, double fps) {
     mono_audio = mono;
     output_sample_rate = lround(sample_rate);
     auto buffer_size = pullup(lround(output_sample_rate / fps));
-    buffer.resize(buffer_size * 4);
+    buffer.resize(buffer_size * 8);
     return open(buffer_size);
 }
 
