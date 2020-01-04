@@ -32,7 +32,8 @@ public:
     virtual int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id);
 
 protected:
-    int16_t pad_states = 0;
+    bool pad_enabled[2] = {true, false};
+    int16_t pad_states[2] = {};
 
 private:
     std::vector<input_port_t> ports;

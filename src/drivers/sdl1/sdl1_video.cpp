@@ -21,6 +21,8 @@ bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bp
         SDL_FreeSurface(screen);
         screen = nullptr;
     }
+    curr_width = width;
+    curr_height = height;
     if (width != 0 && height != 0) {
         auto scale = g_cfg.get_scale();
         screen = SDL_SetVideoMode(width*scale, height*scale, 16, SDL_SWSURFACE | SDL_DOUBLEBUF);
@@ -35,6 +37,9 @@ bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bp
 void sdl1_video::render(const void *data, unsigned width, unsigned height, size_t pitch) {
     if (!data) return;
 
+    if (curr_width != width || curr_height != height) {
+        resolution_changed(width, height, 16);
+    }
     bool lock = SDL_MUSTLOCK(screen);
     if (lock) SDL_LockSurface(screen);
     int h = static_cast<int>(height);
@@ -74,6 +79,15 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
     }
     if (lock) SDL_UnlockSurface(screen);
     SDL_Flip(screen);
+}
+
+void *sdl1_video::get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) {
+    if (!screen) return nullptr;
+    *width = screen->w;
+    *height = screen->h;
+    *pitch = screen->pitch;
+    *format = 2;
+    return screen->pixels;
 }
 
 }

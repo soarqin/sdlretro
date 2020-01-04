@@ -17,10 +17,12 @@ public:
     sdl1_video();
     bool resolution_changed(unsigned width, unsigned height, unsigned bpp) override;
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
+    void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
 
 private:
     SDL_Surface *screen = nullptr;
     std::unique_ptr<sdl1_font> ttf;
+    unsigned curr_width, curr_height;
 };
 
 }

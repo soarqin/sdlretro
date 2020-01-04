@@ -6,7 +6,7 @@
 
 namespace drivers {
 
-static void audio_callback(void *userdata, Uint8 *stream, int len) {
+void sdl1_audio::audio_callback(void *userdata, uint8_t *stream, int len) {
     auto *audio = static_cast<sdl1_audio*>(userdata);
     audio->read_samples(reinterpret_cast<int16_t*>(stream), len / 2);
 }
@@ -27,6 +27,7 @@ bool sdl1_audio::open(unsigned buffer_size) {
 }
 
 void sdl1_audio::close() {
+    output_sample_rate = 0;
     SDL_CloseAudio();
 }
 

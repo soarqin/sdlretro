@@ -63,9 +63,11 @@ void RETRO_CALLCONV log_printf(enum retro_log_level level, const char *fmt, ...)
     va_list l;
     va_start(l, fmt);
     log_vprintf((int)level, fmt, l);
+    va_end(l);
 }
 
 static void RETRO_CALLCONV retro_video_refresh_cb(const void *data, unsigned width, unsigned height, size_t pitch) {
+    if (!data) return;
     current_driver->get_video()->render(data, width, height, pitch);
 }
 
@@ -124,7 +126,6 @@ bool driver_base::load_game(const std::string &path) {
         logger(LOG_ERROR) << "Unable to load " << path << std::endl;
         return false;
     }
-
     game_path = path;
     auto pos = game_path.find_last_of("/\\");
     if (pos != std::string::npos) {
@@ -190,8 +191,8 @@ inline void load_variable(std::map<std::string, driver_base::variable_t> &variab
         auto &var = variables[def->key];
         var.curr_index = 0;
         var.default_index = 0;
-        var.label = def->desc;
-        var.info = def->info;
+        var.label = def->desc ? def->desc : "";
+        var.info = def->info ? def->info : "";
         const auto *opt = def->values;
         while (opt->value != nullptr) {
             if (strcmp(opt->value, def->default_value)==0)
@@ -216,8 +217,9 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         case RETRO_ENVIRONMENT_SET_MESSAGE:
         case RETRO_ENVIRONMENT_SHUTDOWN:
-        case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
             break;
+        case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
+            return true;
         case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
             *(const char**)data = system_dir.c_str();
             return true;
@@ -279,7 +281,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
             support_no_game = *(bool*)data;
-            break;
+            return true;
         case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
             *(const char**)data = nullptr;
             return true;
@@ -323,6 +325,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             max_width = geometry->max_width;
             max_height = geometry->max_height;
             aspect_ratio = geometry->aspect_ratio;
+            video->resolution_changed(base_width, base_height, 16);
             return true;
         }
         case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -332,6 +335,15 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             *(unsigned*)data = RETRO_LANGUAGE_ENGLISH;
             return true;
         case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
+            /*
+        {
+            auto *fb = (retro_framebuffer*)data;
+            fb->data = video->get_framebuffer(&fb->width, &fb->height, &fb->pitch, (int*)&fb->format);
+            if (fb->data)
+                return true;
+        }
+             */
+            return false;
         case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
         case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
         case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:

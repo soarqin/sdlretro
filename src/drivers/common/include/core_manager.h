@@ -26,11 +26,11 @@ public:
     inline std::unique_ptr<driver_base> load_core(const std::string &path) {
         driver_base *c = new(std::nothrow) T;
         if (c == nullptr) return nullptr;
+        c->set_dirs(static_root_dir, config_root_dir);
         if (!c->load(path)) {
             delete c;
             return nullptr;
         }
-        c->set_dirs(static_root_dir, config_root_dir);
         return std::unique_ptr<driver_base>(c);
     }
 

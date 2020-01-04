@@ -27,7 +27,7 @@ void buffered_audio::stop() {
 }
 
 void buffered_audio::write_samples(const int16_t *data, size_t count) {
-    if (!count) return;
+    if (!output_sample_rate || !count) return;
     if (mono_audio) {
         size_t samples = count / 2;
         int16_t *monodata = (int16_t*)alloca(128 * sizeof(int16_t));

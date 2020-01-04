@@ -12,6 +12,9 @@ protected:
     bool open(unsigned buffer_size) override;
     void close() override;
 
+private:
+    static void audio_callback(void *userdata, uint8_t *stream, int len);
+
 public:
     void pause(bool b) override;
 };
