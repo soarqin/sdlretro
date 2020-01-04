@@ -9,7 +9,9 @@
 #include <shlwapi.h>
 #else
 #include <dirent.h>
+#include <dlfcn.h>
 #endif
+#include <string.h>
 
 namespace drivers {
 

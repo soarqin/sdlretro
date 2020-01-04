@@ -1,6 +1,6 @@
 #include <util.h>
 
-#include <sys/time.h>
+#include <time.h>
 
 namespace drivers {
 

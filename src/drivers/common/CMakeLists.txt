@@ -1,4 +1,4 @@
-find_package(FreeType REQUIRED)
+find_package(Freetype REQUIRED)
 
 add_library(driver_common STATIC
     # config
