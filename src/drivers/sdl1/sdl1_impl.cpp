@@ -43,6 +43,16 @@ bool sdl1_impl::run_frame(bool check) {
         switch (event.type) {
             case SDL_QUIT:
                 return false;
+            case SDL_KEYDOWN:
+                if (event.key.keysym.sym ==
+#ifdef GCW_ZERO
+                    SDLK_HOME
+#else
+                    SDLK_ESCAPE
+#endif
+                    )
+                    return false;
+                break;
             default: break;
         }
     }

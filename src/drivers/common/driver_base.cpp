@@ -178,6 +178,7 @@ bool driver_base::load_game(const std::string &path) {
 }
 
 void driver_base::unload_game() {
+    check_save_ram();
     game_path.clear();
     game_base_name.clear();
     game_save_path.clear();
