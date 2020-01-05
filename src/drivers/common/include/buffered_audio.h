@@ -27,6 +27,9 @@ public:
 protected:
     bool mono_audio = false;
     unsigned output_sample_rate = 0;
+    unsigned sample_multiplier = 1;
+    int32_t sample_cache_sum[2] = {};
+    int sample_cache_size = 0;
 
 private:
     circular_buffer<int16_t> buffer;

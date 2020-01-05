@@ -92,6 +92,10 @@ static int16_t RETRO_CALLCONV retro_input_state_cb(unsigned port, unsigned devic
     return current_driver->get_input()->input_state(port, device, index, id);
 }
 
+static bool RETRO_CALLCONV retro_set_rumble_state_cb(unsigned port, enum retro_rumble_effect effect, uint16_t strength) {
+    return false;
+}
+
 inline bool read_file(const std::string filename, std::vector<uint8_t> &data) {
     std::ifstream ifs(filename, std::ios_base::binary | std::ios_base::in);
     if (!ifs.good()) return false;
@@ -295,8 +299,12 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
         case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
-        case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE:
             break;
+        case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE: {
+            auto *ri = (retro_rumble_interface*)data;
+            ri->set_rumble_state = retro_set_rumble_state_cb;
+            return true;
+        }
         case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES:
             *(uint64_t*)data = 1ULL << RETRO_DEVICE_JOYPAD;
             return true;
