@@ -6,9 +6,15 @@
 namespace drivers {
 
 enum :uint32_t {
+#ifdef GCW_ZERO
+    DEFAULT_WIDTH = 320,
+    DEFAULT_HEIGHT = 240,
+    DEFAULT_SCALE = 1,
+#else
     DEFAULT_WIDTH = 640,
     DEFAULT_HEIGHT = 480,
-    DEFAULT_SCALE = 1,
+    DEFAULT_SCALE = 2,
+#endif
 };
 
 class cfg {

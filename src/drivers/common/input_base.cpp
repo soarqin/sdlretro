@@ -25,7 +25,6 @@ int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, 
         default:
             return 0;
     }
-
 }
 
 }

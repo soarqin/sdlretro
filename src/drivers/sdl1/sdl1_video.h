@@ -22,7 +22,7 @@ public:
 private:
     SDL_Surface *screen = nullptr;
     std::unique_ptr<sdl1_font> ttf;
-    unsigned curr_width, curr_height;
+    unsigned curr_width, curr_height, curr_bpp;
 };
 
 }

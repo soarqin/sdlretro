@@ -168,7 +168,7 @@ bool driver_base::load_game(const std::string &path) {
     audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, av_info.timing.fps);
     frame_throttle->reset(av_info.timing.fps);
     core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
-    video->resolution_changed(base_width, base_height, 16);
+    video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
 
     return true;
 }
@@ -226,9 +226,14 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
             *(const char**)data = system_dir.c_str();
             return true;
-        case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
-            pixel_format = (unsigned)*(const enum retro_pixel_format *)data;
+        case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: {
+            auto new_format = (unsigned)*(const enum retro_pixel_format *)data;
+            if (new_format != pixel_format) {
+                pixel_format = new_format;
+                video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
+            }
             return true;
+        }
         case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: {
             const auto *inp = (const retro_input_descriptor*)data;
             while (inp->description != nullptr) {
@@ -328,7 +333,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             max_width = geometry->max_width;
             max_height = geometry->max_height;
             aspect_ratio = geometry->aspect_ratio;
-            video->resolution_changed(base_width, base_height, 16);
+            video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
             return true;
         }
         case RETRO_ENVIRONMENT_GET_USERNAME:

@@ -98,7 +98,7 @@ protected:
     bool need_fullpath = false;
 
     /* retro_pixel_format, check libretro.h */
-    unsigned pixel_format = 0;
+    unsigned pixel_format = 2;
 
     /* support no game boot */
     bool support_no_game = false;
