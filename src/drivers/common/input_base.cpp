@@ -16,10 +16,16 @@ void input_base::add_button(unsigned port, unsigned device, unsigned index, unsi
 }
 
 int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
-    if (id == RETRO_DEVICE_ID_JOYPAD_MASK) {
-        return pad_states[port];
+    switch (device) {
+        case RETRO_DEVICE_JOYPAD:
+            if (id==RETRO_DEVICE_ID_JOYPAD_MASK) {
+                return pad_states[port];
+            }
+            return (pad_states[port] & (1 << id)) ? 1 : 0;
+        default:
+            return 0;
     }
-    return pad_states[port] & (1 << id);
+
 }
 
 }

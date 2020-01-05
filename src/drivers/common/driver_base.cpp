@@ -167,7 +167,7 @@ bool driver_base::load_game(const std::string &path) {
 
     audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, av_info.timing.fps);
     frame_throttle->reset(av_info.timing.fps);
-
+    core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
     video->resolution_changed(base_width, base_height, 16);
 
     return true;
