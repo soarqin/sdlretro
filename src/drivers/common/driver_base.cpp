@@ -43,7 +43,7 @@ void driver_base::set_dirs(const std::string &static_root, const std::string &co
 }
 
 void driver_base::run() {
-    while (run_frame()) {
+    while (run_frame(video->frame_drawn())) {
         auto check = g_cfg.get_save_check();
         if (check) {
             if (!save_check_countdown) {

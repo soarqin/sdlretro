@@ -49,7 +49,11 @@ bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bp
 }
 
 void sdl1_video::render(const void *data, unsigned width, unsigned height, size_t pitch) {
-    if (!data) return;
+    if (!data) {
+        drawn = false;
+        return;
+    }
+    drawn = true;
 
     if (curr_width != width || curr_height != height) {
         resolution_changed(width, height, curr_bpp);

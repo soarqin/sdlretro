@@ -19,4 +19,8 @@ uint64_t throttle::check_wait() {
     return 0ULL;
 }
 
+void throttle::skip_check() {
+    next_frame += frame_time;
+}
+
 }

@@ -13,6 +13,8 @@ public:
 
     virtual void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format)
     { return nullptr; }
+
+    virtual bool frame_drawn() { return false; }
 };
 
 }

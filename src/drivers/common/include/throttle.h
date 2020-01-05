@@ -8,6 +8,7 @@ class throttle {
 public:
     void reset(double fps);
     uint64_t check_wait();
+    void skip_check();
 
 private:
     uint64_t next_frame = 0;

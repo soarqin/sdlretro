@@ -37,7 +37,7 @@ void sdl1_impl::deinit() {
 void sdl1_impl::unload() {
 }
 
-bool sdl1_impl::run_frame() {
+bool sdl1_impl::run_frame(bool check) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
@@ -46,11 +46,14 @@ bool sdl1_impl::run_frame() {
             default: break;
         }
     }
-    uint64_t usecs = 0;
-    do {
-        usleep(usecs);
-        usecs = frame_throttle->check_wait();
-    } while(usecs);
+    if (check) {
+        uint64_t usecs = 0;
+        do {
+            usleep(usecs);
+            usecs = frame_throttle->check_wait();
+        } while (usecs);
+    } else
+        frame_throttle->skip_check();
     return true;
 }
 

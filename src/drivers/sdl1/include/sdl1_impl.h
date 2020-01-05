@@ -14,7 +14,7 @@ protected:
     bool init() final;
     void deinit() final;
     void unload() final;
-    bool run_frame() final;
+    bool run_frame(bool check) final;
 };
 
 }

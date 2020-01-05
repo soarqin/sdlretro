@@ -84,7 +84,7 @@ protected:
     virtual void unload() = 0;
 
     /* frame runner for the core */
-    virtual bool run_frame() = 0;
+    virtual bool run_frame(bool check) = 0;
 
 protected:
     /* core struct, check libretro/include/core.h */
