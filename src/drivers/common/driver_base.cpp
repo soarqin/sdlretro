@@ -43,7 +43,7 @@ void driver_base::set_dirs(const std::string &static_root, const std::string &co
 }
 
 void driver_base::run() {
-    while (run_frame(video->frame_drawn())) {
+    while (!shutdown && run_frame(video->frame_drawn())) {
         auto check = g_cfg.get_save_check();
         if (check) {
             if (!save_check_countdown) {
@@ -54,6 +54,7 @@ void driver_base::run() {
             }
         }
         core->retro_run();
+        video->message_frame_pass();
     }
 }
 
@@ -63,6 +64,10 @@ bool RETRO_CALLCONV retro_environment_cb(unsigned cmd, void *data) {
 }
 
 void RETRO_CALLCONV log_printf(enum retro_log_level level, const char *fmt, ...) {
+#if !defined(NDEBUG) && !defined(LIBRETRO_DEBUG_LOG)
+    if (level >= RETRO_LOG_DEBUG)
+        return;
+#endif
     va_list l;
     va_start(l, fmt);
     log_vprintf((int)level, fmt, l);
@@ -133,6 +138,7 @@ bool driver_base::load_game(const std::string &path) {
         logger(LOG_ERROR) << "Unable to load " << path << std::endl;
         return false;
     }
+
     game_path = path;
     auto pos = game_path.find_last_of("/\\");
     if (pos != std::string::npos) {
@@ -178,6 +184,7 @@ bool driver_base::load_game(const std::string &path) {
 }
 
 void driver_base::unload_game() {
+    shutdown = false;
     check_save_ram();
     game_path.clear();
     game_base_name.clear();
@@ -223,9 +230,14 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_GET_CAN_DUPE:
             *(bool*)data = true;
             return true;
-        case RETRO_ENVIRONMENT_SET_MESSAGE:
+        case RETRO_ENVIRONMENT_SET_MESSAGE: {
+            const auto *msg = (const retro_message*)data;
+            video->set_message(msg->msg, msg->frames);
+            return true;
+        }
         case RETRO_ENVIRONMENT_SHUTDOWN:
-            break;
+            shutdown = true;
+            return true;
         case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
             return true;
         case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
@@ -258,12 +270,13 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
                 var->value = ite->second.options[ite->second.curr_index].first.c_str();
                 return true;
             }
+            variables_updated = false;
             break;
         }
         case RETRO_ENVIRONMENT_SET_VARIABLES: {
             const auto *vars = (const retro_variable*)data;
             variables.clear();
-            variables_updated = false;
+            variables_updated = true;
             while (vars->key != nullptr) {
                 std::string value = vars->value;
                 auto pos = value.find("; ");
@@ -326,8 +339,11 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
         case RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK:
         case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
-        case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
             break;
+        case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO: {
+            const auto *info = (const retro_controller_info*)data;
+            return true;
+        }
         case RETRO_ENVIRONMENT_SET_MEMORY_MAPS: {
             const auto *memmap = (const retro_memory_map*)data;
             for (unsigned i = 0; i < memmap->num_descriptors; ++i) {
@@ -381,13 +397,13 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS: {
             variables.clear();
-            variables_updated = false;
+            variables_updated = true;
             load_variable(variables, (const retro_core_option_definition*)data);
             return true;
         }
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL: {
             variables.clear();
-            variables_updated = false;
+            variables_updated = true;
             load_variable(variables, ((const retro_core_options_intl*)data)->us);
             return true;
         }
@@ -429,6 +445,7 @@ bool driver_base::init_internal() {
         return false;
     }
 
+    shutdown = false;
     core->retro_set_environment(retro_environment_cb);
 
     retro_system_info info = {};

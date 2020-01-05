@@ -153,6 +153,9 @@ private:
 
     /* core is inited */
     bool inited = false;
+
+    /* shutdown is requested */
+    bool shutdown = false;
 };
 
 }

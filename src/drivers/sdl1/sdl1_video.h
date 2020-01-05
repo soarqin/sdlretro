@@ -21,6 +21,10 @@ public:
     bool frame_drawn() override { return drawn; }
 
 private:
+    void draw_text(int x, int y, const char *text, bool allow_wrap, bool shadow);
+    void draw_text_pixel(int x, int y, const char *text, bool allow_wrap, bool shadow);
+
+private:
     SDL_Surface *screen = nullptr;
     std::unique_ptr<sdl1_font> ttf;
     unsigned curr_width = 0, curr_height = 0, curr_bpp = 0;

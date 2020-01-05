@@ -4,8 +4,6 @@
 
 #include "cfg.h"
 
-#include "bmfont.inl"
-
 #include <SDL.h>
 
 namespace drivers {
@@ -27,6 +25,11 @@ sdl1_video::sdl1_video() {
     std::tie(w, h) = g_cfg.get_resolution();
     curr_bpp = 16;
     screen = SDL_SetVideoMode(w, h, curr_bpp, sdl_video_flags);
+    /* TODO: ttf font load
+    ttf = std::make_unique<sdl1_font>();
+    ttf->init(16, 0);
+    ttf->add("", 0);
+     */
 }
 
 bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bpp) {
@@ -102,6 +105,10 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
         } else {
             CODE_WITH_TYPE(uint16_t)
         }
+    #undef CODE_WITH_TYPE
+    }
+    if (message_frames) {
+        draw_text(0, curr_height * scale - 20, message_text.c_str(), false, true);
     }
     if (lock) SDL_UnlockSurface(screen);
     SDL_Flip(screen);
@@ -114,6 +121,80 @@ void *sdl1_video::get_framebuffer(unsigned *width, unsigned *height, size_t *pit
     *pitch = screen->pitch;
     *format = 2;
     return screen->pixels;
+}
+
+void sdl1_video::draw_text(int x, int y, const char *text, bool allow_wrap, bool shadow) {
+    if (ttf) {
+        ttf->render(screen, x, y, text, allow_wrap, shadow);
+    } else {
+        draw_text_pixel(x, y, text, allow_wrap, shadow);
+    }
+}
+
+#include "bmfont.inl"
+
+void sdl1_video::draw_text_pixel(int x, int y, const char *text, bool allow_wrap, bool shadow) {
+    auto swidth = screen->pitch / screen->format->BytesPerPixel;
+    while (*text) {
+        uint8_t c = *text++;
+        if (c > 0x7F) continue;
+        auto &fd = font_data[c];
+        if (x + fd.sw > screen->w) {
+            if (!allow_wrap) break;
+            x = 0;
+            y += 12;
+        }
+    #define CODE_WITH_TYPE(TYPE) \
+        auto *ptr = (TYPE*)screen->pixels + x + fd.x + (y + fd.y) * swidth; \
+        auto *fontdata = fd.data; \
+        uint32_t wrapx = swidth - fd.w; \
+        uint32_t step = (fd.w + 7) >> 3; \
+        if (shadow) { \
+            for (int h = fd.h; h; h--) { \
+                uint8_t bitflag = 0x01; \
+                uint32_t fdidx = 0; \
+                for (int w = fd.w; w; w--) { \
+                    if (fontdata[fdidx] & bitflag) { \
+                        *ptr++ = (TYPE)-1; \
+                        *(ptr + swidth) = 0; \
+                    } else ++ptr; \
+                    if (bitflag == 0x80) { \
+                        fdidx++; \
+                        bitflag = 1; \
+                    } else { \
+                        bitflag <<= 1; \
+                    } \
+                } \
+                ptr += wrapx; \
+                fontdata += step; \
+            } \
+        } else { \
+            for (int h = fd.h; h; h--) { \
+                uint8_t bitflag = 0x01; \
+                uint32_t fdidx = 0; \
+                for (int w = fd.w; w; w--) { \
+                    if (fontdata[fdidx] & bitflag) \
+                        *ptr++ = (TYPE)-1; \
+                    else ++ptr; \
+                    if (bitflag == 0x80) { \
+                        fdidx++; \
+                        bitflag = 1; \
+                    } else { \
+                        bitflag <<= 1; \
+                    } \
+                } \
+                ptr += wrapx; \
+                fontdata += step; \
+            } \
+        }
+        if (curr_bpp == 32) {
+            CODE_WITH_TYPE(uint32_t)
+        } else {
+            CODE_WITH_TYPE(uint16_t)
+        }
+    #undef CODE_WITH_TYPE
+        x += fd.sw;
+    }
 }
 
 }

@@ -22,6 +22,10 @@ int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, 
                 return pad_states[port];
             }
             return (pad_states[port] & (1 << id)) ? 1 : 0;
+        case RETRO_DEVICE_KEYBOARD:
+            return 0;
+        case RETRO_DEVICE_ANALOG:
+            return 0;
         default:
             return 0;
     }

@@ -4,8 +4,8 @@
 
 namespace drivers {
 
-void sdl1_font::init_font(int size, uint8_t mono_width, SDL_Surface *surface) {
-    init(size, mono_width);
+void sdl1_font::calc_depth_color(SDL_Surface *surface) {
+    surface_bpp = surface->format->BitsPerPixel;
     for (uint16_t i = 0; i < 256; ++i) {
         uint8_t c;
 #ifndef TTF_SMOOTH
@@ -19,6 +19,9 @@ void sdl1_font::init_font(int size, uint8_t mono_width, SDL_Surface *surface) {
 }
 
 void sdl1_font::render(SDL_Surface *surface, int x, int y, const char *text, bool allowWrap, bool shadow) {
+    if (surface->format->BitsPerPixel != surface_bpp) {
+        calc_depth_color(surface);
+    }
     int stride = surface->pitch / surface->format->BytesPerPixel;
     int surface_w = surface->w;
 
@@ -32,6 +35,9 @@ void sdl1_font::render(SDL_Surface *surface, int x, int y, const char *text, boo
 
         if (ite == font_cache.end()) {
             fd = make_cache(ch);
+            if (!fd) {
+                continue;
+            }
         } else {
             fd = &ite->second;
             if (fd->advW == 0) continue;
@@ -44,39 +50,31 @@ void sdl1_font::render(SDL_Surface *surface, int x, int y, const char *text, boo
             if (y + font_size > surface->h)
                 break;
         }
-        uint16_t *outptr = static_cast<uint16_t*>(surface->pixels) + stride * (y + font_size + fd->iy0) + x + fd->ix0;
-        const uint8_t *input = get_rect_pack_data(fd->rpidx, fd->rpx, fd->rpy);
-        int iw = get_rect_pack_width() - fd->w;
-        int ow = stride - fd->w;
-        for (int j = fd->h; j; j--) {
-            for (int i = fd->w; i; i--) {
-#define TTF_NOALPHA
-#ifdef TTF_NOALPHA
-                uint8_t c;
-                if ((c = *input++) >= 32) {
-                    *outptr++ = depth_color[c];
-                    if (shadow)
-                        *(outptr + stride) = 0;
-                } else
-                    ++outptr;
-#else
-                uint16_t c = *outptr;
-                if (c == 0) { *outptr++ = depth_color[*input++]; continue; }
-                uint8_t n = *input++;
-#ifndef USE_BGR15
-                *outptr++ = ((((c >> 11u) * (0xFFu - n) + 0x1Fu * n) / 0xFFu) << 11u)
-                    | (((((c >> 5u) & 0x3Fu) * (0xFFu - n) + 0x3Fu * n) / 0xFFu) << 5u)
-                    | (((c & 0x1Fu) * (0xFFu - n) + 0x1Fu * n) / 0xFFu);
-#else
-	            *outptr++ = ((((c >> 10u) * (0xFFu - n) + 0x1Fu * n) / 0xFFu) << 10u)
-	                        | (((((c >> 5u) & 0x1Fu) * (0xFFu - n) + 0x1Fu * n) / 0xFFu) << 5u)
-	                        | (((c & 0x1Fu) * (0xFFu - n) + 0x1Fu * n) / 0xFFu);
-#endif
-#endif
-            }
-            outptr += ow;
-            input += iw;
+    #define CODE_WITH_TYPE(TYPE) \
+        TYPE *outptr = static_cast<TYPE*>(surface->pixels) + stride * (y + font_size + fd->iy0) + x + fd->ix0; \
+        const uint8_t *input = get_rect_pack_data(fd->rpidx, fd->rpx, fd->rpy); \
+        int iw = get_rect_pack_width() - fd->w; \
+        int ow = stride - fd->w; \
+        for (int j = fd->h; j; j--) { \
+            for (int i = fd->w; i; i--) { \
+                uint8_t c; \
+                if ((c = *input++) >= 32) { \
+                    *outptr++ = depth_color[c]; \
+                    if (shadow) \
+                        *(outptr + stride) = 0; \
+                } else \
+                    ++outptr; \
+            } \
+            outptr += ow; \
+            input += iw; \
         }
+
+        if (surface_bpp == 32) {
+            CODE_WITH_TYPE(uint32_t)
+        } else {
+            CODE_WITH_TYPE(uint16_t)
+        }
+    #undef CODE_WITH_TYPE
         x += cwidth;
     }
 }
