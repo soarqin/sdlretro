@@ -197,4 +197,12 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, bool allow_wrap
     }
 }
 
+void sdl1_video::enter_menu() {
+
+}
+
+void sdl1_video::leave_menu() {
+
+}
+
 }

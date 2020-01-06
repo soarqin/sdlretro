@@ -12,10 +12,13 @@ public:
     virtual bool resolution_changed(unsigned width, unsigned height, unsigned bpp) = 0;
     virtual void render(const void *data, unsigned width, unsigned height, size_t pitch) = 0;
 
+    virtual bool frame_drawn() = 0;
+
+    virtual void enter_menu() = 0;
+    virtual void leave_menu() = 0;
+
     virtual void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format)
     { return nullptr; }
-
-    virtual bool frame_drawn() { return false; }
 
     inline void set_message(const char *text, unsigned frames) {
         message_text = text;

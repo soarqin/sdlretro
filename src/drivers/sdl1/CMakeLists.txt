@@ -12,7 +12,7 @@ add_library(driver_sdl1 STATIC
     sdl1_input.h
     sdl1_font.cpp
     sdl1_font.h
-    )
+    sdl1_menu.cpp sdl1_menu.h)
 
 target_compile_definitions(driver_sdl1 PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(driver_sdl1 PUBLIC include)

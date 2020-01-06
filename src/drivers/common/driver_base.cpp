@@ -43,7 +43,7 @@ void driver_base::set_dirs(const std::string &static_root, const std::string &co
 }
 
 void driver_base::run() {
-    while (!shutdown && run_frame(video->frame_drawn())) {
+    while (!shutdown_driver && run_frame(video->frame_drawn())) {
         auto check = g_cfg.get_save_check();
         if (check) {
             if (!save_check_countdown) {
@@ -184,7 +184,7 @@ bool driver_base::load_game(const std::string &path) {
 }
 
 void driver_base::unload_game() {
-    shutdown = false;
+    shutdown_driver = false;
     check_save_ram();
     game_path.clear();
     game_base_name.clear();
@@ -236,7 +236,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_SHUTDOWN:
-            shutdown = true;
+            shutdown_driver = true;
             return true;
         case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
             return true;
@@ -445,7 +445,7 @@ bool driver_base::init_internal() {
         return false;
     }
 
-    shutdown = false;
+    shutdown_driver = false;
     core->retro_set_environment(retro_environment_cb);
 
     retro_system_info info = {};

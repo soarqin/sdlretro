@@ -28,6 +28,10 @@ private:
     SDL_Surface *screen = nullptr;
     std::unique_ptr<sdl1_font> ttf;
     unsigned curr_width = 0, curr_height = 0, curr_bpp = 0;
+public:
+    void enter_menu() override;
+    void leave_menu() override;
+private:
     bool drawn = false;
 };
 

@@ -17,7 +17,7 @@ public:
 
 private:
     uint32_t depth_color[256];
-    uint32_t surface_bpp = 16;
+    uint32_t surface_bpp = 0;
 };
 
 }

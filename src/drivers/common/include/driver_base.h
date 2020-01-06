@@ -46,7 +46,10 @@ public:
     void set_dirs(const std::string &static_root, const std::string &config_root);
 
     /* enter core main loop */
-    virtual void run();
+    void run();
+
+    /* shutdown the driver */
+    inline void shutdown() { shutdown_driver = true; }
 
     /* load game from file with given path */
     bool load_game(const std::string &path);
@@ -155,7 +158,7 @@ private:
     bool inited = false;
 
     /* shutdown is requested */
-    bool shutdown = false;
+    bool shutdown_driver = false;
 };
 
 }
