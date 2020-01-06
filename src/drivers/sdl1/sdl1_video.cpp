@@ -197,12 +197,44 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, bool allow_wrap
     }
 }
 
-void sdl1_video::enter_menu() {
+void sdl1_video::clear() {
+    bool lock = SDL_MUSTLOCK(screen);
+    if (lock) SDL_LockSurface(screen);
+    memset(screen->pixels, 0, screen->pitch * screen->h);
+    if (lock) SDL_UnlockSurface(screen);
+    SDL_Flip(screen);
+    if (lock) SDL_LockSurface(screen);
+    memset(screen->pixels, 0, screen->pitch * screen->h);
+    if (lock) SDL_UnlockSurface(screen);
+    SDL_Flip(screen);
+#ifdef SDL_TRIPLEBUF
+    if (lock) SDL_LockSurface(screen);
+    memset(screen->pixels, 0, screen->pitch * screen->h);
+    if (lock) SDL_UnlockSurface(screen);
+    SDL_Flip(screen);
+#endif
+}
 
+void sdl1_video::enter_menu() {
+    saved_width = curr_width;
+    saved_height = curr_height;
+    saved_bpp = curr_bpp;
+
+    curr_width = DEFAULT_WIDTH;
+    curr_height = DEFAULT_HEIGHT;
+    curr_bpp = 16;
+
+    screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
+    clear();
 }
 
 void sdl1_video::leave_menu() {
+    curr_width = saved_width;
+    curr_height = saved_height;
+    curr_bpp = saved_bpp;
 
+    screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
+    clear();
 }
 
 }

@@ -1,7 +1,10 @@
 #include "menu_base.h"
 
 #include "driver_base.h"
+#include "input_base.h"
 #include "video_base.h"
+
+#include <libretro.h>
 
 #include <unistd.h>
 
@@ -25,7 +28,7 @@ bool menu_base::enter_menu_loop() {
     if (topmenu) {
         driver->get_video()->leave_menu();
     }
-    return false;
+    return ok_pressed;
 }
 
 void menu_base::leave_menu_loop() {
@@ -88,6 +91,45 @@ void menu_base::move_last() {
     if (top_index + page_size > selected + 1) {
         top_index = selected >= page_size ? selected + 1 - page_size : 0;
     }
+}
+
+bool menu_base::poll_input() {
+    auto *input = driver->get_input();
+    input->input_poll();
+    auto states = input->get_pad_states(0);
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_UP)) {
+        move_up();
+        return true;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_DOWN)) {
+        move_down();
+        return true;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_LEFT)) {
+        page_up();
+        return true;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_RIGHT)) {
+        page_down();
+        return true;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_L)) {
+        move_first();
+        return true;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_R)) {
+        move_last();
+        return true;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_A)) {
+        set_ok_pressed(true);
+        return false;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_B)) {
+        set_ok_pressed(false);
+        return false;
+    }
+    return false;
 }
 
 }

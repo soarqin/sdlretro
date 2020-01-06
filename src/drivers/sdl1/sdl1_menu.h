@@ -9,7 +9,6 @@ protected:
     void enter() override;
     void leave() override;
     void draw() override;
-    bool poll_input() override;
     size_t page_count() override { return page_size; }
 
 private:

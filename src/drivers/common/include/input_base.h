@@ -27,6 +27,8 @@ public:
 
     void add_button(unsigned port, unsigned device, unsigned index, unsigned id, const std::string &desc);
 
+    inline int16_t get_pad_states(unsigned index) { return pad_states[index]; }
+
     /* virtual method for callback use */
     virtual void input_poll() = 0;
     virtual int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id);
