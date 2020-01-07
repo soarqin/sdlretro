@@ -16,8 +16,6 @@ class throttle;
 
 /* base class for all drivers */
 class driver_base {
-    friend class core_manager;
-
 public:
     /* variable struct */
     struct variable_t {
@@ -69,10 +67,10 @@ public:
     inline buffered_audio *get_audio() { return audio.get(); }
     inline input_base *get_input() { return input.get(); }
 
-private:
     /* load core from path */
-    bool load(const std::string &path);
+    bool load_core(const std::string &path);
 
+private:
     /* internal init/deinit */
     bool init_internal();
     void deinit_internal();
@@ -120,16 +118,16 @@ protected:
     double   fps = 0.;
 
     /* frame throttle */
-    std::unique_ptr<throttle> frame_throttle;
+    std::shared_ptr<throttle> frame_throttle;
 
     /* video_base for video output */
-    std::unique_ptr<video_base> video;
+    std::shared_ptr<video_base> video;
 
     /* buffered_audio for audio input */
-    std::unique_ptr<buffered_audio> audio;
+    std::shared_ptr<buffered_audio> audio;
 
     /* input_base for contoller input */
-    std::unique_ptr<input_base> input;
+    std::shared_ptr<input_base> input;
 
 private:
     /* game file path and base name(remove dir and ext part from game path) */
@@ -160,5 +158,12 @@ private:
     /* shutdown is requested */
     bool shutdown_driver = false;
 };
+
+template<class T>
+inline std::shared_ptr<driver_base> create_driver() {
+    driver_base *c = new(std::nothrow) T;
+    if (c == nullptr) return std::shared_ptr<driver_base>();
+    return std::shared_ptr<driver_base>(c);
+}
 
 }

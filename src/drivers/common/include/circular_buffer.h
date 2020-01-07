@@ -43,71 +43,44 @@ public:
     // Add items to this circular buffer, overflow is ignored, and return count of pushed items.
     size_t push(const T *items, size_t count) {
         if (!count) return 0;
-        size_t push_size = 0;
         if (tail >= head) {
-            if (tail + count >= max_size) {
-                if (head == 0) {
-                    push_size = max_size - tail - 1;
-                    if (!push_size) return 0;
-                    memcpy(&buffer[tail], items, push_size * sizeof(T));
-                    tail = max_size - 1;
-                } else {
-                    push_size = max_size - tail;
-                    memcpy(&buffer[tail], items, push_size * sizeof(T));
-                    tail = 0;
-                }
-                items += push_size;
-                count -= push_size;
-                if (head == 0) {
-                    return push_size;
-                }
-            } else {
-                memcpy(&buffer[tail], items, count * sizeof(T));
-                tail = tail + count;
-                return count;
+            if (tail + count > max_size) {
+                size_t part1 = max_size - tail;
+                return push(items, part1) + push(items + part1, count - part1);
             }
-        }
-        if (tail + count >= head) {
-            size_t write_size = head - tail - 1;
-            memcpy(&buffer[tail], items, write_size * sizeof(T));
-            tail += write_size;
-            push_size += write_size;
-        } else {
             memcpy(&buffer[tail], items, count * sizeof(T));
-            tail += count;
-            push_size += count;
+            tail = (tail + count) % max_size;
+            return count;
         }
-        return push_size;
+        if (tail + count + 2 > head) {
+            // align to 2
+            count = head - tail - 2;
+            if (!count) return 0;
+        }
+        memcpy(&buffer[tail], items, count * sizeof(T));
+        tail += count;
+        return count;
     }
 
     // Pop items from this circular buffer, return count of popped up items
     size_t pop(T *items, size_t count) {
         if (!count) return 0;
-        size_t pop_size = 0;
         if (tail < head) {
             if (head + count > max_size) {
-                pop_size = max_size - head;
-                memcpy(items, &buffer[head], pop_size * sizeof(T));
-                head = 0;
-                items += pop_size;
-                count -= pop_size;
-            } else {
-                memcpy(items, &buffer[head], count * sizeof(T));
-                head = (head + count) % max_size;
-                return count;
+                size_t part1 = max_size - head;
+                return pop(items, part1) + pop(items + part1, count - part1);
             }
+            memcpy(items, &buffer[head], count * sizeof(T));
+            head = (head + count) % max_size;
+            return count;
         }
         if (head + count > tail) {
-            size_t read_size = tail - head;
-            memcpy(items, &buffer[head], read_size * sizeof(T));
-            head += read_size;
-            pop_size += read_size;
-        } else {
-            memcpy(items, &buffer[head], count * sizeof(T));
-            head += count;
-            pop_size += count;
+            count = tail - head;
+            if (!count) return 0;
         }
-        return pop_size;
+        memcpy(items, &buffer[head], count * sizeof(T));
+        head += count;
+        return count;
     }
 
     // Return the item at the front of this circular buffer.

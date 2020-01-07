@@ -6,8 +6,6 @@
 #include <iostream>
 #include <iomanip>
 
-namespace drivers {
-
 cfg g_cfg;
 
 using json = nlohmann::json;
@@ -61,6 +59,4 @@ void cfg::save() {
         std::cerr << "failed to write config to " << filename << std::endl;
     }
     ofs.close();
-}
-
 }

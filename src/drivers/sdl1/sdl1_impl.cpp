@@ -24,9 +24,9 @@ bool sdl1_impl::init() {
         return false;
     }
     SDL_WM_SetCaption("SDLRetro", nullptr);
-    video = std::make_unique<sdl1_video>();
-    audio = std::make_unique<sdl1_audio>();
-    input = std::make_unique<sdl1_input>();
+    video = std::make_shared<sdl1_video>();
+    audio = std::make_shared<sdl1_audio>();
+    input = std::make_shared<sdl1_input>();
     return true;
 }
 

@@ -32,7 +32,7 @@ public:
 
 protected:
     std::string message_text;
-    unsigned message_frames;
+    unsigned message_frames = 0;
 };
 
 }

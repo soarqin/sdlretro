@@ -13,6 +13,7 @@ protected:
 
 private:
     size_t page_size = 0;
+    int line_height = 0;
 };
 
 }

@@ -1,7 +1,6 @@
 #include "core_manager.h"
 
 #include "cfg.h"
-#include "logger.h"
 #include "util.h"
 
 #include <libretro.h>
@@ -15,19 +14,15 @@
 #endif
 #include <cstring>
 
-namespace drivers {
+namespace libretro {
 
 core_manager::core_manager(const std::string &static_root, const std::string &config_root) {
     util_mkdir(config_root.c_str());
-    g_cfg.set_filename(config_root + "/sdlretro.json");
-    static_root_dir = static_root;
-    config_root_dir = config_root;
     auto config_core_dir = config_root + "/cores";
     util_mkdir(config_core_dir.c_str());
     core_dirs.push_back(config_core_dir);
-    if (static_root != config_root)
+    if (static_root!=config_root)
         core_dirs.push_back(static_root + "/cores");
-    g_cfg.load();
 
     for (const auto &core_dir: core_dirs) {
 #ifdef _WIN32
@@ -111,12 +106,12 @@ core_manager::~core_manager() {
     g_cfg.save();
 }
 
-std::vector<core_info> core_manager::match_cores_by_extension(const std::string &ext) {
-    std::vector<core_info> core_list;
+std::vector<const core_info *> core_manager::match_cores_by_extension(const std::string &ext) {
+    std::vector<const core_info *> core_list;
     for (const auto &c: cores) {
         for (const auto &extension: c.extensions) {
-            if (strcasecmp(extension.c_str(), ext.c_str()) == 0) {
-                core_list.push_back(c);
+            if (strcasecmp(extension.c_str(), ext.c_str())==0) {
+                core_list.push_back(&c);
                 break;
             }
         }

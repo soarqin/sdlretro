@@ -8,8 +8,6 @@
 #include <sys/stat.h>
 #endif
 
-namespace drivers {
-
 uint64_t get_ticks_usec() {
 #ifndef CLOCK_MONOTONIC_COARSE
 #define CLOCK_MONOTONIC_COARSE CLOCK_MONOTONIC
@@ -27,6 +25,4 @@ void util_mkdir(const char *path) {
 #else
     mkdir(path, 0755);
 #endif
-}
-
 }

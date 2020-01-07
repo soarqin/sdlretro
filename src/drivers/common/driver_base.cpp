@@ -21,7 +21,7 @@ namespace drivers {
 driver_base *current_driver = nullptr;
 
 driver_base::driver_base() {
-    frame_throttle = std::make_unique<throttle>();
+    frame_throttle = std::make_shared<throttle>();
 }
 
 driver_base::~driver_base() {
@@ -428,7 +428,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
     return false;
 }
 
-bool driver_base::load(const std::string &path) {
+bool driver_base::load_core(const std::string &path) {
     core = core_load(path.c_str());
     if (!core) return false;
 

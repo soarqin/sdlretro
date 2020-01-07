@@ -1,14 +1,6 @@
 find_package(Freetype REQUIRED)
 
 add_library(driver_common STATIC
-    # config
-    cfg.cpp
-    include/cfg.h
-
-    # core files
-    core_manager.cpp
-    include/core_manager.h
-
     # driver files
     buffered_audio.cpp
     driver_base.cpp
@@ -25,14 +17,9 @@ add_library(driver_common STATIC
     include/ttf_font.h
     include/video_base.h
 
-    # utils
-    util.cpp
-    include/util.h
+    # logger
     logger.cpp
     include/logger.h
-
-    # external libs
-    external/json.hpp
     )
 
 target_include_directories(driver_common PRIVATE external ${FREETYPE_INCLUDE_DIRS})

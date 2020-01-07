@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <string>
 
-namespace drivers {
-
 enum :uint32_t {
 #ifdef GCW_ZERO
     DEFAULT_WIDTH = 320,
@@ -39,5 +37,3 @@ protected:
 };
 
 extern cfg g_cfg;
-
-}

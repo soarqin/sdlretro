@@ -26,7 +26,7 @@ sdl1_video::sdl1_video() {
     curr_bpp = 16;
     screen = SDL_SetVideoMode(w, h, curr_bpp, sdl_video_flags);
     /* TODO: ttf font load
-    ttf = std::make_unique<sdl1_font>();
+    ttf = std::make_shared<sdl1_font>();
     ttf->init(16, 0);
     ttf->add("", 0);
      */
@@ -70,11 +70,15 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
         auto *pixels = static_cast<uint8_t *>(screen->pixels);
         const auto *input = static_cast<const uint8_t *>(data);
         int output_pitch = screen->pitch;
-        int line_bytes = width * (bpp >> 3);
-        for (; h; h--) {
-            memcpy(pixels, input, line_bytes);
-            pixels += output_pitch;
-            input += pitch;
+        if (output_pitch == pitch) {
+            memcpy(pixels, input, h * pitch);
+        } else {
+            int line_bytes = width*(bpp >> 3);
+            for (; h; h--) {
+                memcpy(pixels, input, line_bytes);
+                pixels += output_pitch;
+                input += pitch;
+            }
         }
     } else {
     #define CODE_WITH_TYPE(TYPE) \
@@ -138,11 +142,19 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, bool allow_wrap
     while (*text) {
         uint8_t c = *text++;
         if (c > 0x7F) continue;
-        auto &fd = font_data[c];
+#ifdef GCW_ZERO
+        auto &fd = font_small_data[c];
+#else
+        auto &fd = font_big_data[c];
+#endif
         if (x + fd.sw > screen->w) {
             if (!allow_wrap) break;
             x = 0;
-            y += 12;
+#ifdef GCW_ZERO
+            y += 9;
+#else
+            y += 18;
+#endif
         }
     #define CODE_WITH_TYPE(TYPE) \
         auto *ptr = (TYPE*)screen->pixels + x + fd.x + (y + fd.y) * swidth; \
