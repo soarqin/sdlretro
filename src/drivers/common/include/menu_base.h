@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -18,7 +19,7 @@ protected:
     };
 
 public:
-    inline menu_base(driver_base *d, bool t): driver(d), topmenu(t) {}
+    inline menu_base(const std::shared_ptr<driver_base> &d, bool t): driver(d), topmenu(t) {}
     virtual ~menu_base() = default;
 
     inline void set_rect(int x, int y, int w, int h) { menu_x = x; menu_y = y; menu_width = w; menu_height = h; }
@@ -55,7 +56,7 @@ protected:
     virtual bool poll_input();
 
 protected:
-    driver_base *driver = nullptr;
+    std::shared_ptr<driver_base> driver;
     bool topmenu = false;
     size_t top_index = 0;
     size_t selected = 0;

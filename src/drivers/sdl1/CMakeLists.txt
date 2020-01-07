@@ -3,6 +3,8 @@ find_package(SDL REQUIRED)
 add_library(driver_sdl1 STATIC
     sdl1_impl.cpp
     include/sdl1_impl.h
+    sdl1_menu.cpp
+    include/sdl1_menu.h
 
     sdl1_audio.cpp
     sdl1_audio.h
@@ -12,7 +14,7 @@ add_library(driver_sdl1 STATIC
     sdl1_input.h
     sdl1_font.cpp
     sdl1_font.h
-    sdl1_menu.cpp sdl1_menu.h)
+    )
 
 target_compile_definitions(driver_sdl1 PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(driver_sdl1 PUBLIC include)

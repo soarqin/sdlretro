@@ -5,6 +5,9 @@
 namespace drivers {
 
 class sdl1_menu: public menu_base {
+public:
+    using menu_base::menu_base;
+
 protected:
     void enter() override;
     void leave() override;
