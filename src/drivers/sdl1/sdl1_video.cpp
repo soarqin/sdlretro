@@ -127,6 +127,22 @@ void *sdl1_video::get_framebuffer(unsigned *width, unsigned *height, size_t *pit
     return screen->pixels;
 }
 
+void sdl1_video::clear() {
+    memset(screen->pixels, 0, screen->pitch * screen->h);
+}
+
+void sdl1_video::lock() {
+    if (SDL_MUSTLOCK(screen)) SDL_LockSurface(screen);
+}
+
+void sdl1_video::unlock() {
+    if (SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
+}
+
+void sdl1_video::flip() {
+    SDL_Flip(screen);
+}
+
 void sdl1_video::draw_text(int x, int y, const char *text, bool allow_wrap, bool shadow) {
     if (ttf) {
         ttf->render(screen, x, y, text, allow_wrap, shadow);
@@ -207,24 +223,6 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, bool allow_wrap
     #undef CODE_WITH_TYPE
         x += fd.sw;
     }
-}
-
-void sdl1_video::clear() {
-    bool lock = SDL_MUSTLOCK(screen);
-    if (lock) SDL_LockSurface(screen);
-    memset(screen->pixels, 0, screen->pitch * screen->h);
-    if (lock) SDL_UnlockSurface(screen);
-    SDL_Flip(screen);
-    if (lock) SDL_LockSurface(screen);
-    memset(screen->pixels, 0, screen->pitch * screen->h);
-    if (lock) SDL_UnlockSurface(screen);
-    SDL_Flip(screen);
-#ifdef SDL_TRIPLEBUF
-    if (lock) SDL_LockSurface(screen);
-    memset(screen->pixels, 0, screen->pitch * screen->h);
-    if (lock) SDL_UnlockSurface(screen);
-    SDL_Flip(screen);
-#endif
 }
 
 void sdl1_video::enter_menu() {

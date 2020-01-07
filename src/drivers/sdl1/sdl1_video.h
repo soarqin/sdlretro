@@ -19,6 +19,10 @@ public:
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
+    void clear();
+    void lock();
+    void unlock();
+    void flip();
     void draw_text(int x, int y, const char *text, bool allow_wrap, bool shadow);
 
     inline unsigned get_width() { return curr_width; }
@@ -27,7 +31,6 @@ public:
 
 private:
     void draw_text_pixel(int x, int y, const char *text, bool allow_wrap, bool shadow);
-    void clear();
 
 public:
     void enter_menu() override;

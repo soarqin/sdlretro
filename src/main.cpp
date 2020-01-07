@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef GCW_ZERO
     const std::string static_root(".");
-    const std::String config_root("/usr/local/home/.sdlretro");
+    const std::string config_root("/usr/local/home/.sdlretro");
 #else
     const std::string static_root(".");
     const std::string config_root(".");

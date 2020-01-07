@@ -17,11 +17,18 @@ bool menu_base::enter_menu_loop() {
 
     enter();
     running = true;
+    draw();
     while (running) {
+        usleep(75000);
+        if (driver->process_events()) {
+            running = false;
+            ok_pressed = false;
+            break;
+        }
         if (poll_input()) {
             draw();
+            usleep(75000);
         }
-        usleep(50000);
     }
     leave();
 
@@ -122,11 +129,13 @@ bool menu_base::poll_input() {
         return true;
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_A)) {
-        set_ok_pressed(true);
+        ok_pressed = true;
+        running = false;
         return false;
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_B)) {
-        set_ok_pressed(false);
+        ok_pressed = false;
+        running = false;
         return false;
     }
     return false;

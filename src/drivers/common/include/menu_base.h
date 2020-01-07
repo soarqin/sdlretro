@@ -9,18 +9,20 @@ namespace drivers {
 
 class driver_base;
 
-class menu_base {
-protected:
-    struct menu_item {
-        std::string text;
-        std::string description;
-        std::vector<std::string> values;
-        size_t selected;
-    };
+struct menu_item {
+    std::string text;
+    std::string description;
+    std::vector<std::string> values;
+    size_t selected;
+};
 
+class menu_base {
 public:
     inline menu_base(const std::shared_ptr<driver_base> &d, bool t): driver(d), topmenu(t) {}
     virtual ~menu_base() = default;
+
+    inline void set_title(const std::string &text) { title = text; }
+    inline void set_items(std::vector<menu_item> it) { items = std::move(it); }
 
     inline void set_rect(int x, int y, int w, int h) { menu_x = x; menu_y = y; menu_width = w; menu_height = h; }
     inline void set_line_spacing(int s) { line_spacing = s; }
@@ -60,6 +62,7 @@ protected:
     bool topmenu = false;
     size_t top_index = 0;
     size_t selected = 0;
+    std::string title;
     std::vector<menu_item> items;
     int menu_x = 0, menu_y = 0;
     int menu_width, menu_height;

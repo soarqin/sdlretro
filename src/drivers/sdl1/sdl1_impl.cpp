@@ -15,18 +15,43 @@
 
 namespace drivers {
 
+sdl1_impl::sdl1_impl() {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE) != 0) {
+        return;
+    }
+    SDL_WM_SetCaption("SDLRetro", nullptr);
+    video = std::make_shared<sdl1_video>();
+    input = std::make_shared<sdl1_input>();
+}
+
 sdl1_impl::~sdl1_impl() {
     deinit();
 }
 
-bool sdl1_impl::init() {
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE) != 0) {
-        return false;
+bool sdl1_impl::process_events() {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+            case SDL_QUIT:
+                return true;
+            case SDL_KEYDOWN:
+                if (event.key.keysym.sym ==
+#ifdef GCW_ZERO
+                    SDLK_HOME
+#else
+                    SDLK_ESCAPE
+#endif
+                    )
+                    return true;
+                break;
+            default: break;
+        }
     }
-    SDL_WM_SetCaption("SDLRetro", nullptr);
-    video = std::make_shared<sdl1_video>();
+    return false;
+}
+
+bool sdl1_impl::init() {
     audio = std::make_shared<sdl1_audio>();
-    input = std::make_shared<sdl1_input>();
     return true;
 }
 
@@ -38,24 +63,7 @@ void sdl1_impl::unload() {
 }
 
 bool sdl1_impl::run_frame(bool check) {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        switch (event.type) {
-            case SDL_QUIT:
-                return false;
-            case SDL_KEYDOWN:
-                if (event.key.keysym.sym ==
-#ifdef GCW_ZERO
-                    SDLK_HOME
-#else
-                    SDLK_ESCAPE
-#endif
-                    )
-                    return false;
-                break;
-            default: break;
-        }
-    }
+    if (process_events()) return false;
     if (check) {
         uint64_t usecs = 0;
         do {

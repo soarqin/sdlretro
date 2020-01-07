@@ -176,9 +176,15 @@ bool driver_base::load_game(const std::string &path) {
     fps = av_info.timing.fps;
 
     audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, av_info.timing.fps);
-    frame_throttle->reset(av_info.timing.fps);
+    frame_throttle->reset(fps);
     core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
     video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
+
+    retro_system_info sysinfo = {};
+    core->retro_get_system_info(&sysinfo);
+    char library_message[256];
+    snprintf(library_message, 256, "Loaded core: %s", sysinfo.library_name);
+    video->set_message(library_message, lround(fps * 5));
 
     return true;
 }
@@ -378,7 +384,10 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
              */
             return false;
         case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
+            break;
         case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
+            support_achivements = data ? *(bool*)data : true;
+            break;
         case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:
         case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
         case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:

@@ -70,6 +70,9 @@ public:
     /* load core from path */
     bool load_core(const std::string &path);
 
+    /* process events, for menu use, return true for QUIT event */
+    virtual bool process_events() { return false; }
+
 private:
     /* internal init/deinit */
     bool init_internal();
@@ -103,6 +106,9 @@ protected:
 
     /* support no game boot */
     bool support_no_game = false;
+
+    /* support achivements, but it might not be implemented by SDLRetro */
+    bool support_achivements = false;
 
     /* all variables copied from retro_system_av_info */
     unsigned base_width = 0;    /* Nominal video width of game. */
