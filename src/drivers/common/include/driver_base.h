@@ -15,27 +15,26 @@ class buffered_audio;
 class input_base;
 class throttle;
 
+/* variable struct */
+struct variable_t {
+    /* variable name */
+    std::string name;
+    /* selected index */
+    size_t curr_index;
+    /* default index */
+    size_t default_index;
+    /* variable display text */
+    std::string label;
+    /* variable description */
+    std::string info;
+    /* visible */
+    bool visible;
+    /* options list, in pair (display, description) */
+    std::vector<std::pair<std::string, std::string>> options;
+};
+
 /* base class for all drivers */
 class driver_base {
-public:
-    /* variable struct */
-    struct variable_t {
-        /* variable name */
-        std::string name;
-        /* selected index */
-        size_t curr_index;
-        /* default index */
-        size_t default_index;
-        /* variable display text */
-        std::string label;
-        /* variable description */
-        std::string info;
-        /* visible */
-        bool visible;
-        /* options list, in pair (display, description) */
-        std::vector<std::pair<std::string, std::string>> options;
-    };
-
 protected:
     driver_base();
 
@@ -163,6 +162,7 @@ private:
 
     /* variables */
     std::vector<variable_t> variables;
+    std::map<std::string, variable_t*> variables_map;
     bool variables_updated = false;
 
     /* core is inited */

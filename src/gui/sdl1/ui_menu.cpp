@@ -23,7 +23,9 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
         items.emplace_back(mi);
     }
     menu.set_items(items);
-    menu.set_rect(50, 50, DEFAULT_WIDTH - 100, DEFAULT_HEIGHT - 100);
+    uint32_t w, h;
+    std::tie(w, h) = g_cfg.get_resolution();
+    menu.set_rect(50, 50, w - 100, h - 100);
     if (!menu.enter_menu_loop()) return -1;
     return menu.get_selected();
 }
@@ -38,7 +40,9 @@ void ui_menu::in_game_menu() {
         { menu_static, "Core Settings", "", 0, {}, std::bind(&ui_menu::core_settings_menu, this, _1) },
     };
     menu.set_items(items);
-    menu.set_rect(50, 50, DEFAULT_WIDTH - 100, DEFAULT_HEIGHT - 100);
+    uint32_t w, h;
+    std::tie(w, h) = g_cfg.get_resolution();
+    menu.set_rect(50, 50, w - 100, h - 100);
     menu.enter_menu_loop();
 }
 
@@ -68,7 +72,9 @@ bool ui_menu::global_settings_menu(const menu_item&) {
         },
     };
     menu.set_items(items);
-    menu.set_rect(50, 50, DEFAULT_WIDTH - 100, DEFAULT_HEIGHT - 100);
+    uint32_t w, h;
+    std::tie(w, h) = g_cfg.get_resolution();
+    menu.set_rect(50, 50, w - 100, h - 100);
     menu.enter_menu_loop();
     return false;
 }
@@ -84,10 +90,18 @@ bool ui_menu::core_settings_menu(const menu_item&) {
         menu_item item = { menu_values, var.label, var.info, var.curr_index };
         for (auto &opt: var.options)
             item.values.push_back(opt.first);
+        item.callback = [this, &var](const menu_item &item)->bool {
+            driver->set_variable(var.name, item.selected);
+            return false;
+        };
         items.emplace_back(item);
     }
     menu.set_items(items);
-    menu.set_rect(50, 50, DEFAULT_WIDTH - 100, DEFAULT_HEIGHT - 100);
+    uint32_t w, h;
+    std::tie(w, h) = g_cfg.get_resolution();
+    auto border = w / 16;
+    menu.set_rect(border, border, w - border * 2, h - border * 2);
+    menu.set_item_width(DEFAULT_WIDTH - border * 2 - 80);
     menu.enter_menu_loop();
     return false;
 }

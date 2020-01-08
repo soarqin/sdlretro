@@ -13,7 +13,7 @@ class sdl1_font: public ttf_font {
 public:
     void calc_depth_color(SDL_Surface *surface);
 
-    void render(SDL_Surface *surface, int x, int y, const char *text, bool allow_wrap = false, bool shadow = false);
+    void render(SDL_Surface *surface, int x, int y, const char *text, int width = 0, bool shadow = false);
 
 private:
     uint32_t depth_color[256];

@@ -114,7 +114,7 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
     #undef CODE_WITH_TYPE
     }
     if (message_frames) {
-        draw_text(0, curr_height * scale - 20, message_text.c_str(), false, true);
+        draw_text(0, curr_height * scale - 20, message_text.c_str(), 0, true);
     }
     if (lock) SDL_UnlockSurface(screen);
     SDL_Flip(screen);
@@ -145,11 +145,11 @@ void sdl1_video::flip() {
     SDL_Flip(screen);
 }
 
-void sdl1_video::draw_text(int x, int y, const char *text, bool allow_wrap, bool shadow) {
+void sdl1_video::draw_text(int x, int y, const char *text, int width, bool shadow) {
     if (ttf) {
-        ttf->render(screen, x, y, text, allow_wrap, shadow);
+        ttf->render(screen, x, y, text, width, shadow);
     } else {
-        draw_text_pixel(x, y, text, allow_wrap, shadow);
+        draw_text_pixel(x, y, text, width, shadow);
     }
 }
 
@@ -182,21 +182,40 @@ uint32_t sdl1_video::get_text_width(const char *text) {
     return w;
 }
 
-void sdl1_video::draw_text_pixel(int x, int y, const char *text, bool allow_wrap, bool shadow) {
+void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool shadow) {
+    bool allow_wrap = false;
+    int nwidth;
+    int ox = x;
+    if (width == 0) {
+        nwidth = width = screen->w - x;
+    } else if (width == -1) {
+        nwidth = width = screen->w - x;
+        allow_wrap = true;
+    } else {
+        if (width < 0) {
+            allow_wrap = true;
+            width = -width;
+            nwidth = width;
+        } else {
+            nwidth = width;
+        }
+    }
     auto swidth = screen->pitch / screen->format->BytesPerPixel;
     while (*text) {
         uint8_t c = *text++;
         if (c > 0x7F) continue;
         const auto &fd = get_pixel_font_data(c);
-        if (x + fd.sw > screen->w) {
+        if (fd.sw > nwidth) {
             if (!allow_wrap) break;
-            x = 0;
+            x = ox;
+            nwidth = width;
 #ifdef GCW_ZERO
             y += 9;
 #else
             y += 18;
 #endif
         }
+        nwidth -= fd.sw;
     #define CODE_WITH_TYPE(TYPE) \
         auto *ptr = (TYPE*)screen->pixels + x + fd.x + (y + fd.y) * swidth; \
         auto *fontdata = fd.data; \
@@ -255,8 +274,7 @@ void sdl1_video::enter_menu() {
     saved_height = curr_height;
     saved_bpp = curr_bpp;
 
-    curr_width = DEFAULT_WIDTH;
-    curr_height = DEFAULT_HEIGHT;
+    std::tie(curr_width, curr_height) = g_cfg.get_resolution();
     curr_bpp = 16;
 
     if (screen)

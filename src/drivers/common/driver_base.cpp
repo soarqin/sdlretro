@@ -207,9 +207,9 @@ void driver_base::reset() {
     core->retro_reset();
 }
 
-inline void load_variable(std::vector<driver_base::variable_t> &variables, const retro_core_option_definition *def) {
+inline void load_variable(std::vector<variable_t> &variables, std::map<std::string, variable_t*> &variables_map, const retro_core_option_definition *def) {
     while (def->key != nullptr) {
-        driver_base::variable_t *var = nullptr;
+        variable_t *var = nullptr;
         for (auto &v: variables) {
             if (v.name == def->key) {
                 var = &v;
@@ -219,8 +219,9 @@ inline void load_variable(std::vector<driver_base::variable_t> &variables, const
         if (var == nullptr) {
             variables.resize(variables.size() + 1);
             var = &variables.back();
+            var->name = def->key;
+            variables_map[var->name] = var;
         }
-        var->name = def->key;
         var->curr_index = 0;
         var->default_index = 0;
         var->label = def->desc ? def->desc : "";
@@ -282,13 +283,9 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             break;
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
             auto *var = (retro_variable *)data;
-            auto ite = variables.begin();
-            while (ite != variables.end()) {
-                if (ite->name == var->key) break;
-                ++ite;
-            }
-            if (ite != variables.end()) {
-                var->value = ite->options[ite->curr_index].first.c_str();
+            auto ite = variables_map.find(var->key);
+            if (ite != variables_map.end()) {
+                var->value = ite->second->options[ite->second->curr_index].first.c_str();
                 return true;
             }
             variables_updated = false;
@@ -435,24 +432,21 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS: {
             variables.clear();
             variables_updated = true;
-            load_variable(variables, (const retro_core_option_definition*)data);
+            load_variable(variables, variables_map, (const retro_core_option_definition*)data);
             return true;
         }
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL: {
             variables.clear();
             variables_updated = true;
-            load_variable(variables, ((const retro_core_options_intl*)data)->us);
+            load_variable(variables, variables_map, ((const retro_core_options_intl*)data)->us);
             return true;
         }
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY: {
             const auto *opt = (const retro_core_option_display*)data;
-            auto ite = variables.begin();
-            while (ite != variables.end()) {
-                if (ite->name == opt->key) {
-                    ite->visible = opt->visible;
-                    return true;
-                }
-                ++ite;
+            auto ite = variables_map.find(opt->key);
+            if (ite != variables_map.end()) {
+                ite->second->visible = opt->visible;
+                return true;
             }
             return false;
         }
@@ -469,14 +463,10 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
 }
 
 void driver_base::set_variable(const std::string &key, size_t index) {
-    auto ite = variables.begin();
-    while (ite != variables.end()) {
-        if (ite->name == key)
-            break;
-        ++ite;
-    }
-    if (ite == variables.end() || ite->curr_index == index) return;
-    ite->curr_index = index;
+    auto ite = variables_map.find(key);
+    if (ite == variables_map.end()) return;
+    if (ite->second->curr_index == index) return;
+    ite->second->curr_index = index;
     variables_updated = true;
 }
 

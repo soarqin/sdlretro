@@ -35,14 +35,17 @@ bool sdl1_impl::process_events() {
             case SDL_QUIT:
                 return true;
             case SDL_KEYDOWN:
-                if (!in_game_menu && event.key.keysym.sym ==
+                if (event.key.keysym.sym ==
 #ifdef GCW_ZERO
                     SDLK_HOME
 #else
                     SDLK_ESCAPE
 #endif
                     ) {
-                    in_game_menu = true;
+                    if (!in_game_menu)
+                        in_game_menu = true;
+                    else
+                        return true;
                 }
                 break;
             default: break;

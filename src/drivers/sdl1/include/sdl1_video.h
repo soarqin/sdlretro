@@ -23,7 +23,9 @@ public:
     void lock();
     void unlock();
     void flip();
-    void draw_text(int x, int y, const char *text, bool allow_wrap, bool shadow);
+    /* width: 0=fullscreen -1=fullscreen allow wrap
+     *        others: negative = allow wrap */
+    void draw_text(int x, int y, const char *text, int width = 0, bool shadow = false);
     uint32_t get_text_width(const char *text);
 
     inline unsigned get_width() { return curr_width; }
@@ -31,7 +33,7 @@ public:
     inline sdl1_font *get_font() { return ttf.get(); }
 
 private:
-    void draw_text_pixel(int x, int y, const char *text, bool allow_wrap, bool shadow);
+    void draw_text_pixel(int x, int y, const char *text, int width, bool shadow);
 
 public:
     void enter_menu() override;
@@ -40,9 +42,9 @@ public:
 private:
     SDL_Surface *screen = nullptr;
     std::shared_ptr<sdl1_font> ttf;
-    unsigned curr_width = 0, curr_height = 0, curr_bpp = 0;
+    uint32_t curr_width = 0, curr_height = 0, curr_bpp = 0;
     /* saved previous resolution for use with menu enter/leave */
-    unsigned saved_width = 0, saved_height = 0, saved_bpp = 0;
+    uint32_t saved_width = 0, saved_height = 0, saved_bpp = 0;
 
     bool drawn = false;
 };

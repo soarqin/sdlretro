@@ -63,8 +63,9 @@ public:
     inline void set_title(const std::string &text) { title = text; }
     inline void set_items(std::vector<menu_item> it) { items = std::move(it); }
 
-    inline void set_rect(int x, int y, int w, int h) { menu_x = x; menu_y = y; menu_width = w; menu_height = h; }
-    inline void set_line_spacing(int s) { line_spacing = s; }
+    inline void set_rect(int x, int y, unsigned w, unsigned h) { menu_x = x; menu_y = y; menu_width = w; menu_height = h; }
+    inline void set_line_spacing(unsigned s) { line_spacing = s; }
+    inline void set_item_width(unsigned w) { item_width = w; }
 
     /* enter menu loop
      * return if `OK` is pressed and use get_selected() to fetch index*/
@@ -106,8 +107,9 @@ protected:
     std::string title;
     std::vector<menu_item> items;
     int menu_x = 0, menu_y = 0;
-    int menu_width = 0, menu_height = 0;
-    int line_spacing = 2;
+    unsigned menu_width = 0, menu_height = 0;
+    unsigned line_spacing = 2;
+    unsigned item_width = 0;
 
 private:
     bool running = false;

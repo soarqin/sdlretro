@@ -34,7 +34,10 @@ void sdl1_menu::enter() {
         uint32_t w = video->get_text_width(item.text.c_str());
         if (w > maxwidth) maxwidth = w;
     }
-    value_x = menu_x + indicator_width + maxwidth + 20;
+    if (item_width == 0 || item_width > maxwidth)
+        item_width = maxwidth;
+    value_x = menu_x + indicator_width + item_width + 20;
+    value_width = menu_width - value_x;
 }
 
 void sdl1_menu::leave() {
@@ -46,23 +49,23 @@ void sdl1_menu::draw() {
     video->lock();
     video->clear();
     if (!title.empty()) {
-        video->draw_text(menu_x, y, title.c_str(), false, true);
+        video->draw_text(menu_x, y, title.c_str(), 0, true);
         y += line_height + 4;
     }
     size_t end_index = top_index + page_size;
     if (end_index > items.size()) end_index = items.size();
     for (size_t i = top_index; i < end_index; ++i) {
         if (i == selected) {
-            video->draw_text(menu_x, y, ">", false, true);
+            video->draw_text(menu_x, y, ">", 0, true);
         }
         auto &item = items[i];
-        video->draw_text(x, y, item.text.c_str(), false, true);
+        video->draw_text(x, y, item.text.c_str(), item_width, true);
         switch (item.type) {
         case menu_boolean:
-            video->draw_text(value_x, y, item.selected ? "yes" : "no", false, true);
+            video->draw_text(value_x, y, item.selected ? "yes" : "no", value_width, true);
             break;
         case menu_values:
-            video->draw_text(value_x, y, item.values[item.selected].c_str(), false, true);
+            video->draw_text(value_x, y, item.values[item.selected].c_str(), value_width, true);
             break;
         default:
             break;
