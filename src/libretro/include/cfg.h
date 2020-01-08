@@ -24,8 +24,11 @@ public:
 
     inline std::pair<uint32_t, uint32_t> get_resolution() { return std::make_pair(res_w, res_h); }
     inline bool get_mono_audio() { return mono_audio; }
+    inline void set_mono_audio(bool b) { mono_audio = b; }
     inline uint32_t get_scale() { return scale; }
+    inline void set_scale(uint32_t s) { scale = s; }
     inline uint32_t get_save_check() { return save_check; }
+    inline void set_save_check(uint32_t c) { save_check = c; }
 
 protected:
     std::string filename;

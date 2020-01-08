@@ -24,6 +24,7 @@ public:
     void unlock();
     void flip();
     void draw_text(int x, int y, const char *text, bool allow_wrap, bool shadow);
+    uint32_t get_text_width(const char *text);
 
     inline unsigned get_width() { return curr_width; }
     inline unsigned get_height() { return curr_height; }

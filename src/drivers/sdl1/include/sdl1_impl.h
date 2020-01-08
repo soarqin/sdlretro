@@ -16,7 +16,10 @@ protected:
     bool init() final;
     void deinit() final;
     void unload() final;
-    bool run_frame(bool check) final;
+    bool run_frame(std::function<void()> &in_game_menu_cb, bool check) final;
+
+private:
+    bool in_game_menu = false;
 };
 
 }

@@ -2,7 +2,7 @@
 
 #include "menu_base.h"
 
-namespace drivers {
+namespace gui {
 
 class sdl1_menu: public menu_base {
 public:
@@ -17,6 +17,7 @@ protected:
 private:
     size_t page_size = 0;
     int line_height = 0;
+    uint32_t value_x = 0;
 };
 
 }

@@ -5,10 +5,11 @@ if("${CROSS}" STREQUAL "")
 endif ()
 
 set(MIPS_CFLAGS "${MIPS_CFLAGS} -mips32r2 -fno-PIC -mno-check-zero-division -mplt -mno-shared -ffast-math -DGCW_ZERO")
+set(MIPS_CXXFLAGS "${MIPS_CXXFLAGS} -fno-rtti")
 
 set(TOOL_OS_SUFFIX "")
 if(CMAKE_HOST_WIN32)
- set(TOOL_OS_SUFFIX ".exe")
+  set(TOOL_OS_SUFFIX ".exe")
 endif()
 
 execute_process(COMMAND "${CROSS}gcc${TOOL_OS_SUFFIX}" -v RESULT_VARIABLE C_CHECK_RESULT OUTPUT_QUIET ERROR_QUIET)

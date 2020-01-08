@@ -42,8 +42,8 @@ void driver_base::set_dirs(const std::string &static_root, const std::string &co
     util_mkdir(save_dir.c_str());
 }
 
-void driver_base::run() {
-    while (!shutdown_driver && run_frame(video->frame_drawn())) {
+void driver_base::run(std::function<void()> in_game_menu_cb) {
+    while (!shutdown_driver && run_frame(in_game_menu_cb, video->frame_drawn())) {
         auto check = g_cfg.get_save_check();
         if (check) {
             if (!save_check_countdown) {
@@ -207,21 +207,32 @@ void driver_base::reset() {
     core->retro_reset();
 }
 
-inline void load_variable(std::map<std::string, driver_base::variable_t> &variables, const retro_core_option_definition *def) {
+inline void load_variable(std::vector<driver_base::variable_t> &variables, const retro_core_option_definition *def) {
     while (def->key != nullptr) {
-        auto &var = variables[def->key];
-        var.curr_index = 0;
-        var.default_index = 0;
-        var.label = def->desc ? def->desc : "";
-        var.info = def->info ? def->info : "";
+        driver_base::variable_t *var = nullptr;
+        for (auto &v: variables) {
+            if (v.name == def->key) {
+                var = &v;
+                break;
+            }
+        }
+        if (var == nullptr) {
+            variables.resize(variables.size() + 1);
+            var = &variables.back();
+        }
+        var->name = def->key;
+        var->curr_index = 0;
+        var->default_index = 0;
+        var->label = def->desc ? def->desc : "";
+        var->info = def->info ? def->info : "";
         const auto *opt = def->values;
         while (opt->value != nullptr) {
             if (strcmp(opt->value, def->default_value)==0)
-                var.curr_index = var.default_index = var.options.size();
-            var.options.emplace_back(std::make_pair(opt->value, opt->label == nullptr ? "" : opt->label));
+                var->curr_index = var->default_index = var->options.size();
+            var->options.emplace_back(std::make_pair(opt->value, opt->label == nullptr ? "" : opt->label));
             ++opt;
         }
-        var.visible = true;
+        var->visible = true;
         ++def;
     }
 }
@@ -271,13 +282,17 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             break;
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
             auto *var = (retro_variable *)data;
-            auto ite = variables.find(var->key);
+            auto ite = variables.begin();
+            while (ite != variables.end()) {
+                if (ite->name == var->key) break;
+                ++ite;
+            }
             if (ite != variables.end()) {
-                var->value = ite->second.options[ite->second.curr_index].first.c_str();
+                var->value = ite->options[ite->curr_index].first.c_str();
                 return true;
             }
             variables_updated = false;
-            break;
+            return false;
         }
         case RETRO_ENVIRONMENT_SET_VARIABLES: {
             const auto *vars = (const retro_variable*)data;
@@ -287,17 +302,27 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
                 std::string value = vars->value;
                 auto pos = value.find("; ");
                 if (pos != std::string::npos) {
-                    auto &var = variables[vars->key];
-                    var.curr_index = 0;
-                    var.default_index = 0;
-                    var.label = value.substr(0, pos);
-                    var.info.clear();
-                    var.visible = true;
+                    variable_t *var = nullptr;
+                    for (auto &v: variables) {
+                        if (v.name == vars->key) {
+                            var = &v;
+                            break;
+                        }
+                    }
+                    if (var == nullptr) {
+                        variables.resize(variables.size() + 1);
+                        var = &variables.back();
+                    }
+                    var->curr_index = 0;
+                    var->default_index = 0;
+                    var->label = value.substr(0, pos);
+                    var->info.clear();
+                    var->visible = true;
                     pos += 2;
                     for (;;) {
                         int end_pos = value.find('|', pos);
                         if (pos < end_pos)
-                            var.options.emplace_back(std::make_pair(value.substr(pos, end_pos - pos), std::string()));
+                            var->options.emplace_back(std::make_pair(value.substr(pos, end_pos - pos), std::string()));
                         if (end_pos == std::string::npos) {
                             break;
                         }
@@ -387,11 +412,14 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             break;
         case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
             support_achivements = data ? *(bool*)data : true;
-            break;
+            return true;
         case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:
         case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
         case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
+            break;
         case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
+            /* TODO: write a vfs interface? */
+            return false;
         case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
         case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
         case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE:
@@ -418,12 +446,15 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         }
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY: {
             const auto *opt = (const retro_core_option_display*)data;
-            auto ite = variables.find(opt->key);
-            if (ite != variables.end()) {
-                ite->second.visible = opt->visible;
-                return true;
+            auto ite = variables.begin();
+            while (ite != variables.end()) {
+                if (ite->name == opt->key) {
+                    ite->visible = opt->visible;
+                    return true;
+                }
+                ++ite;
             }
-            break;
+            return false;
         }
         case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
         default:
@@ -435,6 +466,18 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         logger(LOG_INFO) << "Unhandled env: " << cmd << std::endl;
     }
     return false;
+}
+
+void driver_base::set_variable(const std::string &key, size_t index) {
+    auto ite = variables.begin();
+    while (ite != variables.end()) {
+        if (ite->name == key)
+            break;
+        ++ite;
+    }
+    if (ite == variables.end() || ite->curr_index == index) return;
+    ite->curr_index = index;
+    variables_updated = true;
 }
 
 bool driver_base::load_core(const std::string &path) {

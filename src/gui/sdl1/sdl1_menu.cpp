@@ -5,12 +5,20 @@
 
 #include "driver_base.h"
 
+#include "util.h"
+
 #include <SDL.h>
 
-namespace drivers {
+namespace gui {
+
+#ifdef GCW_ZERO
+const int indicator_width = 8;
+#else
+const int indicator_width = 10;
+#endif
 
 void sdl1_menu::enter() {
-    auto *video = static_cast<sdl1_video*>(driver->get_video());
+    auto *video = static_cast<drivers::sdl1_video*>(driver->get_video());
 #ifdef GCW_ZERO
     line_height = 9 + line_spacing;
 #else
@@ -20,19 +28,21 @@ void sdl1_menu::enter() {
     if (menu_height == 0) menu_height = (int)video->get_height() - menu_y;
     if (!title.empty()) menu_height = menu_height - line_height - 4;
     page_size = (menu_height + line_spacing) / line_height;
+
+    unsigned maxwidth = 0;
+    for (auto &item: items) {
+        uint32_t w = video->get_text_width(item.text.c_str());
+        if (w > maxwidth) maxwidth = w;
+    }
+    value_x = menu_x + indicator_width + maxwidth + 20;
 }
 
 void sdl1_menu::leave() {
 }
 
 void sdl1_menu::draw() {
-#ifdef GCW_ZERO
-    const int indent = 8;
-#else
-    const int indent = 10;
-#endif
-    int x = menu_x + indent, y = menu_y;
-    auto *video = static_cast<sdl1_video*>(driver->get_video());
+    int x = menu_x + indicator_width, y = menu_y;
+    auto *video = static_cast<drivers::sdl1_video*>(driver->get_video());
     video->lock();
     video->clear();
     if (!title.empty()) {
@@ -47,6 +57,16 @@ void sdl1_menu::draw() {
         }
         auto &item = items[i];
         video->draw_text(x, y, item.text.c_str(), false, true);
+        switch (item.type) {
+        case menu_boolean:
+            video->draw_text(value_x, y, item.selected ? "yes" : "no", false, true);
+            break;
+        case menu_values:
+            video->draw_text(value_x, y, item.values[item.selected].c_str(), false, true);
+            break;
+        default:
+            break;
+        }
         y += line_height;
     }
     video->unlock();

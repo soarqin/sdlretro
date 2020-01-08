@@ -2,23 +2,62 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
+#include <functional>
 #include <cstdint>
 
 namespace drivers {
-
 class driver_base;
+}
+
+namespace gui {
+
+enum menu_type {
+    menu_static = 0,
+    menu_boolean,
+    menu_values,
+    menu_path,
+};
 
 struct menu_item {
+    /* check enum `menu_type` */
+    menu_type type;
+    /* display text */
     std::string text;
+    /* description displayed aside */
     std::string description;
-    std::vector<std::string> values;
+    /* current selected index
+     * for menu_boolean, its 0 or 1
+     * for menu_values, its index in member `values`
+     * ignored for menu_static and menu_path
+     */
     size_t selected;
+    /* used for menu_values */
+    std::vector<std::string> values;
+
+    /* for menu_static:
+     *   if this is null, enter_menu_loop() will return true if button A is pressed
+     *   if this is not null, this function will be called on button A pressed
+     *   return true to close all levels of menu
+     * for menu_boolean and menu_values:
+     *   called if selected index is changed
+     *   return value is ignored
+     */
+    std::function<bool(const menu_item&)> callback;
+
+    /* assigned data to alter, ignored for menu_static
+     * if callback is not null, this pointer is ignored
+     */
+    void *data;
+
+    /* use for menu_path, store selected path */
+    std::string path;
 };
 
 class menu_base {
 public:
-    inline menu_base(const std::shared_ptr<driver_base> &d, bool t): driver(d), topmenu(t) {}
+    inline menu_base(std::shared_ptr<drivers::driver_base> d, bool t): driver(std::move(d)), topmenu(t) {}
     virtual ~menu_base() = default;
 
     inline void set_title(const std::string &text) { title = text; }
@@ -39,6 +78,8 @@ public:
     void page_down();
     void move_first();
     void move_last();
+    void value_dec();
+    void value_inc();
 
     inline size_t get_selected() { return selected; }
 
@@ -58,14 +99,14 @@ protected:
     virtual bool poll_input();
 
 protected:
-    std::shared_ptr<driver_base> driver;
+    std::shared_ptr<drivers::driver_base> driver;
     bool topmenu = false;
     size_t top_index = 0;
     size_t selected = 0;
     std::string title;
     std::vector<menu_item> items;
     int menu_x = 0, menu_y = 0;
-    int menu_width, menu_height;
+    int menu_width = 0, menu_height = 0;
     int line_spacing = 2;
 
 private:

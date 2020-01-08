@@ -77,6 +77,14 @@ bool ttf_font::add(const std::string &filename, int index) {
     return true;
 }
 
+uint8_t ttf_font::get_char_width(uint16_t ch) const {
+    auto ite = font_cache.find(ch);
+    if (ite == font_cache.end()) return 0;
+    if (mono_width)
+        return std::max(ite->second.advW, mono_width);
+    return ite->second.advW;
+}
+
 const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {
     font_info *fi = nullptr;
 #ifdef USE_STB_TRUETYPE
@@ -156,87 +164,6 @@ const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {
 #endif
     return fd;
 }
-
-/* UTF-8 to UCS-4 */
-uint32_t ttf_font::utf8_to_ucs4(const char *&text) {
-    auto c = static_cast<uint8_t>(*text);
-    if (c < 0x80) {
-        uint16_t ch = c;
-        ++text;
-        return ch;
-    } else if (c < 0xC0) {
-        ++text;
-        return 0;
-    } else if (c < 0xE0) {
-        uint16_t ch = (c & 0x1Fu) << 6u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= c & 0x3Fu;
-        ++text;
-        return ch;
-    } else if (c < 0xF0) {
-        uint16_t ch = (c & 0x0Fu) << 12u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 6u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= c & 0x3Fu;
-        ++text;
-        return ch;
-    } else if (c < 0xF8) {
-        uint16_t ch = (c & 0x07u) << 18u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 12u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 6u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= c & 0x3Fu;
-        ++text;
-        return ch;
-    } else if (c < 0xFC) {
-        uint16_t ch = (c & 0x03u) << 24u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 18u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 12u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 6u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= c & 0x3Fu;
-        ++text;
-        return ch;
-    } else if (c < 0xFE) {
-        uint16_t ch = (c & 0x03u) << 30u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 24u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 18u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 12u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= (c & 0x3Fu) << 6u;
-        c = static_cast<uint8_t>(*++text);
-        if (c == 0) return 0;
-        ch |= c & 0x3Fu;
-        ++text;
-        return ch;
-    }
-    ++text;
-    return 0;
-}
-
 
 void ttf_font::new_rect_pack() {
     auto *rpd = new rect_pack_data;

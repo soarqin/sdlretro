@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <functional>
 
 extern "C" typedef struct retro_core_t retro_core_t;
 
@@ -19,6 +20,8 @@ class driver_base {
 public:
     /* variable struct */
     struct variable_t {
+        /* variable name */
+        std::string name;
         /* selected index */
         size_t curr_index;
         /* default index */
@@ -44,7 +47,7 @@ public:
     void set_dirs(const std::string &static_root, const std::string &config_root);
 
     /* enter core main loop */
-    void run();
+    void run(std::function<void()> in_game_menu_cb);
 
     /* shutdown the driver */
     inline void shutdown() { shutdown_driver = true; }
@@ -60,6 +63,10 @@ public:
 
     /* environment callback */
     bool env_callback(unsigned cmd, void *data);
+
+    /* get/set variable */
+    const std::vector<variable_t> &get_variables() { return variables; }
+    void set_variable(const std::string &key, size_t index);
 
     inline const std::string &get_system_dir() { return system_dir; }
     inline throttle *get_frame_throttle() { return frame_throttle.get(); }
@@ -88,7 +95,7 @@ protected:
     virtual void unload() = 0;
 
     /* frame runner for the core */
-    virtual bool run_frame(bool check) = 0;
+    virtual bool run_frame(std::function<void()> &in_game_menu_cb, bool check) = 0;
 
 protected:
     /* core struct, check libretro/include/core.h */
@@ -155,7 +162,7 @@ private:
     uint32_t save_check_countdown = 0;
 
     /* variables */
-    std::map<std::string, variable_t> variables;
+    std::vector<variable_t> variables;
     bool variables_updated = false;
 
     /* core is inited */

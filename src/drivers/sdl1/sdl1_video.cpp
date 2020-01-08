@@ -4,6 +4,8 @@
 
 #include "cfg.h"
 
+#include "util.h"
+
 #include <SDL.h>
 
 namespace drivers {
@@ -153,16 +155,39 @@ void sdl1_video::draw_text(int x, int y, const char *text, bool allow_wrap, bool
 
 #include "bmfont.inl"
 
+inline const font_data_t &get_pixel_font_data(uint8_t c) {
+#ifdef GCW_ZERO
+    return font_small_data[c];
+#else
+    return font_big_data[c];
+#endif
+}
+
+uint32_t sdl1_video::get_text_width(const char *text) {
+    uint32_t w = 0;
+    if (ttf) {
+        while (*text!=0) {
+            uint32_t ch = utf8_to_ucs4(text);
+            if (ch==0 || ch > 0xFFFFu) continue;
+            w += ttf->get_char_width(ch);
+        }
+    } else {
+        while (*text) {
+            uint8_t c = *text++;
+            if (c > 0x7F) continue;
+            const auto &fd = get_pixel_font_data(c);
+            w += fd.sw;
+        }
+    }
+    return w;
+}
+
 void sdl1_video::draw_text_pixel(int x, int y, const char *text, bool allow_wrap, bool shadow) {
     auto swidth = screen->pitch / screen->format->BytesPerPixel;
     while (*text) {
         uint8_t c = *text++;
         if (c > 0x7F) continue;
-#ifdef GCW_ZERO
-        auto &fd = font_small_data[c];
-#else
-        auto &fd = font_big_data[c];
-#endif
+        const auto &fd = get_pixel_font_data(c);
         if (x + fd.sw > screen->w) {
             if (!allow_wrap) break;
             x = 0;
@@ -234,17 +259,20 @@ void sdl1_video::enter_menu() {
     curr_height = DEFAULT_HEIGHT;
     curr_bpp = 16;
 
+    if (screen)
+        SDL_FreeSurface(screen);
+
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
     clear();
 }
 
 void sdl1_video::leave_menu() {
-    curr_width = saved_width;
-    curr_height = saved_height;
-    curr_bpp = saved_bpp;
-
-    screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
+    resolution_changed(saved_width, saved_height, saved_bpp);
     clear();
+    clear();
+#ifdef SDL_TRIPLEBUF
+    clear();
+#endif
 }
 
 }

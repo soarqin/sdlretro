@@ -35,14 +35,15 @@ bool sdl1_impl::process_events() {
             case SDL_QUIT:
                 return true;
             case SDL_KEYDOWN:
-                if (event.key.keysym.sym ==
+                if (!in_game_menu && event.key.keysym.sym ==
 #ifdef GCW_ZERO
                     SDLK_HOME
 #else
                     SDLK_ESCAPE
 #endif
-                    )
-                    return true;
+                    ) {
+                    in_game_menu = true;
+                }
                 break;
             default: break;
         }
@@ -62,8 +63,15 @@ void sdl1_impl::deinit() {
 void sdl1_impl::unload() {
 }
 
-bool sdl1_impl::run_frame(bool check) {
+bool sdl1_impl::run_frame(std::function<void()> &in_game_menu_cb, bool check) {
     if (process_events()) return false;
+    if (in_game_menu) {
+        audio->pause(true);
+        in_game_menu_cb();
+        audio->pause(false);
+        frame_throttle->reset(fps);
+        in_game_menu = false;
+    }
     if (check) {
         uint64_t usecs = 0;
         do {

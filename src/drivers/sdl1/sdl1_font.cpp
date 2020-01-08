@@ -1,5 +1,7 @@
 #include "sdl1_font.h"
 
+#include "util.h"
+
 #include <SDL.h>
 
 namespace drivers {

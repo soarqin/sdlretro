@@ -10,20 +10,86 @@
 
 namespace gui {
 
+using std::placeholders::_1;
+
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
-    drivers::sdl1_menu menu(driver, true);
+    sdl1_menu menu(driver, true);
 
-    menu.set_title("[select core to use]");
+    menu.set_title("[SELECT CORE TO USE]");
 
-    std::vector<drivers::menu_item> items;
+    std::vector<menu_item> items;
     for (const auto *core: core_list) {
-        drivers::menu_item mi = {core->name + ' ' + core->version };
+        menu_item mi = { menu_static, core->name + ' ' + core->version };
         items.emplace_back(mi);
     }
     menu.set_items(items);
     menu.set_rect(50, 50, DEFAULT_WIDTH - 100, DEFAULT_HEIGHT - 100);
     if (!menu.enter_menu_loop()) return -1;
     return menu.get_selected();
+}
+
+void ui_menu::in_game_menu() {
+    sdl1_menu menu(driver, true);
+
+    menu.set_title("[IN-GAME MENU]");
+
+    std::vector<menu_item> items = {
+        { menu_static, "Global Settings", "", 0, {}, std::bind(&ui_menu::global_settings_menu, this, _1) },
+        { menu_static, "Core Settings", "", 0, {}, std::bind(&ui_menu::core_settings_menu, this, _1) },
+    };
+    menu.set_items(items);
+    menu.set_rect(50, 50, DEFAULT_WIDTH - 100, DEFAULT_HEIGHT - 100);
+    menu.enter_menu_loop();
+}
+
+enum :size_t {
+    check_secs_count = 4
+};
+const uint32_t check_secs[check_secs_count] = {0, 30, 60, 300};
+bool ui_menu::global_settings_menu(const menu_item&) {
+    sdl1_menu menu(driver, false);
+
+    menu.set_title("[GLOBAL SETTINGS]");
+
+    size_t check_sec_idx;
+    const uint32_t *n = std::lower_bound(check_secs, check_secs + check_secs_count, g_cfg.get_save_check());
+    check_sec_idx = n - check_secs;
+    if (check_sec_idx >= check_secs_count) {
+        check_sec_idx = 0;
+    }
+    std::vector<menu_item> items = {
+        { menu_values, "SRAM Save Interval", "", check_sec_idx,
+            {"disable", "30", "60", "300"},
+            [](const menu_item &item)->bool {
+                if (item.selected < check_secs_count)
+                    g_cfg.set_save_check(check_secs[item.selected]);
+                return false;
+            }
+        },
+    };
+    menu.set_items(items);
+    menu.set_rect(50, 50, DEFAULT_WIDTH - 100, DEFAULT_HEIGHT - 100);
+    menu.enter_menu_loop();
+    return false;
+}
+
+bool ui_menu::core_settings_menu(const menu_item&) {
+    sdl1_menu menu(driver, false);
+
+    menu.set_title("[CORE SETTINGS]");
+
+    std::vector<menu_item> items;
+    const auto &vars = driver->get_variables();
+    for (auto &var: vars) {
+        menu_item item = { menu_values, var.label, var.info, var.curr_index };
+        for (auto &opt: var.options)
+            item.values.push_back(opt.first);
+        items.emplace_back(item);
+    }
+    menu.set_items(items);
+    menu.set_rect(50, 50, DEFAULT_WIDTH - 100, DEFAULT_HEIGHT - 100);
+    menu.enter_menu_loop();
+    return false;
 }
 
 }

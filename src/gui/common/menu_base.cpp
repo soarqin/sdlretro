@@ -8,7 +8,7 @@
 
 #include <unistd.h>
 
-namespace drivers {
+namespace gui {
 
 bool menu_base::enter_menu_loop() {
     if (topmenu) {
@@ -60,7 +60,7 @@ void menu_base::move_down() {
         return;
     }
     auto page_size = page_count();
-    if (top_index + page_size > selected + 1) {
+    if (top_index + page_size <= selected + 1) {
         top_index = selected + 1 >= page_size ? (selected + 1 == sz ? selected + 1 - page_size : selected + 2 - page_size) : 0;
     }
 }
@@ -79,7 +79,7 @@ void menu_base::page_down() {
     if (selected + 1 >= sz) return;
     auto page_size = page_count();
     if (selected + page_size >= sz) selected = sz - 1;
-    if (top_index + page_size > selected) {
+    if (top_index + page_size <= selected + 1) {
         top_index = selected + 1 >= page_size ? (selected + 1 == sz ? selected + 1 - page_size : selected + 2 - page_size) : 0;
     }
 }
@@ -95,8 +95,46 @@ void menu_base::move_last() {
     if (items.empty()) return;
     selected = items.size() - 1;
     auto page_size = page_count();
-    if (top_index + page_size > selected + 1) {
+    if (top_index + page_size <= selected + 1) {
         top_index = selected >= page_size ? selected + 1 - page_size : 0;
+    }
+}
+
+void menu_base::value_dec() {
+    auto &item = items[selected];
+    switch (item.type) {
+    case menu_boolean:
+        item.selected ^= 1U;
+        if (item.callback) item.callback(item);
+        else if (item.data) *(bool*)item.data = item.selected;
+        break;
+    case menu_values:
+        if (item.selected == 0) item.selected = item.values.size() - 1;
+        else item.selected--;
+        if (item.callback) item.callback(item);
+        else if (item.data) *(uint32_t*)item.data = item.selected;
+        break;
+    default:
+        break;
+    }
+}
+
+void menu_base::value_inc() {
+    auto &item = items[selected];
+    switch (item.type) {
+    case menu_boolean:
+        item.selected ^= 1U;
+        if (item.callback) item.callback(item);
+        else if (item.data) *(bool*)item.data = item.selected;
+        break;
+    case menu_values:
+        if (++item.selected >= item.values.size())
+            item.selected = 0;
+        if (item.callback) item.callback(item);
+        else if (item.data) *(uint32_t*)item.data = item.selected;
+        break;
+    default:
+        break;
     }
 }
 
@@ -113,25 +151,44 @@ bool menu_base::poll_input() {
         return true;
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_LEFT)) {
-        page_up();
+        value_dec();
         return true;
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_RIGHT)) {
-        page_down();
+        value_inc();
         return true;
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_L)) {
-        move_first();
+        page_up();
         return true;
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_R)) {
+        page_down();
+        return true;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_L2)) {
+        move_first();
+        return true;
+    }
+    if (states & (1<<RETRO_DEVICE_ID_JOYPAD_R2)) {
         move_last();
         return true;
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_A)) {
-        ok_pressed = true;
-        running = false;
-        return false;
+        auto &item = items[selected];
+        if (item.type == menu_static) {
+            if (item.callback) {
+                if (item.callback(item)) {
+                    running = false;
+                    return false;
+                }
+                return true;
+            }
+            ok_pressed = true;
+            running = false;
+            return false;
+        }
+        /* TODO: handle menu_path */
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_B)) {
         ok_pressed = false;

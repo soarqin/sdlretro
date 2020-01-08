@@ -41,13 +41,13 @@ public:
     virtual ~ttf_font();
     void init(int size, uint8_t width = 0);
     bool add(const std::string& filename, int index = 0);
+    uint8_t get_char_width(uint16_t ch) const;
 
 private:
     void new_rect_pack();
 
 protected:
     const font_data *make_cache(uint16_t);
-    static uint32_t utf8_to_ucs4(const char *&text);
     const uint8_t *get_rect_pack_data(uint8_t idx, int16_t x, int16_t y);
     uint16_t get_rect_pack_width();
 

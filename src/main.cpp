@@ -44,9 +44,12 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Cannot find core for file extension %s!\n", ptr + 1);
             return 1;
         }
-        auto index = menu.select_core_menu(core_list);
-        if (index < 0 || index >= core_list.size()) {
-            return 1;
+        int index = 0;
+        if (core_list.size() > 1) {
+            index = menu.select_core_menu(core_list);
+            if (index < 0 || index >= core_list.size()) {
+                return 1;
+            }
         }
         if (!impl->load_core(core_list[index]->filepath)) {
             fprintf(stderr, "Unable to load core from `%s`!\n", core_list[index]->filepath.c_str());
@@ -60,7 +63,7 @@ int main(int argc, char *argv[]) {
     }
 
     impl->load_game(argv[1]);
-    impl->run();
+    impl->run(std::bind(&gui::ui_menu::in_game_menu, &menu));
     impl->unload_game();
 
     return 0;
