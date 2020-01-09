@@ -14,8 +14,9 @@ namespace drivers {
 const int sdl_video_flags =
 #ifdef GCW_ZERO
     SDL_FULLSCREEN | SDL_HWSURFACE |
-#endif
+#else
     SDL_SWSURFACE |
+#endif
 #ifdef SDL_TRIPLEBUF
     SDL_TRIPLEBUF
 #else
@@ -24,10 +25,9 @@ const int sdl_video_flags =
     ;
 
 sdl1_video::sdl1_video() {
-    uint32_t w, h;
-    std::tie(w, h) = g_cfg.get_resolution();
+    std::tie(curr_width, curr_height) = g_cfg.get_resolution();
     curr_bpp = 16;
-    screen = SDL_SetVideoMode(w, h, curr_bpp, sdl_video_flags);
+    screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
     lock();
     /* TODO: ttf font load
     ttf = std::make_shared<sdl1_font>();
@@ -37,17 +37,16 @@ sdl1_video::sdl1_video() {
 }
 
 bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bpp) {
-    curr_width = width;
-    curr_height = height;
     curr_bpp = bpp;
     unlock();
     if (width != 0 && height != 0) {
+        curr_width = width;
+        curr_height = height;
         auto scale = g_cfg.get_scale();
         screen = SDL_SetVideoMode(width*scale, height*scale, bpp, sdl_video_flags);
     } else {
-        uint32_t w, h;
-        std::tie(w, h) = g_cfg.get_resolution();
-        screen = SDL_SetVideoMode(w, h, bpp, sdl_video_flags);
+        std::tie(curr_width, curr_height) = g_cfg.get_resolution();
+        screen = SDL_SetVideoMode(curr_width, curr_height, bpp, sdl_video_flags);
     }
     lock();
     return screen != nullptr;
@@ -279,16 +278,10 @@ void sdl1_video::enter_menu() {
     unlock();
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
     lock();
-    usleep(100000);
-    clear();
-    flip();
 }
 
 void sdl1_video::leave_menu() {
     resolution_changed(saved_width, saved_height, saved_bpp);
-    usleep(100000);
-    clear();
-    flip();
 }
 
 }

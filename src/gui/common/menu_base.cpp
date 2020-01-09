@@ -19,7 +19,7 @@ bool menu_base::enter_menu_loop() {
     running = true;
     draw();
     while (running) {
-        usleep(75000);
+        usleep(50000);
         if (driver->process_events()) {
             running = false;
             ok_pressed = false;
@@ -27,7 +27,7 @@ bool menu_base::enter_menu_loop() {
         }
         if (poll_input()) {
             draw();
-            usleep(75000);
+            usleep(125000);
         }
     }
     leave();
