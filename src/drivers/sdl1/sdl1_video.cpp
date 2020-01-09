@@ -275,6 +275,14 @@ void sdl1_video::enter_menu() {
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
     curr_bpp = 16;
 
+    clear();
+    flip();
+    clear();
+    flip();
+#ifdef SDL_TRIPLEBUF
+    clear();
+    flip();
+#endif
     unlock();
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
     lock();
