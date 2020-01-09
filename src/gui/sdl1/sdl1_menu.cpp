@@ -46,7 +46,6 @@ void sdl1_menu::leave() {
 void sdl1_menu::draw() {
     int x = menu_x + indicator_width, y = menu_y;
     auto *video = static_cast<drivers::sdl1_video*>(driver->get_video());
-    video->lock();
     video->clear();
     if (!title.empty()) {
         video->draw_text(menu_x, y, title.c_str(), 0, true);
@@ -72,7 +71,6 @@ void sdl1_menu::draw() {
         }
         y += line_height;
     }
-    video->unlock();
     video->flip();
 }
 

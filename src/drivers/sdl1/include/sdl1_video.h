@@ -20,8 +20,6 @@ public:
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
     void clear();
-    void lock();
-    void unlock();
     void flip();
     /* width: 0=fullscreen -1=fullscreen allow wrap
      *        others: negative = allow wrap */
@@ -34,6 +32,8 @@ public:
 
 private:
     void draw_text_pixel(int x, int y, const char *text, int width, bool shadow);
+    void lock();
+    void unlock();
 
 public:
     void enter_menu() override;

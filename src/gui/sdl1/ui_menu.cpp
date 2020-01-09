@@ -40,6 +40,10 @@ void ui_menu::in_game_menu() {
         { menu_static, "Global Settings", "", 0, {}, std::bind(&ui_menu::global_settings_menu, this, _1) },
         { menu_static, "Core Settings", "", 0, {}, std::bind(&ui_menu::core_settings_menu, this, _1) },
     };
+    auto *vari = driver->get_variables();
+    const auto &vars = vari->get_variables();
+    if (vars.empty())
+        items.resize(1);
     menu.set_items(items);
     uint32_t w, h;
     std::tie(w, h) = g_cfg.get_resolution();
@@ -83,13 +87,14 @@ bool ui_menu::global_settings_menu(const menu_item&) {
 }
 
 bool ui_menu::core_settings_menu(const menu_item&) {
+    auto *vari = driver->get_variables();
+    const auto &vars = vari->get_variables();
+    if (vars.empty()) return false;
     sdl1_menu menu(driver, false);
 
     menu.set_title("[CORE SETTINGS]");
 
     std::vector<menu_item> items;
-    auto *vari = driver->get_variables();
-    const auto &vars = vari->get_variables();
     for (auto &var: vars) {
         menu_item item = { menu_values, var.label, var.info, var.curr_index };
         for (auto &opt: var.options)
