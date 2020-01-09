@@ -42,8 +42,8 @@ bool sdl1_impl::process_events() {
                     SDLK_ESCAPE
 #endif
                     ) {
-                    if (!in_game_menu)
-                        in_game_menu = true;
+                    if (!menu_button_pressed)
+                        menu_button_pressed = true;
                     else
                         return true;
                 }
@@ -68,12 +68,12 @@ void sdl1_impl::unload() {
 
 bool sdl1_impl::run_frame(std::function<void()> &in_game_menu_cb, bool check) {
     if (process_events()) return false;
-    if (in_game_menu) {
+    if (menu_button_pressed) {
         audio->pause(true);
         in_game_menu_cb();
         audio->pause(false);
         frame_throttle->reset(fps);
-        in_game_menu = false;
+        menu_button_pressed = false;
     }
     if (check) {
         uint64_t usecs = 0;
