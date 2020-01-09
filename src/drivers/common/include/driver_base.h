@@ -8,30 +8,16 @@
 
 extern "C" typedef struct retro_core_t retro_core_t;
 
+namespace libretro {
+class retro_variables;
+}
+
 namespace drivers {
 
 class video_base;
 class buffered_audio;
 class input_base;
 class throttle;
-
-/* variable struct */
-struct variable_t {
-    /* variable name */
-    std::string name;
-    /* selected index */
-    size_t curr_index;
-    /* default index */
-    size_t default_index;
-    /* variable display text */
-    std::string label;
-    /* variable description */
-    std::string info;
-    /* visible */
-    bool visible;
-    /* options list, in pair (display, description) */
-    std::vector<std::pair<std::string, std::string>> options;
-};
 
 /* base class for all drivers */
 class driver_base {
@@ -62,16 +48,14 @@ public:
 
     /* environment callback */
     bool env_callback(unsigned cmd, void *data);
-
-    /* get/set variable */
-    const std::vector<variable_t> &get_variables() { return variables; }
-    void set_variable(const std::string &key, size_t index);
+    void save_variables_to_cfg();
 
     inline const std::string &get_system_dir() { return system_dir; }
     inline throttle *get_frame_throttle() { return frame_throttle.get(); }
     inline video_base *get_video() { return video.get(); }
     inline buffered_audio *get_audio() { return audio.get(); }
     inline input_base *get_input() { return input.get(); }
+    inline libretro::retro_variables *get_variables() { return variables.get(); }
 
     /* load core from path */
     bool load_core(const std::string &path);
@@ -100,9 +84,14 @@ protected:
     /* core struct, check libretro/include/core.h */
     retro_core_t *core = nullptr;
 
+    /* static directory, readonly directory, should not write any file into it */
+    std::string static_dir;
+    /* config directory, writable directory for save user data */
+    std::string config_dir;
+
     /* various directories, as described in libretro env def */
-    std::string system_dir;
-    std::string save_dir;
+    std::string system_dir; /* `static_dir`/system */
+    std::string save_dir;   /* `config_dir`/saves */
 
     /* need_fullpath in retro_system_info, for game loading use */
     bool need_fullpath = false;
@@ -141,7 +130,13 @@ protected:
     /* input_base for contoller input */
     std::shared_ptr<input_base> input;
 
+    /* varaibles */
+    std::unique_ptr<libretro::retro_variables> variables;
+
 private:
+    /* core cfg file path */
+    std::string core_cfg_path;
+
     /* game file path and base name(remove dir and ext part from game path) */
     std::string game_path;
     std::string game_base_name;
@@ -159,11 +154,6 @@ private:
 
     /* frame countdown for save check */
     uint32_t save_check_countdown = 0;
-
-    /* variables */
-    std::vector<variable_t> variables;
-    std::map<std::string, variable_t*> variables_map;
-    bool variables_updated = false;
 
     /* core is inited */
     bool inited = false;

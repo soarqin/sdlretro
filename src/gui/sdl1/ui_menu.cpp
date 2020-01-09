@@ -6,6 +6,7 @@
 #include "video_base.h"
 #include "driver_base.h"
 
+#include "variables.h"
 #include "core_manager.h"
 
 namespace gui {
@@ -63,7 +64,7 @@ bool ui_menu::global_settings_menu(const menu_item&) {
     }
     std::vector<menu_item> items = {
         { menu_values, "SRAM Save Interval", "", check_sec_idx,
-            {"disable", "30", "60", "300"},
+            {"off", "30", "60", "300"},
             [](const menu_item &item)->bool {
                 if (item.selected < check_secs_count)
                     g_cfg.set_save_check(check_secs[item.selected]);
@@ -74,7 +75,9 @@ bool ui_menu::global_settings_menu(const menu_item&) {
     menu.set_items(items);
     uint32_t w, h;
     std::tie(w, h) = g_cfg.get_resolution();
-    menu.set_rect(50, 50, w - 100, h - 100);
+    auto border = w / 16;
+    menu.set_rect(border, border, w - border * 2, h - border * 2);
+    menu.set_item_width(w - border * 2 - 90);
     menu.enter_menu_loop();
     return false;
 }
@@ -85,13 +88,14 @@ bool ui_menu::core_settings_menu(const menu_item&) {
     menu.set_title("[CORE SETTINGS]");
 
     std::vector<menu_item> items;
-    const auto &vars = driver->get_variables();
+    auto *vari = driver->get_variables();
+    const auto &vars = vari->get_variables();
     for (auto &var: vars) {
         menu_item item = { menu_values, var.label, var.info, var.curr_index };
         for (auto &opt: var.options)
             item.values.push_back(opt.first);
-        item.callback = [this, &var](const menu_item &item)->bool {
-            driver->set_variable(var.name, item.selected);
+        item.callback = [this, &vari, &var](const menu_item &item)->bool {
+            vari->set_variable(var.name, item.selected);
             return false;
         };
         items.emplace_back(item);
@@ -101,8 +105,9 @@ bool ui_menu::core_settings_menu(const menu_item&) {
     std::tie(w, h) = g_cfg.get_resolution();
     auto border = w / 16;
     menu.set_rect(border, border, w - border * 2, h - border * 2);
-    menu.set_item_width(DEFAULT_WIDTH - border * 2 - 80);
+    menu.set_item_width(w - border * 2 - 90);
     menu.enter_menu_loop();
+    driver->save_variables_to_cfg();
     return false;
 }
 

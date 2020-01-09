@@ -37,7 +37,7 @@ void sdl1_menu::enter() {
     if (item_width == 0 || item_width > maxwidth)
         item_width = maxwidth;
     value_x = menu_x + indicator_width + item_width + 20;
-    value_width = menu_width - value_x;
+    value_width = menu_x + menu_width - value_x;
 }
 
 void sdl1_menu::leave() {

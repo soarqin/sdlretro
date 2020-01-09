@@ -9,6 +9,7 @@
 #include "throttle.h"
 #include "util.h"
 
+#include <variables.h>
 #include <core.h>
 
 #include <cstring>
@@ -22,6 +23,7 @@ driver_base *current_driver = nullptr;
 
 driver_base::driver_base() {
     frame_throttle = std::make_shared<throttle>();
+    variables = std::make_unique<libretro::retro_variables>();
 }
 
 driver_base::~driver_base() {
@@ -36,6 +38,8 @@ driver_base::~driver_base() {
 }
 
 void driver_base::set_dirs(const std::string &static_root, const std::string &config_root) {
+    static_dir = static_root;
+    config_dir = config_root;
     system_dir = config_root + "/system";
     util_mkdir(system_dir.c_str());
     save_dir = config_root + "/saves";
@@ -64,7 +68,7 @@ bool RETRO_CALLCONV retro_environment_cb(unsigned cmd, void *data) {
 }
 
 void RETRO_CALLCONV log_printf(enum retro_log_level level, const char *fmt, ...) {
-#if !defined(NDEBUG) && !defined(LIBRETRO_DEBUG_LOG)
+#if defined(NDEBUG) || !defined(LIBRETRO_DEBUG_LOG)
     if (level >= RETRO_LOG_DEBUG)
         return;
 #endif
@@ -207,37 +211,6 @@ void driver_base::reset() {
     core->retro_reset();
 }
 
-inline void load_variable(std::vector<variable_t> &variables, std::map<std::string, variable_t*> &variables_map, const retro_core_option_definition *def) {
-    while (def->key != nullptr) {
-        variable_t *var = nullptr;
-        for (auto &v: variables) {
-            if (v.name == def->key) {
-                var = &v;
-                break;
-            }
-        }
-        if (var == nullptr) {
-            variables.resize(variables.size() + 1);
-            var = &variables.back();
-            var->name = def->key;
-            variables_map[var->name] = var;
-        }
-        var->curr_index = 0;
-        var->default_index = 0;
-        var->label = def->desc ? def->desc : "";
-        var->info = def->info ? def->info : "";
-        const auto *opt = def->values;
-        while (opt->value != nullptr) {
-            if (strcmp(opt->value, def->default_value)==0)
-                var->curr_index = var->default_index = var->options.size();
-            var->options.emplace_back(std::make_pair(opt->value, opt->label == nullptr ? "" : opt->label));
-            ++opt;
-        }
-        var->visible = true;
-        ++def;
-    }
-}
-
 bool driver_base::env_callback(unsigned cmd, void *data) {
     switch (cmd) {
         case RETRO_ENVIRONMENT_SET_ROTATION:
@@ -283,55 +256,22 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             break;
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
             auto *var = (retro_variable *)data;
-            auto ite = variables_map.find(var->key);
-            if (ite != variables_map.end()) {
-                var->value = ite->second->options[ite->second->curr_index].first.c_str();
+            auto *vari = variables->get_variable(var->key);
+            if (vari) {
+                var->value = vari->options[vari->curr_index].first.c_str();
                 return true;
             }
-            variables_updated = false;
+            variables->set_variables_updated(false);
             return false;
         }
         case RETRO_ENVIRONMENT_SET_VARIABLES: {
             const auto *vars = (const retro_variable*)data;
-            variables.clear();
-            variables_updated = true;
-            while (vars->key != nullptr) {
-                std::string value = vars->value;
-                auto pos = value.find("; ");
-                if (pos != std::string::npos) {
-                    variable_t *var = nullptr;
-                    for (auto &v: variables) {
-                        if (v.name == vars->key) {
-                            var = &v;
-                            break;
-                        }
-                    }
-                    if (var == nullptr) {
-                        variables.resize(variables.size() + 1);
-                        var = &variables.back();
-                    }
-                    var->curr_index = 0;
-                    var->default_index = 0;
-                    var->label = value.substr(0, pos);
-                    var->info.clear();
-                    var->visible = true;
-                    pos += 2;
-                    for (;;) {
-                        int end_pos = value.find('|', pos);
-                        if (pos < end_pos)
-                            var->options.emplace_back(std::make_pair(value.substr(pos, end_pos - pos), std::string()));
-                        if (end_pos == std::string::npos) {
-                            break;
-                        }
-                        pos = end_pos + 1;
-                    }
-                }
-                ++vars;
-            }
+            variables->load_variables(vars);
+            variables->load_variables_from_cfg(core_cfg_path);
             return true;
         }
         case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
-            *(bool*)data = variables_updated;
+            *(bool*)data = variables->get_variables_updated();
             return true;
         case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
             support_no_game = *(bool*)data;
@@ -430,25 +370,19 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             *(unsigned*)data = RETRO_API_VERSION;
             return true;
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS: {
-            variables.clear();
-            variables_updated = true;
-            load_variable(variables, variables_map, (const retro_core_option_definition*)data);
+            variables->load_variables((const retro_core_option_definition*)data);
+            variables->load_variables_from_cfg(core_cfg_path);
             return true;
         }
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL: {
-            variables.clear();
-            variables_updated = true;
-            load_variable(variables, variables_map, ((const retro_core_options_intl*)data)->us);
+            variables->load_variables(((const retro_core_options_intl*)data)->us);
+            variables->load_variables_from_cfg(core_cfg_path);
             return true;
         }
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY: {
             const auto *opt = (const retro_core_option_display*)data;
-            auto ite = variables_map.find(opt->key);
-            if (ite != variables_map.end()) {
-                ite->second->visible = opt->visible;
-                return true;
-            }
-            return false;
+            variables->set_variable_visible(opt->key, opt->visible);
+            return true;
         }
         case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
         default:
@@ -462,12 +396,8 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
     return false;
 }
 
-void driver_base::set_variable(const std::string &key, size_t index) {
-    auto ite = variables_map.find(key);
-    if (ite == variables_map.end()) return;
-    if (ite->second->curr_index == index) return;
-    ite->second->curr_index = index;
-    variables_updated = true;
+void driver_base::save_variables_to_cfg() {
+    variables->save_variables_to_cfg(core_cfg_path);
 }
 
 bool driver_base::load_core(const std::string &path) {
@@ -475,6 +405,19 @@ bool driver_base::load_core(const std::string &path) {
     if (!core) return false;
 
     current_driver = this;
+
+    core_cfg_path = config_dir + "/cfg";
+    util_mkdir(core_cfg_path.c_str());
+    retro_system_info sysinfo = {};
+    core->retro_get_system_info(&sysinfo);
+    std::string lowered_name = sysinfo.library_name;
+    for (char &c: lowered_name) {
+        if (c <= ' ' || c == '\\' || c == '/' || c == ':' || c == '*' || c == '"' || c == '<' || c == '>' || c == '|')
+            c = '_';
+        else
+            c = std::tolower(c);
+    }
+    core_cfg_path = core_cfg_path + '/' + lowered_name + ".cfg";
 
     init_internal();
     return true;
@@ -525,8 +468,7 @@ void driver_base::deinit_internal() {
 
     game_data.clear();
 
-    variables.clear();
-    variables_updated = false;
+    variables->reset();
 
     inited = false;
 }
