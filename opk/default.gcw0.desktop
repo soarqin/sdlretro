@@ -7,4 +7,5 @@ Type=Application
 StartupNotify=true
 Icon=sdlretro_icon
 Categories=emulators;
+MimeType=application/x-snes-rom;application/x-sms-rom;application/x-megadrive-rom;application/x-genesis-rom;application/x-nes-rom;application/x-gba-rom;application/x-gbc-rom;application/x-gameboy-rom;application/zip;application/x-cue;application/x-cd-image;
 X-OD-NeedsDownscaling=true

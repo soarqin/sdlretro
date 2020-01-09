@@ -11,20 +11,10 @@
 
 namespace drivers {
 
-const int sdl_video_flags =
-#ifdef GCW_ZERO
-    SDL_FULLSCREEN | SDL_HWSURFACE |
-#else
-    SDL_SWSURFACE |
-#endif
-#ifdef SDL_TRIPLEBUF
-    SDL_TRIPLEBUF
-#else
-    SDL_DOUBLEBUF
-#endif
-    ;
+const int sdl_video_flags = SDL_SWSURFACE | SDL_DOUBLEBUF;
 
 sdl1_video::sdl1_video() {
+    SDL_ShowCursor(SDL_DISABLE);
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
     curr_bpp = 16;
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
@@ -279,10 +269,6 @@ void sdl1_video::enter_menu() {
     flip();
     clear();
     flip();
-#ifdef SDL_TRIPLEBUF
-    clear();
-    flip();
-#endif
     unlock();
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
     lock();
