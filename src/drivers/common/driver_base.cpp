@@ -19,6 +19,15 @@
 
 namespace drivers {
 
+inline void lowered_string(std::string &s) {
+    for (char &c: s) {
+        if (c <= ' ' || c == '\\' || c == '/' || c == ':' || c == '*' || c == '"' || c == '<' || c == '>' || c == '|')
+            c = '_';
+        else
+            c = std::tolower(c);
+    }
+}
+
 driver_base *current_driver = nullptr;
 
 driver_base::driver_base() {
@@ -144,52 +153,32 @@ bool driver_base::load_game(const std::string &path) {
     }
 
     game_path = path;
-    auto pos = game_path.find_last_of("/\\");
-    if (pos != std::string::npos) {
-        game_base_name = game_path.substr(pos + 1);
+    post_load();
+    return true;
+}
+
+bool driver_base::load_game_from_mem(const std::string &path, const std::string ext, const std::vector<uint8_t> &data) {
+    retro_game_info info = {};
+    if (!need_fullpath) {
+        game_data.assign(data.begin(), data.end());
+        info.path = path.c_str();
+        info.data = &game_data[0];
+        info.size = game_data.size();
     } else {
-        game_base_name = game_path;
+        temp_file = config_dir + "/tmp." + ext;
+        std::ofstream ofs(temp_file, std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
+        if (!ofs.good()) return false;
+        ofs.write((const char*)&data[0], data.size());
+        ofs.close();
+        info.path = temp_file.c_str();
     }
-    pos = game_base_name.find_last_of('.');
-    if (pos != std::string::npos)
-        game_base_name.erase(pos);
-    game_save_path = (save_dir.empty() ? "" : (save_dir + '/')) + game_base_name + ".sav";
-    game_rtc_path = (save_dir.empty() ? "" : (save_dir + '/')) + game_base_name + ".rtc";
-
-    read_file(game_save_path, save_data);
-    read_file(game_rtc_path, rtc_data);
-
-    if (!save_data.empty()) {
-        size_t sz = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
-        if (sz > save_data.size()) sz = save_data.size();
-        if (sz) memcpy(core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM), save_data.data(), sz);
-    }
-    if (!rtc_data.empty()) {
-        size_t sz = core->retro_get_memory_size(RETRO_MEMORY_RTC);
-        if (sz > rtc_data.size()) sz = rtc_data.size();
-        if (sz) memcpy(core->retro_get_memory_data(RETRO_MEMORY_RTC), rtc_data.data(), sz);
+    if (!core->retro_load_game(&info)) {
+        logger(LOG_ERROR) << "Unable to load " << path << std::endl;
+        return false;
     }
 
-    retro_system_av_info av_info = {};
-    core->retro_get_system_av_info(&av_info);
-    base_width = av_info.geometry.base_width;
-    base_height = av_info.geometry.base_height;
-    max_width = av_info.geometry.max_width;
-    max_height = av_info.geometry.max_height;
-    aspect_ratio = av_info.geometry.aspect_ratio;
-    fps = av_info.timing.fps;
-
-    audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, av_info.timing.fps);
-    frame_throttle->reset(fps);
-    core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
-    video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
-
-    retro_system_info sysinfo = {};
-    core->retro_get_system_info(&sysinfo);
-    char library_message[256];
-    snprintf(library_message, 256, "Loaded core: %s", sysinfo.library_name);
-    video->set_message(library_message, lround(fps * 5));
-
+    game_path = path;
+    post_load();
     return true;
 }
 
@@ -205,6 +194,10 @@ void driver_base::unload_game() {
     core->retro_unload_game();
     audio->stop();
     unload();
+    if (!temp_file.empty()) {
+        remove(temp_file.c_str());
+        temp_file.clear();
+    }
 }
 
 void driver_base::reset() {
@@ -302,7 +295,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY:
             break;
         case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-            *(const char**)data = save_dir.empty() ? nullptr : save_dir.c_str();
+            *(const char**)data = core_save_dir.empty() ? nullptr : core_save_dir.c_str();
             return true;
         case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
         case RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK:
@@ -410,14 +403,14 @@ bool driver_base::load_core(const std::string &path) {
     util_mkdir(core_cfg_path.c_str());
     retro_system_info sysinfo = {};
     core->retro_get_system_info(&sysinfo);
-    std::string lowered_name = sysinfo.library_name;
-    for (char &c: lowered_name) {
-        if (c <= ' ' || c == '\\' || c == '/' || c == ':' || c == '*' || c == '"' || c == '<' || c == '>' || c == '|')
-            c = '_';
-        else
-            c = std::tolower(c);
-    }
-    core_cfg_path = core_cfg_path + '/' + lowered_name + ".cfg";
+    library_name = sysinfo.library_name;
+    library_version = sysinfo.library_version;
+    need_fullpath = sysinfo.need_fullpath;
+    std::string name = sysinfo.library_name;
+    lowered_string(name);
+    core_cfg_path = core_cfg_path + '/' + name + ".cfg";
+    core_save_dir = save_dir + '/' + name;
+    util_mkdir(core_save_dir.c_str());
 
     init_internal();
     return true;
@@ -432,10 +425,6 @@ bool driver_base::init_internal() {
 
     shutdown_driver = false;
     core->retro_set_environment(retro_environment_cb);
-
-    retro_system_info info = {};
-    core->retro_get_system_info(&info);
-    need_fullpath = info.need_fullpath;
 
     core->retro_init();
 
@@ -455,6 +444,8 @@ void driver_base::deinit_internal() {
     core->retro_deinit();
 
     /* reset all variables to default value */
+    library_name.clear();
+    library_version.clear();
     need_fullpath = false;
 
     pixel_format = 0;
@@ -495,6 +486,52 @@ void driver_base::check_save_ram() {
             rtc_data.assign((uint8_t*)rtc, (uint8_t*)rtc + rtc_size);
         }
     }
+}
+
+void driver_base::post_load() {
+    auto pos = game_path.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        game_base_name = game_path.substr(pos + 1);
+    } else {
+        game_base_name = game_path;
+    }
+    pos = game_base_name.find_last_of('.');
+    if (pos != std::string::npos)
+        game_base_name.erase(pos);
+    game_save_path = (core_save_dir.empty() ? "" : (core_save_dir + '/')) + game_base_name + ".sav";
+    game_rtc_path = (core_save_dir.empty() ? "" : (core_save_dir + '/')) + game_base_name + ".rtc";
+
+    read_file(game_save_path, save_data);
+    read_file(game_rtc_path, rtc_data);
+
+    if (!save_data.empty()) {
+        size_t sz = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+        if (sz > save_data.size()) sz = save_data.size();
+        if (sz) memcpy(core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM), save_data.data(), sz);
+    }
+    if (!rtc_data.empty()) {
+        size_t sz = core->retro_get_memory_size(RETRO_MEMORY_RTC);
+        if (sz > rtc_data.size()) sz = rtc_data.size();
+        if (sz) memcpy(core->retro_get_memory_data(RETRO_MEMORY_RTC), rtc_data.data(), sz);
+    }
+
+    retro_system_av_info av_info = {};
+    core->retro_get_system_av_info(&av_info);
+    base_width = av_info.geometry.base_width;
+    base_height = av_info.geometry.base_height;
+    max_width = av_info.geometry.max_width;
+    max_height = av_info.geometry.max_height;
+    aspect_ratio = av_info.geometry.aspect_ratio;
+    fps = av_info.timing.fps;
+
+    audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, av_info.timing.fps);
+    frame_throttle->reset(fps);
+    core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
+    video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
+
+    char library_message[256];
+    snprintf(library_message, 256, "Loaded core: %s", library_name.c_str());
+    video->set_message(library_message, lround(fps * 5));
 }
 
 }

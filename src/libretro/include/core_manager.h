@@ -10,12 +10,13 @@ struct core_info {
     std::string name;
     std::string version;
     std::vector<std::string> extensions;
+    bool need_fullpath;
 };
 
 class core_manager final {
 public:
-    explicit core_manager(const std::string &static_root, const std::string &config_root);
-    ~core_manager();
+    explicit core_manager(const std::vector<std::string> &search_dirs);
+    ~core_manager() = default;
 
     /* match libretro cores by rom file extention */
     std::vector<const core_info*> match_cores_by_extension(const std::string &ext);

@@ -92,6 +92,7 @@ bool ui_menu::global_settings_menu(const menu_item&) {
     menu.set_rect(border, border, w - border * 2, h - border * 2);
     menu.set_item_width(w - border * 2 - 90);
     menu.enter_menu_loop();
+    g_cfg.save();
     return false;
 }
 

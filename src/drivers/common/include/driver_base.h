@@ -40,6 +40,9 @@ public:
     /* load game from file with given path */
     bool load_game(const std::string &path);
 
+    /* load game from memory, use temp file if mem load is not supported */
+    bool load_game_from_mem(const std::string &path, const std::string ext, const std::vector<uint8_t> &data);
+
     /* unload game */
     void unload_game();
 
@@ -71,6 +74,9 @@ private:
     /* check sram/rtc and save to file if changed */
     void check_save_ram();
 
+    /* post processing for game load */
+    void post_load();
+
 protected:
     /* virtual methods for cores init/deinit */
     virtual bool init() = 0;
@@ -93,9 +99,6 @@ protected:
     std::string system_dir; /* `static_dir`/system */
     std::string save_dir;   /* `config_dir`/saves */
 
-    /* need_fullpath in retro_system_info, for game loading use */
-    bool need_fullpath = false;
-
     /* retro_pixel_format, check libretro.h */
     unsigned pixel_format = 2;
 
@@ -104,6 +107,14 @@ protected:
 
     /* support achivements, but it might not be implemented by SDLRetro */
     bool support_achivements = false;
+
+    /* all variables copied from retro_system_info */
+    std::string library_name;
+    std::string library_version;
+    bool need_fullpath = false;
+
+    /* save_dir + '/' + lower-cased library_name */
+    std::string core_save_dir;
 
     /* all variables copied from retro_system_av_info */
     unsigned base_width = 0;    /* Nominal video width of game. */
@@ -147,6 +158,9 @@ private:
 
     /* game data */
     std::string game_data;
+
+    /* temp file for unzip, would be removed after gameplay */
+    std::string temp_file;
 
     /* save&rtc data */
     std::vector<uint8_t> save_data;

@@ -1,8 +1,5 @@
 #include "core_manager.h"
 
-#include "cfg.h"
-#include "util.h"
-
 #include <libretro.h>
 
 #ifdef _WIN32
@@ -16,14 +13,11 @@
 
 namespace libretro {
 
-core_manager::core_manager(const std::string &static_root, const std::string &config_root) {
-    util_mkdir(config_root.c_str());
-    auto config_core_dir = config_root + "/cores";
-    util_mkdir(config_core_dir.c_str());
-    core_dirs.push_back(config_core_dir);
-    if (static_root!=config_root)
-        core_dirs.push_back(static_root + "/cores");
-
+core_manager::core_manager(const std::vector<std::string> &search_dirs) {
+    core_dirs = search_dirs;
+    for (auto &d: core_dirs) {
+        d += "/cores";
+    }
     for (const auto &core_dir: core_dirs) {
 #ifdef _WIN32
         wchar_t path[MAX_PATH] = {}, findpath[MAX_PATH];
@@ -52,6 +46,7 @@ core_manager::core_manager(const std::string &static_root, const std::string &co
                 WideCharToMultiByte(CP_UTF8, 0, fullpath, -1, filename, MAX_PATH*3, nullptr, nullptr);
 
                 core_info coreinfo = {filename, info.library_name, info.library_version};
+                coreinfo.need_fullpath = info.need_fullpath;
                 std::string exts = info.valid_extensions;
 
                 FreeLibrary(mod);
@@ -100,10 +95,6 @@ core_manager::core_manager(const std::string &static_root, const std::string &co
         closedir(d);
 #endif
     }
-}
-
-core_manager::~core_manager() {
-    g_cfg.save();
 }
 
 std::vector<const core_info *> core_manager::match_cores_by_extension(const std::string &ext) {
