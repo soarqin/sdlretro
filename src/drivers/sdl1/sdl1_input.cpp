@@ -46,18 +46,29 @@ sdl1_input::sdl1_input() {
         SDLK_x, // RETRO_DEVICE_ID_JOYPAD_R3
     };
 #endif
+    if (!SDL_WasInit(SDL_INIT_JOYSTICK))
+        SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+    for (int i = 0; i < 2; ++i)
+        joystick[i] = SDL_JoystickOpen(i);
 }
 
 void sdl1_input::input_poll() {
     int numkeys;
     uint8_t *keys = SDL_GetKeyState(&numkeys);
     uint16_t state = 0;
+
+    SDL_JoystickUpdate();
     for (int idx = 0; idx < 2; ++idx) {
         if (!pad_enabled[idx]) continue;
         for (uint32_t i = 0; i < 16; ++i) {
             if (keys[keymap[i]]) state |= 1U << i;
         }
         pad_states[idx] = static_cast<int16_t>(state);
+
+        analog_axis[idx][0][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 0);
+        analog_axis[idx][0][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 1);
+        analog_axis[idx][1][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 2);
+        analog_axis[idx][1][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 3);
     }
 }
 

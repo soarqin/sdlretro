@@ -14,6 +14,7 @@ public:
 
 private:
     std::array<int, 16> keymap = {};
+    void *joystick[2] = {nullptr, nullptr};
 };
 
 }

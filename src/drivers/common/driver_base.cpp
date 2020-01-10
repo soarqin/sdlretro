@@ -307,7 +307,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES:
-            *(uint64_t*)data = 1ULL << RETRO_DEVICE_JOYPAD;
+            *(uint64_t*)data = (1ULL << RETRO_DEVICE_JOYPAD) | (1ULL << RETRO_DEVICE_ANALOG);
             return true;
         case RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE:
         case RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE:

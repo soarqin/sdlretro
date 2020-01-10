@@ -18,6 +18,7 @@ void input_base::add_button(unsigned port, unsigned device, unsigned index, unsi
 int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
     switch (device) {
         case RETRO_DEVICE_JOYPAD:
+            if (!pad_enabled[port]) return 0;
             if (id==RETRO_DEVICE_ID_JOYPAD_MASK) {
                 return pad_states[port];
             }
@@ -25,6 +26,9 @@ int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, 
         case RETRO_DEVICE_KEYBOARD:
             return 0;
         case RETRO_DEVICE_ANALOG:
+            if (pad_enabled[port] && index <= RETRO_DEVICE_INDEX_ANALOG_BUTTON && id <= RETRO_DEVICE_ID_ANALOG_Y) {
+                return analog_axis[port][index][id];
+            }
             return 0;
         default:
             return 0;

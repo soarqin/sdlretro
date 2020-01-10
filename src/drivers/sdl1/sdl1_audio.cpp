@@ -12,6 +12,8 @@ void sdl1_audio::audio_callback(void *userdata, uint8_t *stream, int len) {
 }
 
 bool sdl1_audio::open(unsigned buffer_size) {
+    if (!SDL_WasInit(SDL_INIT_AUDIO))
+        SDL_InitSubSystem(SDL_INIT_AUDIO);
     SDL_AudioSpec spec = {}, obtained = {};
     spec.callback = audio_callback;
     spec.freq = static_cast<int>(output_sample_rate);

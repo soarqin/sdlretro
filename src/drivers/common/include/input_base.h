@@ -36,6 +36,7 @@ public:
 protected:
     bool pad_enabled[2] = {true, false};
     int16_t pad_states[2] = {};
+    int16_t analog_axis[2][3][2] = {};
 
 private:
     std::vector<input_port_t> ports;
