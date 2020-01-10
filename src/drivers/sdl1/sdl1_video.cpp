@@ -11,14 +11,21 @@
 
 namespace drivers {
 
-const int sdl_video_flags = SDL_SWSURFACE | SDL_DOUBLEBUF;
+const int sdl_video_flags = SDL_SWSURFACE |
+#ifdef SDL_TRIPLEBUF
+    SDL_TRIPLEBUF
+#else
+    SDL_DOUBLEBUF
+#endif
+    ;
 
 sdl1_video::sdl1_video() {
     SDL_ShowCursor(SDL_DISABLE);
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
     curr_bpp = 16;
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
-    lock();
+    SDL_LockSurface(screen);
+    screen_ptr = screen->pixels;
     /* TODO: ttf font load
     ttf = std::make_shared<sdl1_font>();
     ttf->init(16, 0);
@@ -26,9 +33,14 @@ sdl1_video::sdl1_video() {
      */
 }
 
+sdl1_video::~sdl1_video() {
+    SDL_UnlockSurface(screen);
+}
+
 bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bpp) {
+    SDL_UnlockSurface(screen);
+    usleep(10000);
     curr_bpp = bpp;
-    unlock();
     if (width != 0 && height != 0) {
         curr_width = width;
         curr_height = height;
@@ -38,8 +50,9 @@ bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bp
         std::tie(curr_width, curr_height) = g_cfg.get_resolution();
         screen = SDL_SetVideoMode(curr_width, curr_height, bpp, sdl_video_flags);
     }
-    lock();
-    return screen != nullptr;
+    SDL_LockSurface(screen);
+    screen_ptr = screen->pixels;
+    return true;
 }
 
 void sdl1_video::render(const void *data, unsigned width, unsigned height, size_t pitch) {
@@ -56,7 +69,7 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
     auto scale = g_cfg.get_scale();
     auto bpp = curr_bpp;
     if (scale == 1) {
-        auto *pixels = static_cast<uint8_t *>(screen->pixels);
+        auto *pixels = static_cast<uint8_t *>(screen_ptr);
         const auto *input = static_cast<const uint8_t *>(data);
         int output_pitch = screen->pitch;
         if (output_pitch == pitch) {
@@ -71,7 +84,7 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
         }
     } else {
     #define CODE_WITH_TYPE(TYPE) \
-        auto *pixels = static_cast<TYPE*>(screen->pixels); \
+        auto *pixels = static_cast<TYPE*>(screen_ptr); \
         const auto *input = static_cast<const TYPE*>(data); \
         int output_pitch = screen->pitch / sizeof(TYPE); \
         auto s = scale; \
@@ -112,17 +125,18 @@ void *sdl1_video::get_framebuffer(unsigned *width, unsigned *height, size_t *pit
     *height = screen->h;
     *pitch = screen->pitch;
     *format = 2;
-    return screen->pixels;
+    return screen_ptr;
 }
 
 void sdl1_video::clear() {
-    memset(screen->pixels, 0, screen->pitch * screen->h);
+    memset(screen_ptr, 0, screen->pitch * screen->h);
 }
 
 void sdl1_video::flip() {
-    unlock();
+    SDL_UnlockSurface(screen);
     SDL_Flip(screen);
-    lock();
+    SDL_LockSurface(screen);
+    screen_ptr = screen->pixels;
 }
 
 void sdl1_video::draw_text(int x, int y, const char *text, int width, bool shadow) {
@@ -197,7 +211,7 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool
         }
         nwidth -= fd.sw;
     #define CODE_WITH_TYPE(TYPE) \
-        auto *ptr = (TYPE*)screen->pixels + x + fd.x + (y + fd.y) * swidth; \
+        auto *ptr = (TYPE*)screen_ptr + x + fd.x + (y + fd.y) * swidth; \
         auto *fontdata = fd.data; \
         uint32_t wrapx = swidth - fd.w; \
         uint32_t step = (fd.w + 7) >> 3; \
@@ -249,29 +263,17 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool
     }
 }
 
-void sdl1_video::lock() {
-    if (SDL_MUSTLOCK(screen)) SDL_LockSurface(screen);
-}
-
-void sdl1_video::unlock() {
-    if (SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
-}
-
 void sdl1_video::enter_menu() {
+    SDL_UnlockSurface(screen);
+    usleep(10000);
     saved_width = curr_width;
     saved_height = curr_height;
     saved_bpp = curr_bpp;
-
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
     curr_bpp = 16;
-
-    clear();
-    flip();
-    clear();
-    flip();
-    unlock();
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
-    lock();
+    SDL_LockSurface(screen);
+    screen_ptr = screen->pixels;
 }
 
 void sdl1_video::leave_menu() {

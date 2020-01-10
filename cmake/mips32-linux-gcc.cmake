@@ -4,7 +4,7 @@ if("${CROSS}" STREQUAL "")
   set(CROSS mipsel-linux-)
 endif ()
 
-set(MIPS_CFLAGS "${MIPS_CFLAGS} -mips32r2 -fno-PIC -mno-check-zero-division -mplt -mno-shared -ffast-math -DGCW_ZERO")
+set(MIPS_CFLAGS "${MIPS_CFLAGS} -mips32r2 -mno-mips16 -mhard-float -fno-PIC -mno-check-zero-division -mplt -mno-shared -ffast-math -DGCW_ZERO")
 set(MIPS_CXXFLAGS "${MIPS_CXXFLAGS} -fno-rtti")
 
 set(TOOL_OS_SUFFIX "")

@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=SDLRetro
+Name=SDLRetro-Test
 Comment=SDL Frontend for libretro
 Exec=sdlretro %f
 Terminal=false

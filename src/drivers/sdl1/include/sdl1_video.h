@@ -15,6 +15,7 @@ class sdl1_font;
 class sdl1_video: public video_base {
 public:
     sdl1_video();
+    ~sdl1_video() override;
     bool resolution_changed(unsigned width, unsigned height, unsigned bpp) override;
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
@@ -32,8 +33,6 @@ public:
 
 private:
     void draw_text_pixel(int x, int y, const char *text, int width, bool shadow);
-    void lock();
-    void unlock();
 
 public:
     void enter_menu() override;
@@ -41,6 +40,7 @@ public:
 
 private:
     SDL_Surface *screen = nullptr;
+	void *screen_ptr = nullptr;
     std::shared_ptr<sdl1_font> ttf;
     uint32_t curr_width = 0, curr_height = 0, curr_bpp = 0;
     /* saved previous resolution for use with menu enter/leave */

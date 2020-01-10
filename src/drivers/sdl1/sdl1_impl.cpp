@@ -19,6 +19,7 @@ sdl1_impl::sdl1_impl() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE) != 0) {
         return;
     }
+    SDL_JoystickEventState(SDL_ENABLE);
     SDL_WM_SetCaption("SDLRetro", nullptr);
     video = std::make_shared<sdl1_video>();
     input = std::make_shared<sdl1_input>();
