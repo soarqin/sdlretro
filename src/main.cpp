@@ -58,11 +58,13 @@ int main(int argc, char *argv[]) {
             mz_zip_archive arc = {};
             if (!mz_zip_reader_init_file(&arc, argv[1], 0)) break;
             auto num_files = mz_zip_reader_get_num_files(&arc);
-            if (num_files == 0 || num_files > 2) {
+            if (num_files == 0) {
                 fprintf(stderr, "Empty zip file!\n");
                 mz_zip_reader_end(&arc);
                 return 1;
             }
+            if (num_files > 2)
+                break;
             for (uint32_t i = 0; i < num_files; ++i) {
                 mz_zip_archive_file_stat file_stat;
                 mz_zip_reader_file_stat(&arc, 0, &file_stat);
