@@ -29,8 +29,10 @@ public:
             message_text.clear();
         }
     }
+    inline void set_skip_frame() { skip_frame = true; }
 
 protected:
+    bool skip_frame = false;
     std::string message_text;
     unsigned message_frames = 0;
 };

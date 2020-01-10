@@ -60,6 +60,11 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
         drawn = false;
         return;
     }
+    if (skip_frame) {
+        drawn = false;
+        skip_frame = false;
+        return;
+    }
     drawn = true;
 
     if (curr_width != width || curr_height != height) {

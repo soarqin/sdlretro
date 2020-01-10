@@ -77,11 +77,16 @@ bool sdl1_impl::run_frame(std::function<void()> &in_game_menu_cb, bool check) {
         menu_button_pressed = false;
     }
     if (check) {
-        uint64_t usecs = 0;
-        do {
-            usleep(usecs);
-            usecs = frame_throttle->check_wait();
-        } while (usecs);
+        int64_t usecs = 0;
+        usecs = frame_throttle->check_wait();
+        if (usecs > 0) {
+            do {
+                usleep(usecs);
+                usecs = frame_throttle->check_wait();
+            } while (usecs > 0);
+        } else {
+            video->set_skip_frame();
+        }
     } else
         frame_throttle->skip_check();
     return true;

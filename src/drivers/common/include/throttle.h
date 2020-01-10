@@ -7,7 +7,7 @@ namespace drivers {
 class throttle {
 public:
     void reset(double fps);
-    uint64_t check_wait();
+    int64_t check_wait();
     void skip_check();
 
 private:

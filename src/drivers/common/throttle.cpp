@@ -11,12 +11,13 @@ void throttle::reset(double fps) {
     next_frame = get_ticks_usec();
 }
 
-uint64_t throttle::check_wait() {
+int64_t throttle::check_wait() {
     uint64_t now = get_ticks_usec();
-    if (now < next_frame)
-        return next_frame - now;
+    auto result = static_cast<int64_t>(next_frame - now);
+    if (result > 0)
+        return result;
     next_frame += frame_time;
-    return 0ULL;
+    return result;
 }
 
 void throttle::skip_check() {
