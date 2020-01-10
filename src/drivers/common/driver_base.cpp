@@ -274,13 +274,13 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_HW_RENDER:
             break;
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
+            variables->set_variables_updated(false);
             auto *var = (retro_variable *)data;
             auto *vari = variables->get_variable(var->key);
             if (vari) {
                 var->value = vari->options[vari->curr_index].first.c_str();
                 return true;
             }
-            variables->set_variables_updated(false);
             return false;
         }
         case RETRO_ENVIRONMENT_SET_VARIABLES: {
