@@ -8,6 +8,12 @@
 #include <cstdio>
 #include <cstring>
 
+#ifdef _WIN32
+#define PATH_SEPARATOR_CHAR "\\"
+#else
+#define PATH_SEPARATOR_CHAR "/"
+#endif
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: sdlretro <rom file>");
@@ -32,7 +38,7 @@ int main(int argc, char *argv[]) {
     libretro::core_manager coreman({static_root});
 #endif
 
-    g_cfg.set_filename(config_root + "/sdlretro.json");
+    g_cfg.set_filename(config_root + PATH_SEPARATOR_CHAR + "sdlretro.json");
     g_cfg.load();
 
     impl->set_dirs(static_root, config_root);

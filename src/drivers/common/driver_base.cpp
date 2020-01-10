@@ -19,6 +19,12 @@
 
 namespace drivers {
 
+#ifdef _WIN32
+#define PATH_SEPARATOR_CHAR "\\"
+#else
+#define PATH_SEPARATOR_CHAR "/"
+#endif
+
 inline void lowered_string(std::string &s) {
     for (char &c: s) {
         if (c <= ' ' || c == '\\' || c == '/' || c == ':' || c == '*' || c == '"' || c == '<' || c == '>' || c == '|')
@@ -26,6 +32,18 @@ inline void lowered_string(std::string &s) {
         else
             c = std::tolower(c);
     }
+}
+
+inline std::string get_base_name(const std::string &path) {
+    std::string basename = path;
+    auto pos = basename.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        basename = basename.substr(pos + 1);
+    }
+    pos = basename.find_last_of('.');
+    if (pos != std::string::npos)
+        basename.erase(pos);
+    return basename;
 }
 
 driver_base *current_driver = nullptr;
@@ -49,9 +67,9 @@ driver_base::~driver_base() {
 void driver_base::set_dirs(const std::string &static_root, const std::string &config_root) {
     static_dir = static_root;
     config_dir = config_root;
-    system_dir = config_root + "/system";
+    system_dir = config_root + PATH_SEPARATOR_CHAR "system";
     util_mkdir(system_dir.c_str());
-    save_dir = config_root + "/saves";
+    save_dir = config_root + PATH_SEPARATOR_CHAR "saves";
     util_mkdir(save_dir.c_str());
 }
 
@@ -165,10 +183,18 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
         info.data = &game_data[0];
         info.size = game_data.size();
     } else {
-        temp_file = config_dir + "/tmp." + ext;
+        std::string basename = get_base_name(path);
+        temp_file = config_dir + PATH_SEPARATOR_CHAR "tmp";
+        util_mkdir(temp_file.c_str());
+        temp_file = temp_file + PATH_SEPARATOR_CHAR + basename + "." + ext;
         std::ofstream ofs(temp_file, std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
         if (!ofs.good()) return false;
         ofs.write((const char*)&data[0], data.size());
+        if (ofs.bad()) {
+            ofs.close();
+            remove(temp_file.c_str());
+            return false;
+        }
         ofs.close();
         info.path = temp_file.c_str();
     }
@@ -308,7 +334,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_MEMORY_MAPS: {
             const auto *memmap = (const retro_memory_map*)data;
             for (unsigned i = 0; i < memmap->num_descriptors; ++i) {
-                // TODO: store info of memory map for future use
+                /* TODO: store info of memory map for future use */
             }
             return true;
         }
@@ -399,7 +425,7 @@ bool driver_base::load_core(const std::string &path) {
 
     current_driver = this;
 
-    core_cfg_path = config_dir + "/cfg";
+    core_cfg_path = config_dir + PATH_SEPARATOR_CHAR + "cfg";
     util_mkdir(core_cfg_path.c_str());
     retro_system_info sysinfo = {};
     core->retro_get_system_info(&sysinfo);
@@ -408,8 +434,8 @@ bool driver_base::load_core(const std::string &path) {
     need_fullpath = sysinfo.need_fullpath;
     std::string name = sysinfo.library_name;
     lowered_string(name);
-    core_cfg_path = core_cfg_path + '/' + name + ".cfg";
-    core_save_dir = save_dir + '/' + name;
+    core_cfg_path = core_cfg_path + PATH_SEPARATOR_CHAR + name + ".cfg";
+    core_save_dir = save_dir + PATH_SEPARATOR_CHAR + name;
     util_mkdir(core_save_dir.c_str());
 
     init_internal();
@@ -489,17 +515,9 @@ void driver_base::check_save_ram() {
 }
 
 void driver_base::post_load() {
-    auto pos = game_path.find_last_of("/\\");
-    if (pos != std::string::npos) {
-        game_base_name = game_path.substr(pos + 1);
-    } else {
-        game_base_name = game_path;
-    }
-    pos = game_base_name.find_last_of('.');
-    if (pos != std::string::npos)
-        game_base_name.erase(pos);
-    game_save_path = (core_save_dir.empty() ? "" : (core_save_dir + '/')) + game_base_name + ".sav";
-    game_rtc_path = (core_save_dir.empty() ? "" : (core_save_dir + '/')) + game_base_name + ".rtc";
+    game_base_name = get_base_name(game_path);
+    game_save_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".sav";
+    game_rtc_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".rtc";
 
     read_file(game_save_path, save_data);
     read_file(game_rtc_path, rtc_data);

@@ -13,10 +13,16 @@
 
 namespace libretro {
 
+#ifdef _WIN32
+#define PATH_SEPARATOR_CHAR "\\"
+#else
+#define PATH_SEPARATOR_CHAR "/"
+#endif
+
 core_manager::core_manager(const std::vector<std::string> &search_dirs) {
     core_dirs = search_dirs;
     for (auto &d: core_dirs) {
-        d += "/cores";
+        d += PATH_SEPARATOR_CHAR "cores";
     }
     for (const auto &core_dir: core_dirs) {
 #ifdef _WIN32
