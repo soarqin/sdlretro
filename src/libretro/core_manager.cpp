@@ -85,7 +85,7 @@ core_manager::core_manager(const std::vector<std::string> &search_dirs) {
             retro_system_info info = {};
             sysinfo(&info);
 
-            core_info coreinfo = {filename, info.library_name ? info.library_name : filename, info.library_version ? info.library_name : "unknown"};
+            core_info coreinfo = {path, info.library_name ? info.library_name : filename, info.library_version ? info.library_name : "unknown"};
             coreinfo.need_fullpath = info.need_fullpath;
             std::string exts = info.valid_extensions ? info.valid_extensions : "";
 
