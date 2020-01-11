@@ -1,13 +1,17 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-OPK_NAME=sdlretro.opk
+if [ -n "$FULL" ]; then
+    OPK_NAME=sdlretro-full.opk
+else
+    OPK_NAME=sdlretro.opk
+fi
 
 echo ${OPK_NAME}
 
 cp ../build/src/sdlretro .
 mipsel-linux-strip sdlretro
 
-if [ -d cores ]; then
+if [ -n "$FULL" ] && [ -d cores ]; then
     mipsel-linux-strip cores/*.so
     CORES=cores
 fi
