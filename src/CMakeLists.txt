@@ -7,5 +7,5 @@ add_subdirectory(gui)
 add_executable(sdlretro main.cpp miniz.c miniz.h)
 
 if(SDLRETRO_USE_SDL1)
-    target_link_libraries(sdlretro driver_sdl1 gui_sdl1)
+    target_link_libraries(sdlretro gui_sdl1)
 endif()

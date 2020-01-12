@@ -22,4 +22,4 @@ add_library(driver_common STATIC
 
 target_include_directories(driver_common PRIVATE external ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(driver_common PUBLIC include)
-target_link_libraries(driver_common PUBLIC libretro ${FREETYPE_LIBRARIES})
+target_link_libraries(driver_common libretro ${FREETYPE_LIBRARIES})

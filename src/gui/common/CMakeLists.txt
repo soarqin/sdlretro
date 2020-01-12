@@ -4,4 +4,4 @@ add_library(gui_common STATIC
     )
 
 target_include_directories(gui_common PUBLIC include)
-target_link_libraries(gui_common PUBLIC libretro driver_common)
+target_link_libraries(gui_common driver_common)

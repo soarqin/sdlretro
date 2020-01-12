@@ -16,4 +16,5 @@ add_library(driver_sdl1 STATIC
 
 target_compile_definitions(driver_sdl1 PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(driver_sdl1 PUBLIC include ${SDL_INCLUDE_DIR})
-target_link_libraries(driver_sdl1 PUBLIC driver_common ${SDL_LIBRARY})
+list(REMOVE_ITEM SDL_LIBRARY "${SDLMAIN_LIBRARY}")
+target_link_libraries(driver_sdl1 driver_common ${SDL_LIBRARY})

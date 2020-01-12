@@ -6,4 +6,4 @@ add_library(gui_sdl1 STATIC
     )
 
 target_include_directories(gui_sdl1 PUBLIC include)
-target_link_libraries(gui_sdl1 PUBLIC gui_common driver_sdl1)
+target_link_libraries(gui_sdl1 driver_sdl1 gui_common)

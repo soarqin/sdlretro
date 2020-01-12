@@ -4,7 +4,7 @@ if("${CROSS}" STREQUAL "")
   set(CROSS mipsel-linux-)
 endif ()
 
-set(MIPS_CFLAGS "${MIPS_CFLAGS} -mips32r2 -mno-mips16 -mhard-float -fno-PIC -mno-check-zero-division -mplt -mno-shared -ffast-math -DGCW_ZERO")
+set(MIPS_CFLAGS "${MIPS_CFLAGS} -mips32r2 -mno-mips16 -mhard-float -fno-PIC -mno-check-zero-division -ffast-math -DGCW_ZERO")
 set(MIPS_CXXFLAGS "${MIPS_CXXFLAGS} -fno-rtti")
 
 set(TOOL_OS_SUFFIX "")
@@ -34,7 +34,7 @@ set(CMAKE_RANLIB       "${TOOLCHAIN_BINARY_DIR}${CROSS}ranlib${TOOL_OS_SUFFIX}" 
 
 set(CMAKE_C_FLAGS          "${CMAKE_C_FLAGS} ${MIPS_CFLAGS}"                     CACHE STRING "C flags")
 set(CMAKE_CXX_FLAGS        "${CMAKE_CXX_FLAGS} ${MIPS_CFLAGS} ${MIPS_CXXFLAGS}"  CACHE STRING "C++ flags")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed -Wl,--gc-sections" CACHE STRING "Executable linker flags")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-no-undefined" CACHE STRING "Executable linker flags")
 
 # No runtime cpu detect for mipsel-linux-gcc.
 set(CONFIG_RUNTIME_CPU_DETECT 0 CACHE BOOL "")
