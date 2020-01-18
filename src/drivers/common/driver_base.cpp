@@ -17,6 +17,10 @@
 #include <memory>
 #include <fstream>
 
+namespace libretro {
+extern struct retro_vfs_interface vfs_interface;
+}
+
 namespace drivers {
 
 #ifdef _WIN32
@@ -373,9 +377,12 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
         case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
             break;
-        case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
-            /* TODO: write a vfs interface? */
-            return false;
+        case RETRO_ENVIRONMENT_GET_VFS_INTERFACE: {
+            auto *info = (struct retro_vfs_interface_info *)data;
+            if (info->required_interface_version > 3) return false;
+            info->iface = &libretro::vfs_interface;
+            return true;
+        }
         case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
         case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
         case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE:

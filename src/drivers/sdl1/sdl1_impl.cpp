@@ -25,7 +25,10 @@ sdl1_impl::sdl1_impl() {
 }
 
 sdl1_impl::~sdl1_impl() {
-    deinit();
+    video.reset();
+    input.reset();
+    audio.reset();
+    SDL_Quit();
 }
 
 bool sdl1_impl::process_events() {
@@ -60,7 +63,7 @@ bool sdl1_impl::init() {
 }
 
 void sdl1_impl::deinit() {
-    SDL_Quit();
+    audio.reset();
 }
 
 void sdl1_impl::unload() {

@@ -9,6 +9,10 @@ add_library(libretro STATIC
     util.cpp
     include/util.h
 
+    # vfs
+    vfs_win32.cpp
+    vfs_unix.cpp
+
     # cores
     core.c
     core_manager.cpp
@@ -19,6 +23,13 @@ add_library(libretro STATIC
     # external libs
     external/json.hpp
     )
+
+if(WIN32)
+    target_compile_definitions(libretro PRIVATE VFS_WIN32)
+elseif(UNIX)
+    target_compile_definitions(libretro PRIVATE VFS_UNIX)
+endif()
+
 target_include_directories(libretro PRIVATE external)
 target_include_directories(libretro PUBLIC include)
 if(WIN32)
