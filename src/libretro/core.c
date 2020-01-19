@@ -1,25 +1,10 @@
 #include "include/core.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
 
-#ifdef _WIN32
-static void *dlopen(const char *filename, int flag) {
-    wchar_t wpath[MAX_PATH];
-    MultiByteToWideChar(CP_UTF8, 0, filename, -1, wpath, MAX_PATH);
-    return LoadLibraryW(wpath);
-}
-#define dlclose(n) FreeLibrary((HMODULE)(n))
-#define dlsym(n,p) GetProcAddress((HMODULE)(n),(p))
-#define RTLD_LAZY 0
-#endif
+#include "dlfcn_compat.h"
 
 #define SYMLOAD(x) do { \
    void *func = dlsym(lib, #x); \

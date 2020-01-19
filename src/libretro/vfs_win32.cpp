@@ -18,6 +18,7 @@ struct retro_vfs_dir_handle {
     HANDLE dir_handle;
     WIN32_FIND_DATAW find_data;
     wchar_t dirnamew[MAX_PATH + 1];
+    bool hidden;
     bool next;
 };
 
@@ -180,16 +181,20 @@ struct retro_vfs_dir_handle *RETRO_CALLCONV win32_vfs_opendir(const char *dir, b
         return nullptr;
     }
     lstrcpynW(handle->dirnamew, dirnamew, MAX_PATH + 1);
+    handle->hidden = include_hidden;
     handle->next = false;
     return handle;
 }
 
 bool RETRO_CALLCONV win32_vfs_readdir(struct retro_vfs_dir_handle *dirstream) {
-    if (dirstream->next) {
-        return FindNextFileW(dirstream->dir_handle, &dirstream->find_data) != 0;
+    for (;;) {
+        if (dirstream->next) {
+            if (!FindNextFileW(dirstream->dir_handle, &dirstream->find_data)) return false;
+        }
+        dirstream->next = true;
+        if (!dirstream->hidden && (dirstream->find_data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != 0) continue;
+        return true;
     }
-    dirstream->next = true;
-    return true;
 }
 
 const char *RETRO_CALLCONV win32_vfs_dirent_get_name(struct retro_vfs_dir_handle *dirstream) {

@@ -8,6 +8,7 @@ add_library(libretro STATIC
     # utils
     util.cpp
     include/util.h
+    dlfcn_compat.h # dlfcn compatible header for win32
 
     # vfs
     vfs_win32.cpp

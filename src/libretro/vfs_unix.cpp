@@ -25,6 +25,7 @@ struct retro_vfs_dir_handle {
     char dirname[PATH_MAX + 1];
     DIR *dir;
     struct dirent *data;
+    bool hidden;
 };
 
 namespace libretro {
@@ -139,12 +140,21 @@ struct retro_vfs_dir_handle *RETRO_CALLCONV unix_vfs_opendir(const char *dir, bo
         return nullptr;
     }
     snprintf(handle->dirname, PATH_MAX + 1, "%s", dir);
+    handle->hidden = include_hidden;
     return handle;
 }
 
 bool RETRO_CALLCONV unix_vfs_readdir(struct retro_vfs_dir_handle *dirstream) {
-    dirstream->data = readdir(dirstream->dir);
-    return dirstream->data != nullptr;
+    for (;;) {
+        dirstream->data = readdir(dirstream->dir);
+        if (dirstream->data == nullptr) return false;
+        /* ignore . and .. , as well as hidden files */
+        if (dirstream->data->d_name[0] == '.' &&
+            (dirstream->data->d_name[1] == 0
+                || (dirstream->data->d_name[1] == '.' && dirstream->data->d_name[2] == 0)
+                || !dirstream->hidden)) continue;
+        return true;
+    }
 }
 
 const char *RETRO_CALLCONV unix_vfs_dirent_get_name(struct retro_vfs_dir_handle *dirstream) {
