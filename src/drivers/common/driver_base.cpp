@@ -549,7 +549,7 @@ void driver_base::post_load() {
     aspect_ratio = av_info.geometry.aspect_ratio;
     fps = av_info.timing.fps;
 
-    audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, av_info.timing.fps);
+    audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, g_cfg.get_sample_rate(), av_info.timing.fps);
     frame_throttle->reset(fps);
     core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
     video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);

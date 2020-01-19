@@ -1,0 +1,19 @@
+/*
+** Copyright (c) 2002-2016, Erik de Castro Lopo <erikd@mega-nerd.com>
+** All rights reserved.
+**
+** This code is released under 2-clause BSD license. Please see the
+** file at : https://github.com/erikd/libsamplerate/blob/master/COPYING
+*/
+
+/* Name of package */
+#define PACKAGE "${PROJECT_NAME}"
+
+/* Version number of package */
+#define VERSION "${PROJECT_VERSION}"
+
+/* Target processor clips on negative float to int conversion. */
+#cmakedefine01 CPU_CLIPS_NEGATIVE
+
+/* Target processor clips on positive float to int conversion. */
+#cmakedefine01 CPU_CLIPS_POSITIVE

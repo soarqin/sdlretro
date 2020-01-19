@@ -37,6 +37,8 @@ void cfg::load() {
         res_w = get_value<uint32_t>(j, "res_w", DEFAULT_WIDTH);
         res_h = get_value<uint32_t>(j, "res_h", DEFAULT_HEIGHT);
         mono_audio  = get_value<bool>(j, "mono_audio", false);
+        sample_rate  = get_value<uint32_t>(j, "sample_rate", DEFAULT_SAMPLE_RATE);
+        resampler_quality  = get_value<uint32_t>(j, "resampler_quality", DEFAULT_RESAMPLER_QUALITY);
         scale = get_value<uint32_t>(j, "scale", DEFAULT_SCALE);
         save_check = get_value<uint32_t>(j, "save_check", 0);
     }
@@ -50,6 +52,8 @@ void cfg::save() {
     j["res_w"] = res_w;
     j["res_h"] = res_h;
     j["mono_audio"] = mono_audio;
+    j["sample_rate"] = sample_rate;
+    j["resampler_quality"] = resampler_quality;
     j["scale"] = scale;
     j["save_check"] = save_check;
 
