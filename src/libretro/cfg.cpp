@@ -11,7 +11,7 @@ cfg g_cfg;
 using json = nlohmann::json;
 
 template<typename T>
-T get_value(json &j, const std::string &key, T defval) {
+inline T get_value(json &j, const std::string &key, T defval) {
     auto jsub = j[key];
     if (jsub.is_string() || jsub.is_boolean() || jsub.is_number()) {
         return jsub.get<T>();
@@ -34,13 +34,16 @@ void cfg::load() {
     ifs.close();
 
     if (j.is_object()) {
-        res_w = get_value<uint32_t>(j, "res_w", DEFAULT_WIDTH);
-        res_h = get_value<uint32_t>(j, "res_h", DEFAULT_HEIGHT);
-        mono_audio  = get_value<bool>(j, "mono_audio", false);
-        sample_rate  = get_value<uint32_t>(j, "sample_rate", DEFAULT_SAMPLE_RATE);
-        resampler_quality  = get_value<uint32_t>(j, "resampler_quality", DEFAULT_RESAMPLER_QUALITY);
-        scale = get_value<uint32_t>(j, "scale", DEFAULT_SCALE);
-        save_check = get_value<uint32_t>(j, "save_check", 0);
+#define JREAD(name, def) name = get_value<decltype(name)>(j, #name, (def))
+        JREAD(res_w, DEFAULT_WIDTH);
+        JREAD(res_h, DEFAULT_HEIGHT);
+        JREAD(mono_audio, false);
+        JREAD(sample_rate, DEFAULT_SAMPLE_RATE);
+        JREAD(resampler_quality, DEFAULT_RESAMPLER_QUALITY);
+        JREAD(scaling_mode, 0);
+        JREAD(scale, DEFAULT_SCALE);
+        JREAD(save_check, 0);
+#undef JREAD
     }
 }
 
@@ -49,14 +52,16 @@ void cfg::save() {
     if (!ofs.good()) return;
 
     json j;
-    j["res_w"] = res_w;
-    j["res_h"] = res_h;
-    j["mono_audio"] = mono_audio;
-    j["sample_rate"] = sample_rate;
-    j["resampler_quality"] = resampler_quality;
-    j["scale"] = scale;
-    j["save_check"] = save_check;
-
+#define JWRITE(name) j[#name] = name
+    JWRITE(res_w);
+    JWRITE(res_h);
+    JWRITE(mono_audio);
+    JWRITE(sample_rate);
+    JWRITE(resampler_quality);
+    JWRITE(scaling_mode);
+    JWRITE(scale);
+    JWRITE(save_check);
+#undef JWRITE
     try {
         ofs << std::setw(4) << j;
     } catch(...) {

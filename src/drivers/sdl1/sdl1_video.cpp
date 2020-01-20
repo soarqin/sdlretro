@@ -38,20 +38,25 @@ sdl1_video::~sdl1_video() {
 }
 
 bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bpp) {
-    SDL_UnlockSurface(screen);
-    usleep(10000);
-    curr_bpp = bpp;
-    if (width != 0 && height != 0) {
+    if (g_cfg.get_scaling_mode() == 0) {
+        SDL_UnlockSurface(screen);
+        usleep(10000);
+        curr_bpp = bpp;
+        if (width != 0 && height != 0) {
+            curr_width = width;
+            curr_height = height;
+            auto scale = force_scale == 0 ? g_cfg.get_scale() : force_scale;
+            screen = SDL_SetVideoMode(width * scale, height * scale, bpp, sdl_video_flags);
+        } else {
+            std::tie(curr_width, curr_height) = g_cfg.get_resolution();
+            screen = SDL_SetVideoMode(curr_width, curr_height, bpp, sdl_video_flags);
+        }
+        SDL_LockSurface(screen);
+        screen_ptr = screen->pixels;
+    } else {
         curr_width = width;
         curr_height = height;
-        auto scale = g_cfg.get_scale();
-        screen = SDL_SetVideoMode(width*scale, height*scale, bpp, sdl_video_flags);
-    } else {
-        std::tie(curr_width, curr_height) = g_cfg.get_resolution();
-        screen = SDL_SetVideoMode(curr_width, curr_height, bpp, sdl_video_flags);
     }
-    SDL_LockSurface(screen);
-    screen_ptr = screen->pixels;
     return true;
 }
 

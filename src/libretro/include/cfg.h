@@ -31,6 +31,8 @@ public:
     inline void set_sample_rate(uint32_t s) { sample_rate = s; }
     inline uint32_t get_resampler_quality() { return resampler_quality; }
     inline void set_resampler_quality(uint32_t r) { resampler_quality = r; }
+    inline uint32_t get_scaling_mode() { return scaling_mode; }
+    inline void set_scaling_mode(uint32_t s) { scaling_mode = s; }
     inline uint32_t get_scale() { return scale; }
     inline void set_scale(uint32_t s) { scale = s; }
     inline uint32_t get_save_check() { return save_check; }
@@ -53,6 +55,10 @@ protected:
      * 1  SRC_ZERO_ORDER_HOLD
      * 0  SRC_LINEAR */
     uint32_t resampler_quality = DEFAULT_RESAMPLER_QUALITY;
+    /* scaling mode
+     * 0  IPU scaling
+     * 1  Screen center */
+    uint32_t scaling_mode;
     /* basic integer scaler */
     uint32_t scale = DEFAULT_SCALE;
     /* save check interval in seconds, set to 0 to disable it */

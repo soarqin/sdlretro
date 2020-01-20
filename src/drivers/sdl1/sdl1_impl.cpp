@@ -59,10 +59,12 @@ bool sdl1_impl::process_events() {
 
 bool sdl1_impl::init() {
     audio = std::make_shared<sdl1_audio>();
+    static_cast<sdl1_video*>(video.get())->set_force_scale(0);
     return true;
 }
 
 void sdl1_impl::deinit() {
+    static_cast<sdl1_video*>(video.get())->set_force_scale(1);
     audio.reset();
 }
 

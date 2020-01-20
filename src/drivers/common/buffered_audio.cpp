@@ -9,6 +9,12 @@
 
 namespace drivers {
 
+enum :size_t {
+    input_buffer_size = 2048,
+    output_buffer_size = 2048,
+    resampler_cache_size = 65536,
+};
+
 inline unsigned pullup(unsigned rate) {
     rate |= rate >> 1U;
     rate |= rate >> 2U;
@@ -49,30 +55,17 @@ void buffered_audio::stop() {
     src_delete(src_state);
     src_state = nullptr;
     sample_ratio = 1.;
-    resampler_cache.reserve(65536);
+    resampler_cache.reserve(resampler_cache_size);
 }
-
-enum :size_t {
-    input_buffer_size = 2048,
-    output_buffer_size = 2048,
-};
 
 void buffered_audio::write_samples(const int16_t *data, size_t count) {
     if (!output_sample_rate || !count) return;
     if (src_state) {
-        if (resampler_cache.size() < 65536) {
-            float outdata[input_buffer_size * 2];
-            while (count) {
-                size_t pcount = count > input_buffer_size * 2 ? input_buffer_size * 2 : count;
-                src_short_to_float_array(data, outdata, pcount);
-                if (pcount + resampler_cache.size() >= 65536) {
-                    resampler_cache.insert(resampler_cache.end(), outdata, outdata + (65536 - resampler_cache.size()));
-                    break;
-                }
-                resampler_cache.insert(resampler_cache.end(), outdata, outdata + pcount);
-                count -= pcount;
-                data += pcount;
-            }
+        if (resampler_cache.size() < resampler_cache_size) {
+            float outdata[65536];
+            if (count > resampler_cache_size) count = resampler_cache_size;
+            src_short_to_float_array(data, outdata, count);
+            resampler_cache.insert(resampler_cache.end(), outdata, outdata + count);
         }
         float proc_data[output_buffer_size * 2];
         int16_t proc_data_s[output_buffer_size * 2];

@@ -30,6 +30,7 @@ public:
     inline unsigned get_width() { return curr_width; }
     inline unsigned get_height() { return curr_height; }
     inline sdl1_font *get_font() { return ttf.get(); }
+    inline void set_force_scale(uint32_t s) { force_scale = s; }
 
 private:
     void draw_text_pixel(int x, int y, const char *text, int width, bool shadow);
@@ -46,6 +47,10 @@ private:
     /* saved previous resolution for use with menu enter/leave */
     uint32_t saved_width = 0, saved_height = 0, saved_bpp = 0;
 
+    /* override global scale cfg */
+    uint32_t force_scale = 1;
+
+    /* indicate wheather frame was drawn, for auto frameskip use */
     bool drawn = false;
 };
 
