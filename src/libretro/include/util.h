@@ -3,5 +3,5 @@
 #include <cstdint>
 
 uint64_t get_ticks_usec();
-void util_mkdir(const char *path);
+int util_mkdir(const char *path);
 uint32_t utf8_to_ucs4(const char *&text);

@@ -1,5 +1,7 @@
 #ifdef VFS_WIN32
 
+#include "util.h"
+
 #include <libretro.h>
 
 #include <windows.h>
@@ -164,9 +166,7 @@ int RETRO_CALLCONV win32_vfs_stat(const char *path, int32_t *size) {
 }
 
 int RETRO_CALLCONV win32_vfs_mkdir(const char *dir) {
-    wchar_t dirnamew[MAX_PATH + 1];
-    if (!FileNameUTF8ToUCS(dir, dirnamew)) return -1;
-    return CreateDirectoryW(dirnamew, nullptr) ? 0 : -1;
+    return util_mkdir(dir);
 }
 
 struct retro_vfs_dir_handle *RETRO_CALLCONV win32_vfs_opendir(const char *dir, bool include_hidden) {
