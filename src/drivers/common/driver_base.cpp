@@ -71,6 +71,7 @@ driver_base::~driver_base() {
 void driver_base::set_dirs(const std::string &static_root, const std::string &config_root) {
     static_dir = static_root;
     config_dir = config_root;
+    util_mkdir(config_dir.c_str());
     system_dir = config_root + PATH_SEPARATOR_CHAR "system";
     util_mkdir(system_dir.c_str());
     save_dir = config_root + PATH_SEPARATOR_CHAR "saves";
