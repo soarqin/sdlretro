@@ -1,6 +1,11 @@
 #include "miniz.h"
 
+#if defined(USE_SDL1)
 #include <sdl1_impl.h>
+#endif
+#if defined(USE_SDL2)
+#include <sdl2_impl.h>
+#endif
 #include <core_manager.h>
 #include <ui_menu.h>
 #include <cfg.h>
@@ -22,7 +27,12 @@ int main(int argc, char *argv[]) {
     setvbuf(stdout, nullptr, _IONBF, 0);
     setvbuf(stderr, nullptr, _IONBF, 0);
 
+#if defined(USE_SDL1)
     auto impl = drivers::create_driver<drivers::sdl1_impl>();
+#endif
+#if defined(USE_SDL2)
+    auto impl = drivers::create_driver<drivers::sdl2_impl>();
+#endif
     if (!impl) {
         fprintf(stderr, "Unable to create driver!\n");
         return 1;

@@ -216,24 +216,29 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
 void driver_base::unload_game() {
     shutdown_driver = false;
     check_save_ram();
+    core->retro_unload_game();
+    audio->stop();
+    unload();
+
+    if (!temp_file.empty()) {
+        remove(temp_file.c_str());
+        temp_file.clear();
+    }
+
     game_path.clear();
     game_base_name.clear();
     game_save_path.clear();
     game_rtc_path.clear();
     save_data.clear();
     rtc_data.clear();
-    core->retro_unload_game();
-    audio->stop();
-    unload();
-    if (!temp_file.empty()) {
-        remove(temp_file.c_str());
-        temp_file.clear();
-    }
 }
 
 void driver_base::reset() {
     core->retro_reset();
 }
+
+static bool camera_start_dummy() { return false; }
+static void camera_stop_dummy() {}
 
 bool driver_base::env_callback(unsigned cmd, void *data) {
     switch (cmd) {
@@ -315,8 +320,13 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             *(uint64_t*)data = (1ULL << RETRO_DEVICE_JOYPAD) | (1ULL << RETRO_DEVICE_ANALOG);
             return true;
         case RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE:
-        case RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE:
             break;
+        case RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE: {
+            auto *cam = (retro_camera_callback*)data;
+            cam->start = &camera_start_dummy;
+            cam->stop = &camera_stop_dummy;
+            return true;
+        }
         case RETRO_ENVIRONMENT_GET_LOG_INTERFACE: {
             ((retro_log_callback*)data)->log = log_printf;
             return true;
@@ -504,9 +514,11 @@ void driver_base::check_save_ram() {
     if (sram_size) {
         void *sram = core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
         if (sram_size != save_data.size() || memcmp(sram, save_data.data(), sram_size) != 0) {
-            std::ofstream ofs(game_save_path, std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
-            ofs.write((const char*)sram, sram_size);
-            ofs.close();
+            auto *handle = libretro::vfs_interface.open(game_save_path.c_str(), RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING, 0);
+            if (handle) {
+                libretro::vfs_interface.write(handle, sram, sram_size);
+                libretro::vfs_interface.close(handle);
+            }
             save_data.assign((uint8_t*)sram, (uint8_t*)sram + sram_size);
         }
     }
@@ -514,9 +526,11 @@ void driver_base::check_save_ram() {
     if (rtc_size) {
         void *rtc = core->retro_get_memory_data(RETRO_MEMORY_RTC);
         if (rtc_size != rtc_data.size() || memcmp(rtc, rtc_data.data(), rtc_size) != 0) {
-            std::ofstream ofs(game_rtc_path, std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
-            ofs.write((const char*)rtc, rtc_size);
-            ofs.close();
+            auto *handle = libretro::vfs_interface.open(game_rtc_path.c_str(), RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING, 0);
+            if (handle) {
+                libretro::vfs_interface.write(handle, rtc, rtc_size);
+                libretro::vfs_interface.close(handle);
+            }
             rtc_data.assign((uint8_t*)rtc, (uint8_t*)rtc + rtc_size);
         }
     }

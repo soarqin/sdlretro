@@ -1,13 +1,9 @@
-#include "sdl1_menu.h"
-
-#include "sdl1_video.h"
-#include "sdl1_input.h"
+#include "sdl_menu.h"
 
 #include "driver_base.h"
+#include "video_base.h"
 
 #include "util.h"
-
-#include <SDL.h>
 
 namespace gui {
 
@@ -17,15 +13,17 @@ const int indicator_width = 8;
 const int indicator_width = 10;
 #endif
 
-void sdl1_menu::enter() {
-    auto *video = static_cast<drivers::sdl1_video*>(driver->get_video());
+void sdl_menu::enter() {
+    auto *video = driver->get_video();
 #ifdef GCW_ZERO
     line_height = 9 + line_spacing;
 #else
     line_height = 18 + line_spacing;
 #endif
-    if (menu_width == 0) menu_width = (int)video->get_width() - menu_x;
-    if (menu_height == 0) menu_height = (int)video->get_height() - menu_y;
+    int ww, wh;
+    video->get_resolution(ww, wh);
+    if (menu_width == 0) menu_width = ww - menu_x;
+    if (menu_height == 0) menu_height = wh - menu_y;
     if (!title.empty()) menu_height = menu_height - line_height - 4;
     page_size = (menu_height + line_spacing) / line_height;
 
@@ -40,12 +38,12 @@ void sdl1_menu::enter() {
     value_width = menu_x + menu_width - value_x;
 }
 
-void sdl1_menu::leave() {
+void sdl_menu::leave() {
 }
 
-void sdl1_menu::draw() {
+void sdl_menu::draw() {
     int x = menu_x + indicator_width, y = menu_y;
-    auto *video = static_cast<drivers::sdl1_video*>(driver->get_video());
+    auto *video = driver->get_video();
     video->clear();
     if (!title.empty()) {
         video->draw_text(menu_x, y, title.c_str(), 0, true);

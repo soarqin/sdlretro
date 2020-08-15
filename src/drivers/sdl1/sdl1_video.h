@@ -20,15 +20,12 @@ public:
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
-    void clear();
-    void flip();
-    /* width: 0=fullscreen -1=fullscreen allow wrap
-     *        others: negative = allow wrap */
-    void draw_text(int x, int y, const char *text, int width = 0, bool shadow = false);
-    uint32_t get_text_width(const char *text);
+    void get_resolution(int &width, int &height) override { width = curr_width; height = curr_height; }
+    void draw_text(int x, int y, const char *text, int width, bool shadow) override;
+    uint32_t get_text_width(const char *text) const override;
+    void clear() override;
+    void flip() override;
 
-    inline unsigned get_width() { return curr_width; }
-    inline unsigned get_height() { return curr_height; }
     inline sdl1_font *get_font() { return ttf.get(); }
     inline void set_force_scale(uint32_t s) { force_scale = s; }
 

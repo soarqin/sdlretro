@@ -2,7 +2,7 @@
 
 #include "cfg.h"
 
-#include "sdl1_menu.h"
+#include "sdl_menu.h"
 #include "video_base.h"
 #include "driver_base.h"
 
@@ -11,10 +11,8 @@
 
 namespace gui {
 
-using std::placeholders::_1;
-
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
-    sdl1_menu menu(driver, true);
+    sdl_menu menu(driver, true);
 
     menu.set_title("[SELECT CORE TO USE]");
 
@@ -32,7 +30,9 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
 }
 
 void ui_menu::in_game_menu() {
-    sdl1_menu menu(driver, true);
+    using std::placeholders::_1;
+
+    sdl_menu menu(driver, true);
 
     menu.set_title("[IN-GAME MENU]");
 
@@ -65,7 +65,7 @@ enum :size_t {
 };
 const uint32_t check_secs[check_secs_count] = {0, 30, 60, 300};
 bool ui_menu::global_settings_menu(const menu_item&) {
-    sdl1_menu menu(driver, false);
+    sdl_menu menu(driver, false);
 
     menu.set_title("[GLOBAL SETTINGS]");
 
@@ -100,7 +100,7 @@ bool ui_menu::core_settings_menu(const menu_item&) {
     auto *vari = driver->get_variables();
     const auto &vars = vari->get_variables();
     if (vars.empty()) return false;
-    sdl1_menu menu(driver, false);
+    sdl_menu menu(driver, false);
 
     menu.set_title("[CORE SETTINGS]");
 

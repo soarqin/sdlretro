@@ -3,9 +3,8 @@
 #include "cfg.h"
 #include "samplerate.h"
 
-#include <memory.h>
 #include <cmath>
-#include <cstdlib>
+#include <cstring>
 
 namespace drivers {
 

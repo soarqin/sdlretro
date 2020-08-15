@@ -2,8 +2,6 @@
 
 #include <SDL.h>
 
-#include <memory.h>
-
 namespace drivers {
 
 void sdl1_audio::audio_callback(void *userdata, uint8_t *stream, int len) {

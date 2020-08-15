@@ -4,7 +4,7 @@
 
 namespace gui {
 
-class sdl1_menu: public menu_base {
+class sdl_menu: public menu_base {
 public:
     using menu_base::menu_base;
 

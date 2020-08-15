@@ -1,2 +1,7 @@
 add_subdirectory(common)
-add_subdirectory(sdl1)
+if(SDLRETRO_USE_SDL1)
+    add_subdirectory(sdl1)
+endif()
+if(SDLRETRO_USE_SDL2)
+    add_subdirectory(sdl2)
+endif()

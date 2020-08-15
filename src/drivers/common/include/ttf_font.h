@@ -49,7 +49,7 @@ private:
 protected:
     const font_data *make_cache(uint16_t);
     const uint8_t *get_rect_pack_data(uint8_t idx, int16_t x, int16_t y);
-    uint16_t get_rect_pack_width();
+    static uint16_t get_rect_pack_width();
 
 protected:
     std::string ttf_filename;

@@ -167,7 +167,7 @@ inline const font_data_t &get_pixel_font_data(uint8_t c) {
 #endif
 }
 
-uint32_t sdl1_video::get_text_width(const char *text) {
+uint32_t sdl1_video::get_text_width(const char *text) const {
     uint32_t w = 0;
     if (ttf) {
         while (*text!=0) {

@@ -173,6 +173,7 @@ void ttf_font::new_rect_pack() {
 const uint8_t *ttf_font::get_rect_pack_data(uint8_t idx, int16_t x, int16_t y) {
     return &rectpack_data[idx]->pixels[y * RECTPACK_WIDTH + x];
 }
+
 uint16_t ttf_font::get_rect_pack_width() {
     return RECTPACK_WIDTH;
 }
