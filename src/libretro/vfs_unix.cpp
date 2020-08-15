@@ -41,10 +41,17 @@ struct retro_vfs_file_handle *RETRO_CALLCONV unix_vfs_open(const char *path, uns
     int flag = O_BINARY;
     if (mode & (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE)) {
         flag |= O_RDWR;
+        if (!(mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING)) {
+            flag |= O_CREAT | O_TRUNC;
+        }
     } else if (mode & RETRO_VFS_FILE_ACCESS_READ) {
         flag |= O_RDONLY;
     } else if (mode & RETRO_VFS_FILE_ACCESS_WRITE) {
-        flag |= O_WRONLY;
+        if (!(mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING)) {
+            flag |= O_WRONLY | O_CREAT | O_TRUNC;
+        } else {
+            flag |= O_RDWR;
+        }
     }
     ret->file_handle = open(path, flag);
     if (ret->file_handle < 0) {

@@ -53,9 +53,9 @@ struct retro_vfs_file_handle *RETRO_CALLCONV win32_vfs_open(const char *path, un
         access |= GENERIC_WRITE;
         share_mode &= ~FILE_SHARE_WRITE;
         if (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING)
-            creation = CREATE_ALWAYS;
+            creation = OPEN_EXISTING;
         else
-            creation = OPEN_ALWAYS;
+            creation = CREATE_ALWAYS;
     }
     ret->file_handle = CreateFileW(ret->filenamew, access, share_mode, nullptr, creation, 0, nullptr);
     if (ret->file_handle == nullptr || ret->file_handle == INVALID_HANDLE_VALUE) {

@@ -15,7 +15,6 @@
 #include <cstring>
 #include <cmath>
 #include <memory>
-#include <fstream>
 
 namespace libretro {
 extern struct retro_vfs_interface vfs_interface;
@@ -137,19 +136,27 @@ static bool RETRO_CALLCONV retro_set_rumble_state_cb(unsigned port, enum retro_r
     return false;
 }
 
-inline bool read_file(const std::string filename, std::vector<uint8_t> &data) {
-    std::ifstream ifs(filename, std::ios_base::binary | std::ios_base::in);
-    if (!ifs.good()) return false;
-    ifs.seekg(0, std::ios_base::end);
-    size_t sz = ifs.tellg();
-    if (!sz) {
-        ifs.close();
+template<typename T>
+inline bool read_file(const std::string &filename, T &data) {
+    auto *handle = libretro::vfs_interface.open(filename.c_str(), RETRO_VFS_FILE_ACCESS_READ, 0);
+    if (handle == nullptr) return false;
+    auto sz = libretro::vfs_interface.size(handle);
+    if (sz < 0) {
+        libretro::vfs_interface.close(handle);
         return false;
     }
     data.resize(sz);
-    ifs.seekg(0, std::ios_base::beg);
-    ifs.read((char *)data.data(), sz);
-    ifs.close();
+    libretro::vfs_interface.read(handle, &data[0], sz);
+    libretro::vfs_interface.close(handle);
+    return true;
+}
+
+template<typename T>
+inline bool write_file(const std::string &filename, T &data) {
+    auto *handle = libretro::vfs_interface.open(filename.c_str(), RETRO_VFS_FILE_ACCESS_WRITE, 0);
+    if (handle == nullptr) return false;
+    libretro::vfs_interface.write(handle, &data[0], data.size());
+    libretro::vfs_interface.close(handle);
     return true;
 }
 
@@ -157,16 +164,10 @@ bool driver_base::load_game(const std::string &path) {
     retro_game_info info = {};
     info.path = path.c_str();
     if (!need_fullpath) {
-        std::ifstream ifs(path, std::ios_base::binary | std::ios_base::in);
-        if (!ifs.good()) {
+        if (!read_file(path, game_data)) {
             logger(LOG_ERROR) << "Unable to load " << path << std::endl;
             return false;
         }
-        ifs.seekg(0, std::ios_base::end);
-        game_data.resize(ifs.tellg());
-        ifs.seekg(0, std::ios_base::beg);
-        ifs.read(&game_data[0], game_data.size());
-        ifs.close();
         info.data = &game_data[0];
         info.size = game_data.size();
     }
@@ -192,15 +193,11 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
         temp_file = config_dir + PATH_SEPARATOR_CHAR "tmp";
         util_mkdir(temp_file.c_str());
         temp_file = temp_file + PATH_SEPARATOR_CHAR + basename + "." + ext;
-        std::ofstream ofs(temp_file, std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
-        if (!ofs.good()) return false;
-        ofs.write((const char*)&data[0], data.size());
-        if (ofs.bad()) {
-            ofs.close();
+        if (!write_file(temp_file, data)) {
             remove(temp_file.c_str());
+            temp_file.clear();
             return false;
         }
-        ofs.close();
         info.path = temp_file.c_str();
     }
     if (!core->retro_load_game(&info)) {
