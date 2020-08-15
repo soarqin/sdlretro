@@ -1,10 +1,10 @@
 #include "core_manager.h"
 
-#include <libretro.h>
-
-#include <cstring>
+#include <util.h>
 
 #include "dlfcn_compat.h"
+
+#include <cstring>
 
 namespace libretro {
 
@@ -13,8 +13,6 @@ namespace libretro {
 #else
 #define PATH_SEPARATOR_CHAR "/"
 #endif
-
-extern struct retro_vfs_interface vfs_interface;
 
 core_manager::core_manager(const std::vector<std::string> &search_dirs) {
     core_dirs = search_dirs;

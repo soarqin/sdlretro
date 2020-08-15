@@ -1,10 +1,10 @@
 #include "cfg.h"
 
+#include <util.h>
+
 #include "json.hpp"
 
-#include <fstream>
 #include <iostream>
-#include <iomanip>
 
 cfg g_cfg;
 
@@ -20,18 +20,17 @@ inline T get_value(json &j, const std::string &key, T defval) {
 }
 
 void cfg::load() {
-    std::ifstream ifs(filename, std::ios_base::binary | std::ios_base::in);
-    if (!ifs.good()) return;
-
     json j;
     try {
-        ifs >> j;
+        std::string content;
+        if (!util_read_file(filename, content)) {
+            throw std::bad_exception();
+        }
+        j = json::parse(content);
     } catch(...) {
         std::cerr << "failed to read config from " << filename << std::endl;
-        ifs.close();
         return;
     }
-    ifs.close();
 
     if (j.is_object()) {
 #define JREAD(name, def) name = get_value<decltype(name)>(j, #name, (def))
@@ -48,9 +47,6 @@ void cfg::load() {
 }
 
 void cfg::save() {
-    std::ofstream ofs(filename, std::ios::binary | std::ios_base::out | std::ios_base::trunc);
-    if (!ofs.good()) return;
-
     json j;
 #define JWRITE(name) j[#name] = name
     JWRITE(res_w);
@@ -63,9 +59,10 @@ void cfg::save() {
     JWRITE(save_check);
 #undef JWRITE
     try {
-        ofs << std::setw(4) << j;
+        auto content = j.dump(4);
+        if (!util_write_file(filename, content))
+            throw std::bad_exception();
     } catch(...) {
         std::cerr << "failed to write config to " << filename << std::endl;
     }
-    ofs.close();
 }

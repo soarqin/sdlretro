@@ -1,12 +1,11 @@
 #include "variables.h"
 
 #include "libretro.h"
+#include "util.h"
 
 #include "json.hpp"
 
-#include <fstream>
 #include <iostream>
-#include <iomanip>
 
 namespace libretro {
 
@@ -83,18 +82,16 @@ void retro_variables::load_variables(const retro_variable *vars) {
 }
 
 void retro_variables::load_variables_from_cfg(const std::string &filename) {
-    std::ifstream ifs(filename, std::ios_base::binary | std::ios_base::in);
-    if (!ifs.good()) return;
-
     nlohmann::json j;
     try {
-        ifs >> j;
+        std::string content;
+        if (!util_read_file(filename, content))
+            throw std::bad_exception();
+        j = nlohmann::json::parse(content);
     } catch(...) {
         std::cerr << "failed to read core config from " << filename << std::endl;
-        ifs.close();
         return;
     }
-    ifs.close();
     if (!j.is_object()) return;
     for (auto &p: j.items()) {
         auto ite = variables_map.find(p.key());
@@ -114,19 +111,17 @@ void retro_variables::load_variables_from_cfg(const std::string &filename) {
 }
 
 void retro_variables::save_variables_to_cfg(const std::string &filename) {
-    std::ofstream ofs(filename, std::ios::binary | std::ios_base::out | std::ios_base::trunc);
-    if (!ofs.good()) return;
-
     nlohmann::json j;
     for (auto &var: variables) {
         j[var.name] = var.options[var.curr_index].first;
     }
     try {
-        ofs << std::setw(4) << j;
+        auto content = j.dump(4);
+        if (!util_write_file(filename, content))
+            throw std::bad_exception();
     } catch(...) {
         std::cerr << "failed to write config to " << filename << std::endl;
     }
-    ofs.close();
 }
 
 }

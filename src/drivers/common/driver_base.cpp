@@ -11,14 +11,11 @@
 
 #include <variables.h>
 #include <core.h>
+#include <util.h>
 
 #include <cstring>
 #include <cmath>
 #include <memory>
-
-namespace libretro {
-extern struct retro_vfs_interface vfs_interface;
-}
 
 namespace drivers {
 
@@ -136,35 +133,11 @@ static bool RETRO_CALLCONV retro_set_rumble_state_cb(unsigned port, enum retro_r
     return false;
 }
 
-template<typename T>
-inline bool read_file(const std::string &filename, T &data) {
-    auto *handle = libretro::vfs_interface.open(filename.c_str(), RETRO_VFS_FILE_ACCESS_READ, 0);
-    if (handle == nullptr) return false;
-    auto sz = libretro::vfs_interface.size(handle);
-    if (sz < 0) {
-        libretro::vfs_interface.close(handle);
-        return false;
-    }
-    data.resize(sz);
-    libretro::vfs_interface.read(handle, &data[0], sz);
-    libretro::vfs_interface.close(handle);
-    return true;
-}
-
-template<typename T>
-inline bool write_file(const std::string &filename, T &data) {
-    auto *handle = libretro::vfs_interface.open(filename.c_str(), RETRO_VFS_FILE_ACCESS_WRITE, 0);
-    if (handle == nullptr) return false;
-    libretro::vfs_interface.write(handle, &data[0], data.size());
-    libretro::vfs_interface.close(handle);
-    return true;
-}
-
 bool driver_base::load_game(const std::string &path) {
     retro_game_info info = {};
     info.path = path.c_str();
     if (!need_fullpath) {
-        if (!read_file(path, game_data)) {
+        if (!util_read_file(path, game_data)) {
             logger(LOG_ERROR) << "Unable to load " << path << std::endl;
             return false;
         }
@@ -193,7 +166,7 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
         temp_file = config_dir + PATH_SEPARATOR_CHAR "tmp";
         util_mkdir(temp_file.c_str());
         temp_file = temp_file + PATH_SEPARATOR_CHAR + basename + "." + ext;
-        if (!write_file(temp_file, data)) {
+        if (!util_write_file(temp_file, data)) {
             remove(temp_file.c_str());
             temp_file.clear();
             return false;
@@ -538,8 +511,8 @@ void driver_base::post_load() {
     game_save_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".sav";
     game_rtc_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".rtc";
 
-    read_file(game_save_path, save_data);
-    read_file(game_rtc_path, rtc_data);
+    util_read_file(game_save_path, save_data);
+    util_read_file(game_rtc_path, rtc_data);
 
     if (!save_data.empty()) {
         size_t sz = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
