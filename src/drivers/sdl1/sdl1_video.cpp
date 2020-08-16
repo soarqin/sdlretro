@@ -22,8 +22,8 @@ const int sdl_video_flags = SDL_SWSURFACE |
 sdl1_video::sdl1_video() {
     SDL_ShowCursor(SDL_DISABLE);
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
-    curr_bpp = 16;
-    screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
+    curr_pixel_format = 2;
+    screen = SDL_SetVideoMode(curr_width, curr_height, 16, sdl_video_flags);
     SDL_LockSurface(screen);
     screen_ptr = screen->pixels;
     /* TODO: ttf font load
@@ -37,11 +37,12 @@ sdl1_video::~sdl1_video() {
     SDL_UnlockSurface(screen);
 }
 
-bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned bpp) {
+bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
     if (g_cfg.get_scaling_mode() == 0) {
         SDL_UnlockSurface(screen);
         usleep(10000);
-        curr_bpp = bpp;
+        curr_pixel_format = pixel_format;
+        unsigned bpp = pixel_format == 1 ? 32 : 16;
         if (width != 0 && height != 0) {
             curr_width = width;
             curr_height = height;
@@ -73,11 +74,11 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
     drawn = true;
 
     if (curr_width != width || curr_height != height) {
-        resolution_changed(width, height, curr_bpp);
+        resolution_changed(width, height, curr_pixel_format);
     }
     int h = static_cast<int>(height);
     auto scale = g_cfg.get_scale();
-    auto bpp = curr_bpp;
+    unsigned bpp = curr_pixel_format == 1 ? 32 : 16;
     if (scale == 1) {
         auto *pixels = static_cast<uint8_t *>(screen_ptr);
         const auto *input = static_cast<const uint8_t *>(data);
@@ -190,6 +191,7 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool
     bool allow_wrap = false;
     int nwidth;
     int ox = x;
+    unsigned bpp = curr_pixel_format == 1 ? 32 : 16;
     if (width == 0) {
         nwidth = width = screen->w - x;
     } else if (width == -1) {
@@ -263,7 +265,7 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool
                 fontdata += step; \
             } \
         }
-        if (curr_bpp == 32) {
+        if (bpp == 32) {
             CODE_WITH_TYPE(uint32_t)
         } else {
             CODE_WITH_TYPE(uint16_t)
@@ -278,16 +280,16 @@ void sdl1_video::enter_menu() {
     usleep(10000);
     saved_width = curr_width;
     saved_height = curr_height;
-    saved_bpp = curr_bpp;
+    saved_pixel_format = curr_pixel_format;
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
-    curr_bpp = 16;
-    screen = SDL_SetVideoMode(curr_width, curr_height, curr_bpp, sdl_video_flags);
+    curr_pixel_format = 16;
+    screen = SDL_SetVideoMode(curr_width, curr_height, curr_pixel_format, sdl_video_flags);
     SDL_LockSurface(screen);
     screen_ptr = screen->pixels;
 }
 
 void sdl1_video::leave_menu() {
-    resolution_changed(saved_width, saved_height, saved_bpp);
+    resolution_changed(saved_width, saved_height, saved_pixel_format);
 }
 
 }

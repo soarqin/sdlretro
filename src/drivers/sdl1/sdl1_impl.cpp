@@ -11,7 +11,6 @@
 #include <SDL.h>
 
 #include <cstdint>
-#include <unistd.h>
 
 namespace drivers {
 
@@ -69,31 +68,6 @@ void sdl1_impl::deinit() {
 }
 
 void sdl1_impl::unload() {
-}
-
-bool sdl1_impl::run_frame(std::function<void()> &in_game_menu_cb, bool check) {
-    if (process_events()) return false;
-    if (menu_button_pressed) {
-        audio->pause(true);
-        in_game_menu_cb();
-        audio->pause(false);
-        frame_throttle->reset(fps);
-        menu_button_pressed = false;
-    }
-    if (check) {
-        int64_t usecs = 0;
-        usecs = frame_throttle->check_wait();
-        if (usecs > 0) {
-            do {
-                usleep(usecs);
-                usecs = frame_throttle->check_wait();
-            } while (usecs > 0);
-        } else {
-            video->set_skip_frame();
-        }
-    } else
-        frame_throttle->skip_check();
-    return true;
 }
 
 }

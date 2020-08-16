@@ -84,7 +84,7 @@ protected:
     virtual void unload() = 0;
 
     /* frame runner for the core */
-    virtual bool run_frame(std::function<void()> &in_game_menu_cb, bool check) = 0;
+    virtual bool run_frame(std::function<void()> &in_game_menu_cb, bool check);
 
 protected:
     /* core struct, check libretro/include/core.h */
@@ -143,6 +143,9 @@ protected:
 
     /* varaibles */
     std::unique_ptr<libretro::retro_variables> variables;
+
+    /* menu button was pressed */
+    bool menu_button_pressed = false;
 
 private:
     /* core cfg file path */

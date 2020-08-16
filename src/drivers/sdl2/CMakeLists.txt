@@ -1,5 +1,3 @@
-add_subdirectory(external/glad)
-
 find_package(SDL2 REQUIRED)
 
 add_library(driver_sdl2 STATIC
@@ -17,5 +15,5 @@ add_library(driver_sdl2 STATIC
     )
 
 target_compile_definitions(driver_sdl2 PUBLIC SDL_MAIN_HANDLED)
-target_include_directories(driver_sdl2 PUBLIC include ${SDL_INCLUDE_DIR})
-target_link_libraries(driver_sdl2 driver_common SDL2::SDL2 glad)
+target_include_directories(driver_sdl2 PUBLIC include)
+target_link_libraries(driver_sdl2 driver_common SDL2::SDL2)

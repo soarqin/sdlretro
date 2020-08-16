@@ -13,17 +13,12 @@
 #include <core.h>
 #include <util.h>
 
+#include <memory>
 #include <cstring>
 #include <cmath>
-#include <memory>
+#include <unistd.h>
 
 namespace drivers {
-
-#ifdef _WIN32
-#define PATH_SEPARATOR_CHAR "\\"
-#else
-#define PATH_SEPARATOR_CHAR "/"
-#endif
 
 inline void lowered_string(std::string &s) {
     for (char &c: s) {
@@ -237,7 +232,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             auto new_format = (unsigned)*(const enum retro_pixel_format *)data;
             if (new_format != pixel_format) {
                 pixel_format = new_format;
-                video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
+                video->resolution_changed(base_width, base_height, pixel_format);
             }
             return true;
         }
@@ -330,7 +325,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             max_width = geometry->max_width;
             max_height = geometry->max_height;
             aspect_ratio = geometry->aspect_ratio;
-            video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
+            video->resolution_changed(base_width, base_height, pixel_format);
             return true;
         }
         case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -537,11 +532,35 @@ void driver_base::post_load() {
     audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, g_cfg.get_sample_rate(), av_info.timing.fps);
     frame_throttle->reset(fps);
     core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
-    video->resolution_changed(base_width, base_height, pixel_format == RETRO_PIXEL_FORMAT_XRGB8888 ? 32 : 16);
+    video->resolution_changed(base_width, base_height, pixel_format);
 
     char library_message[256];
     snprintf(library_message, 256, "Loaded core: %s", library_name.c_str());
     video->set_message(library_message, lround(fps * 5));
+}
+
+bool driver_base::run_frame(std::function<void()> &in_game_menu_cb, bool check) {
+    if (process_events()) return false;
+    if (menu_button_pressed) {
+        audio->pause(true);
+        in_game_menu_cb();
+        audio->pause(false);
+        frame_throttle->reset(fps);
+        menu_button_pressed = false;
+    }
+    if (check) {
+        int64_t usecs = frame_throttle->check_wait();
+        if (usecs > 0) {
+            do {
+                usleep(usecs);
+                usecs = frame_throttle->check_wait();
+            } while (usecs > 0);
+        } else {
+            video->set_skip_frame();
+        }
+    } else
+        frame_throttle->skip_check();
+    return true;
 }
 
 }

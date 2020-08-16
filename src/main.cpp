@@ -7,17 +7,12 @@
 #include <sdl2_impl.h>
 #endif
 #include <core_manager.h>
+#include <util.h>
 #include <ui_menu.h>
 #include <cfg.h>
 
 #include <cstdio>
 #include <cstring>
-
-#ifdef _WIN32
-#define PATH_SEPARATOR_CHAR "\\"
-#else
-#define PATH_SEPARATOR_CHAR "/"
-#endif
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -116,7 +111,7 @@ int main(int argc, char *argv[]) {
     } else {
         impl->load_game_from_mem(argv[1], ext, unzipped_data);
     }
-    impl->run(std::bind(&gui::ui_menu::in_game_menu, &menu));
+    impl->run([&menu] { menu.in_game_menu(); });
     impl->unload_game();
 
     return 0;

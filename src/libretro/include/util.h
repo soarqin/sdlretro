@@ -9,6 +9,12 @@ namespace libretro {
 extern struct retro_vfs_interface vfs_interface;
 }
 
+#ifdef _WIN32
+#define PATH_SEPARATOR_CHAR "\\"
+#else
+#define PATH_SEPARATOR_CHAR "/"
+#endif
+
 uint64_t get_ticks_usec();
 int util_mkdir(const char *path);
 uint32_t utf8_to_ucs4(const char *&text);

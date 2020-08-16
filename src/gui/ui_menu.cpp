@@ -30,8 +30,6 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
 }
 
 void ui_menu::in_game_menu() {
-    using std::placeholders::_1;
-
     sdl_menu menu(driver, true);
 
     menu.set_title("[IN-GAME MENU]");
@@ -40,15 +38,15 @@ void ui_menu::in_game_menu() {
     const auto &vars = vari->get_variables();
     if (vars.empty()) {
         std::vector<menu_item> items = {
-            {menu_static, "Global Settings", "", 0, {}, std::bind(&ui_menu::global_settings_menu, this, _1)},
+            {menu_static, "Global Settings", "", 0, {}, [this](const menu_item &item) { return global_settings_menu(item); } },
             {menu_static, "Reset", "", 0, {}, [this](const menu_item&) { driver->reset(); return true; } },
             {menu_static, "Exit", "", 0, {}, [this](const menu_item&) { driver->shutdown(); return true; } },
         };
         menu.set_items(items);
     } else {
         std::vector<menu_item> items = {
-            {menu_static, "Global Settings", "", 0, {}, std::bind(&ui_menu::global_settings_menu, this, _1)},
-            {menu_static, "Core Settings", "", 0, {}, std::bind(&ui_menu::core_settings_menu, this, _1)},
+            {menu_static, "Global Settings", "", 0, {}, [this](const menu_item &item) { return global_settings_menu(item); } },
+            {menu_static, "Core Settings", "", 0, {}, [this](const menu_item &item) { return core_settings_menu(item); } },
             {menu_static, "Reset", "", 0, {}, [this](const menu_item&) { driver->reset(); return true; } },
             {menu_static, "Exit", "", 0, {}, [this](const menu_item&) { driver->shutdown(); return true; } },
         };

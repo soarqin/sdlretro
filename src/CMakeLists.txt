@@ -3,9 +3,10 @@ set(SDLRETRO_FRONTEND "SDL1" CACHE STRING "Select frontend (SDL1, SDL2)")
 add_subdirectory(libretro)
 add_subdirectory(drivers)
 add_subdirectory(gui)
+add_subdirectory(external)
 
-add_executable(sdlretro main.cpp miniz.c miniz.h)
-target_link_libraries(sdlretro gui)
+add_executable(sdlretro main.cpp)
+target_link_libraries(sdlretro gui miniz)
 
 if(SDLRETRO_FRONTEND STREQUAL "SDL1")
     target_compile_definitions(sdlretro PRIVATE SDLRETRO_FRONTEND=1)
