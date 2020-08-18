@@ -46,10 +46,10 @@ private:
     SDL_Window *window = nullptr;
     SDL_Renderer *renderer = nullptr;
     SDL_Texture *texture = nullptr;
-    void *screen_ptr = nullptr;
 
     uint32_t curr_width = 0, curr_height = 0;
     uint32_t game_pitch = 0, game_height = 0, game_pixel_format = 0;
+    std::array<int, 4> display_rect = {};
 
     std::shared_ptr<sdl2_font> ttf;
 

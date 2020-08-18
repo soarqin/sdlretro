@@ -39,11 +39,13 @@ public:
         }
     }
     inline void set_skip_frame() { skip_frame = true; }
+    inline void set_aspect_ratio(float ratio) { aspect_ratio = ratio; }
 
 protected:
     bool skip_frame = false;
     std::string message_text;
     unsigned message_frames = 0;
+    float aspect_ratio = 0.f;
 };
 
 }

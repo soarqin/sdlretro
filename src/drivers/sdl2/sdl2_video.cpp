@@ -57,6 +57,19 @@ void sdl2_video::render(const void *data, unsigned width, unsigned height, size_
         if (texture) SDL_DestroyTexture(texture);
         game_height = height;
         game_pitch = pitch_in_pixel;
+        float ratio;
+        if (aspect_ratio <= 0.f) {
+            ratio = (float)width / (float)height;
+        } else {
+            ratio = aspect_ratio;
+        }
+        auto expected_width = (int)std::lround(ratio * (float)curr_height);
+        if (expected_width > curr_width) {
+            auto expected_height = (int)std::lround((float)curr_width / ratio);
+            display_rect = {0, ((int)curr_height - expected_height) / 2, (int)curr_width, expected_height};
+        } else {
+            display_rect = {((int)curr_width - expected_width) / 2, 0, expected_width, (int)curr_height};
+        }
         switch (game_pixel_format) {
         case 0:
             texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
@@ -74,8 +87,9 @@ void sdl2_video::render(const void *data, unsigned width, unsigned height, size_
     SDL_LockTexture(texture, nullptr, &pixels, &lock_pitch);
     memcpy(pixels, data, pitch * height);
     SDL_Rect rc {0, 0, (int)width, (int)height};
+    SDL_Rect target_rc {display_rect[0], display_rect[1], display_rect[2], display_rect[3]};
     SDL_UnlockTexture(texture);
-    SDL_RenderCopy(renderer, texture, &rc, nullptr);
+    SDL_RenderCopy(renderer, texture, &rc, &target_rc);
     SDL_RenderPresent(renderer);
 }
 

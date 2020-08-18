@@ -327,6 +327,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             max_width = geometry->max_width;
             max_height = geometry->max_height;
             aspect_ratio = geometry->aspect_ratio;
+            video->set_aspect_ratio(aspect_ratio);
             video->resolution_changed(base_width, base_height, pixel_format);
             return true;
         }
