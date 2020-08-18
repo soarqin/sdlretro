@@ -1,6 +1,5 @@
 #include "driver_base.h"
 
-#include "logger.h"
 #include "cfg.h"
 
 #include "video_base.h"
@@ -12,8 +11,11 @@
 #include <core.h>
 #include <util.h>
 
+#include <spdlog/spdlog.h>
+
 #include <memory>
 #include <cstring>
+#include <cstdarg>
 #include <cmath>
 #include <unistd.h>
 
@@ -43,6 +45,7 @@ inline std::string get_base_name(const std::string &path) {
 driver_base *current_driver = nullptr;
 
 driver_base::driver_base() {
+    spdlog::set_pattern("[%m-%d %H:%M:%S %L] %v");
     frame_throttle = std::make_shared<throttle>();
     variables = std::make_unique<libretro::retro_variables>();
 }
@@ -89,15 +92,32 @@ bool RETRO_CALLCONV retro_environment_cb(unsigned cmd, void *data) {
     return current_driver->env_callback(cmd, data);
 }
 
+static spdlog::level::level_enum log_level_convert(retro_log_level level) {
+    switch(level) {
+    case RETRO_LOG_DEBUG:
+        return spdlog::level::debug;
+    case RETRO_LOG_INFO:
+        return spdlog::level::info;
+    case RETRO_LOG_WARN:
+        return spdlog::level::warn;
+    case RETRO_LOG_ERROR:
+        return spdlog::level::err;
+    default:
+        return spdlog::level::trace;
+    }
+}
+
 void RETRO_CALLCONV log_printf(enum retro_log_level level, const char *fmt, ...) {
 #if defined(NDEBUG) || !defined(LIBRETRO_DEBUG_LOG)
     if (level >= RETRO_LOG_DEBUG)
         return;
 #endif
+    char s[1024];
     va_list l;
     va_start(l, fmt);
-    log_vprintf((int)level, fmt, l);
+    vsnprintf(s, 1024, fmt, l);
     va_end(l);
+    spdlog::log(log_level_convert(level), "{}", s);
 }
 
 static void RETRO_CALLCONV retro_video_refresh_cb(const void *data, unsigned width, unsigned height, size_t pitch) {
@@ -135,14 +155,14 @@ bool driver_base::load_game(const std::string &path) {
     info.path = path.c_str();
     if (!need_fullpath) {
         if (!util_read_file(path, game_data)) {
-            logger(LOG_ERROR) << "Unable to load " << path << std::endl;
+            spdlog::error("Unable to load {}", path);
             return false;
         }
         info.data = &game_data[0];
         info.size = game_data.size();
     }
     if (!core->retro_load_game(&info)) {
-        logger(LOG_ERROR) << "Unable to load " << path << std::endl;
+        spdlog::error("Unable to load {}", path);
         return false;
     }
 
@@ -171,7 +191,7 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
         info.path = temp_file.c_str();
     }
     if (!core->retro_load_game(&info)) {
-        logger(LOG_ERROR) << "Unable to load " << path << std::endl;
+        spdlog::error("Unable to load {}", path);
         return false;
     }
 
@@ -394,9 +414,9 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             break;
     }
     if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) {
-        logger(LOG_INFO) << "Unhandled env: " << (cmd & 0xFFFFU) << "(EXPERIMENTAL)" << std::endl;
+        spdlog::info("Unhandled env: {0:x} (EXPERIMENTAL)", (cmd & 0xFFFFU));
     } else {
-        logger(LOG_INFO) << "Unhandled env: " << cmd << std::endl;
+        spdlog::info("Unhandled env: {0:x}", (cmd & 0xFFFFU));
     }
     return false;
 }

@@ -1,7 +1,6 @@
 find_package(Freetype REQUIRED)
 
-add_subdirectory(external/libsamplerate)
-add_subdirectory(external/stb)
+add_subdirectory(external)
 
 add_library(driver_common STATIC
     # driver files
@@ -17,12 +16,8 @@ add_library(driver_common STATIC
     include/throttle.h
     include/ttf_font.h
     include/video_base.h
-
-    # logger
-    logger.cpp
-    include/logger.h
     )
 
 target_include_directories(driver_common PRIVATE external ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(driver_common PUBLIC include)
-target_link_libraries(driver_common libretro ${FREETYPE_LIBRARIES} samplerate stb)
+target_link_libraries(driver_common libretro ${FREETYPE_LIBRARIES} samplerate stb spdlog::spdlog)

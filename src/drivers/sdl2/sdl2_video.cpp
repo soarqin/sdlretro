@@ -2,21 +2,25 @@
 
 #include "cfg.h"
 
+#include <spdlog/spdlog.h>
+
 #include <SDL.h>
 
 namespace drivers {
 
 sdl2_video::sdl2_video() {
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
-
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
     window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              curr_width, curr_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+                              curr_width, curr_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (renderer == nullptr) {
+        /* fallback to software renderer */
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+    }
+    SDL_RendererInfo info = {};
+    SDL_GetRendererInfo(renderer, &info);
+    spdlog::info("SDL2 Driver: {}", info.name);
 }
 
 sdl2_video::~sdl2_video() {

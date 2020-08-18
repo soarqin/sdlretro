@@ -33,7 +33,6 @@ public:
     uint32_t get_text_width(const char *text) const override;
 
     inline sdl2_font *get_font() { return ttf.get(); }
-    inline void set_force_scale(uint32_t s) { force_scale = s; }
 
 private:
     void draw_text_pixel(int x, int y, const char *text, int width, bool shadow);
@@ -52,9 +51,6 @@ private:
     std::array<int, 4> display_rect = {};
 
     std::shared_ptr<sdl2_font> ttf;
-
-    /* override global scale cfg */
-    uint32_t force_scale = 1;
 
     /* indicate wheather frame was drawn, for auto frameskip use */
     bool drawn = false;
