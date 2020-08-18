@@ -47,7 +47,12 @@ private:
     void new_rect_pack();
 
 protected:
-    const font_data *make_cache(uint16_t);
+    inline const font_data *get_cache(uint16_t ch) {
+        auto ite = font_cache.find(ch);
+        if (ite != font_cache.end()) return &ite->second;
+        return make_cache(ch);
+    }
+    virtual const font_data *make_cache(uint16_t);
     const uint8_t *get_rect_pack_data(uint8_t idx, int16_t x, int16_t y);
     static uint16_t get_rect_pack_width();
 

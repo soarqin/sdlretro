@@ -14,13 +14,13 @@
 namespace drivers {
 
 enum :uint16_t {
-    RECTPACK_WIDTH = 1024
+    TTF_RECTPACK_WIDTH = 1024
 };
 
 struct rect_pack_data {
     stbrp_context context;
-    stbrp_node nodes[RECTPACK_WIDTH];
-    uint8_t pixels[RECTPACK_WIDTH * RECTPACK_WIDTH];
+    stbrp_node nodes[TTF_RECTPACK_WIDTH];
+    uint8_t pixels[TTF_RECTPACK_WIDTH * TTF_RECTPACK_WIDTH];
 };
 
 ttf_font::ttf_font() {
@@ -150,13 +150,13 @@ const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {
     fd->rpidx = rpidx;
 
 #ifdef USE_STB_TRUETYPE
-    stbtt_MakeGlyphBitmapSubpixel(info, &rpd->pixels[rc.y * RECTPACK_WIDTH + rc.x], fd->w, fd->h, RECTPACK_WIDTH, fi->font_scale, fi->font_scale, 3, 3, index);
+    stbtt_MakeGlyphBitmapSubpixel(info, &rpd->pixels[rc.y * TTF_RECTPACK_WIDTH + rc.x], fd->w, fd->h, TTF_RECTPACK_WIDTH, fi->font_scale, fi->font_scale, 3, 3, index);
 #else
-    auto *dst_ptr = &rpd->pixels[rc.y * RECTPACK_WIDTH + rc.x];
+    auto *dst_ptr = &rpd->pixels[rc.y * TTF_RECTPACK_WIDTH + rc.x];
     for (int k = 0; k < fd->h; ++k) {
         memcpy(dst_ptr, src_ptr, fd->w);
         src_ptr += bitmap_pitch;
-        dst_ptr += RECTPACK_WIDTH;
+        dst_ptr += TTF_RECTPACK_WIDTH;
     }
 #endif
     return fd;
@@ -164,16 +164,16 @@ const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {
 
 void ttf_font::new_rect_pack() {
     auto *rpd = new rect_pack_data;
-    stbrp_init_target(&rpd->context, RECTPACK_WIDTH, RECTPACK_WIDTH, rpd->nodes, RECTPACK_WIDTH);
+    stbrp_init_target(&rpd->context, TTF_RECTPACK_WIDTH, TTF_RECTPACK_WIDTH, rpd->nodes, TTF_RECTPACK_WIDTH);
     rectpack_data.push_back(rpd);
 }
 
 const uint8_t *ttf_font::get_rect_pack_data(uint8_t idx, int16_t x, int16_t y) {
-    return &rectpack_data[idx]->pixels[y * RECTPACK_WIDTH + x];
+    return &rectpack_data[idx]->pixels[y * TTF_RECTPACK_WIDTH + x];
 }
 
 uint16_t ttf_font::get_rect_pack_width() {
-    return RECTPACK_WIDTH;
+    return TTF_RECTPACK_WIDTH;
 }
 
 }

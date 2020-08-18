@@ -28,9 +28,6 @@ public:
     /* construct with shared object file path for driver core */
     virtual ~driver_base();
 
-    /* set static root folder and config root folder */
-    void set_dirs(const std::string &static_root, const std::string &config_root);
-
     /* enter core main loop */
     void run(std::function<void()> in_game_menu_cb);
 
@@ -89,11 +86,6 @@ protected:
 protected:
     /* core struct, check libretro/include/core.h */
     retro_core_t *core = nullptr;
-
-    /* static directory, readonly directory, should not write any file into it */
-    std::string static_dir;
-    /* config directory, writable directory for save user data */
-    std::string config_dir;
 
     /* various directories, as described in libretro env def */
     std::string system_dir; /* `static_dir`/system */

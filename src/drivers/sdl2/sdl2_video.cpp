@@ -1,5 +1,7 @@
 #include "sdl2_video.h"
 
+#include "sdl2_ttf.h"
+
 #include "cfg.h"
 
 #include <spdlog/spdlog.h>
@@ -21,9 +23,14 @@ sdl2_video::sdl2_video() {
     SDL_RendererInfo info = {};
     SDL_GetRendererInfo(renderer, &info);
     spdlog::info("SDL2 Driver: {}", info.name);
+
+    ttf = std::make_shared<sdl2_ttf>(renderer);
+    ttf->init(16, 0);
+    ttf->add("font.ttf", 0);
 }
 
 sdl2_video::~sdl2_video() {
+    if (texture) SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 }
@@ -79,7 +86,7 @@ void sdl2_video::render(const void *data, unsigned width, unsigned height, size_
             texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
             break;
         case 1:
-            texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
+            texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
             break;
         default:
             texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
@@ -93,6 +100,7 @@ void sdl2_video::render(const void *data, unsigned width, unsigned height, size_
     SDL_Rect rc {0, 0, (int)width, (int)height};
     SDL_Rect target_rc {display_rect[0], display_rect[1], display_rect[2], display_rect[3]};
     SDL_UnlockTexture(texture);
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
     SDL_RenderCopy(renderer, texture, &rc, &target_rc);
     SDL_RenderPresent(renderer);
 }
@@ -115,18 +123,6 @@ void sdl2_video::draw_text(int x, int y, const char *text, int width, bool shado
 
 uint32_t sdl2_video::get_text_width(const char *text) const {
     return 0;
-}
-
-void sdl2_video::draw_text_pixel(int x, int y, const char *text, int width, bool shadow) {
-
-}
-
-void sdl2_video::enter_menu() {
-
-}
-
-void sdl2_video::leave_menu() {
-
 }
 
 }

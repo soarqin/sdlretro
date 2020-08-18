@@ -282,7 +282,7 @@ void sdl1_video::enter_menu() {
     saved_height = curr_height;
     saved_pixel_format = curr_pixel_format;
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
-    curr_pixel_format = 16;
+    curr_pixel_format = 2;
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_pixel_format, sdl_video_flags);
     SDL_LockSurface(screen);
     screen_ptr = screen->pixels;

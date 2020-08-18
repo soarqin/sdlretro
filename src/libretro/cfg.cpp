@@ -5,10 +5,45 @@
 #include "json.hpp"
 
 #include <iostream>
+#include <cstdlib>
 
 cfg g_cfg;
 
 using json = nlohmann::json;
+#ifdef _WIN32
+#define realpath(r, f) _fullpath(f, r, PATH_MAX)
+#endif
+
+void cfg::set_data_dir(const std::string &dir) {
+    char n[PATH_MAX];
+    if (realpath(dir.c_str(), n) == nullptr)
+        data_dir = dir;
+    else
+        data_dir = n;
+}
+void cfg::set_config_dir(const std::string &dir) {
+    char n[PATH_MAX];
+    if (realpath(dir.c_str(), n) == nullptr)
+        config_dir = dir;
+    else
+        config_dir = n;
+}
+void cfg::set_extra_core_dirs(const std::vector<std::string> &dirs) {
+    core_dirs.clear();
+    for (const auto &d: dirs) {
+        char n[PATH_MAX];
+        if (realpath(d.c_str(), n) != nullptr)
+            core_dirs.emplace_back(n);
+    }
+}
+
+void cfg::get_core_dirs(std::vector<std::string> &dirs) const {
+    dirs = core_dirs;
+    auto ite = std::find(dirs.begin(), dirs.end(), data_dir);
+    if (ite == core_dirs.end()) dirs.push_back(data_dir);
+    ite = std::find(dirs.begin(), dirs.end(), config_dir);
+    if (ite == core_dirs.end()) dirs.push_back(config_dir);
+}
 
 template<typename T>
 inline T get_value(json &j, const std::string &key, T defval) {
@@ -21,6 +56,7 @@ inline T get_value(json &j, const std::string &key, T defval) {
 
 void cfg::load() {
     json j;
+    auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
     try {
         std::string content;
         if (!util_read_file(filename, content)) {
@@ -58,6 +94,7 @@ void cfg::save() {
     JWRITE(scale);
     JWRITE(save_check);
 #undef JWRITE
+    auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
     try {
         auto content = j.dump(4);
         if (!util_write_file(filename, content))

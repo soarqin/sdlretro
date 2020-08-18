@@ -1,5 +1,7 @@
 #include "core_manager.h"
 
+#include "cfg.h"
+
 #include <util.h>
 
 #include "dlfcn_compat.h"
@@ -8,8 +10,8 @@
 
 namespace libretro {
 
-core_manager::core_manager(const std::vector<std::string> &search_dirs) {
-    core_dirs = search_dirs;
+core_manager::core_manager() {
+    g_cfg.get_core_dirs(core_dirs);
     for (auto &d: core_dirs) {
         d += PATH_SEPARATOR_CHAR "cores";
     }

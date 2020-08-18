@@ -12,7 +12,7 @@ typedef struct SDL_Texture SDL_Texture;
 
 namespace drivers {
 
-class sdl2_font;
+class sdl2_ttf;
 
 class sdl2_video: public video_base {
 public:
@@ -32,14 +32,7 @@ public:
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
     uint32_t get_text_width(const char *text) const override;
 
-    inline sdl2_font *get_font() { return ttf.get(); }
-
-private:
-    void draw_text_pixel(int x, int y, const char *text, int width, bool shadow);
-
-public:
-    void enter_menu() override;
-    void leave_menu() override;
+    inline sdl2_ttf *get_ttf() { return ttf.get(); }
 
 private:
     SDL_Window *window = nullptr;
@@ -50,7 +43,7 @@ private:
     uint32_t game_pitch = 0, game_height = 0, game_pixel_format = 0;
     std::array<int, 4> display_rect = {};
 
-    std::shared_ptr<sdl2_font> ttf;
+    std::shared_ptr<sdl2_ttf> ttf;
 
     /* indicate wheather frame was drawn, for auto frameskip use */
     bool drawn = false;

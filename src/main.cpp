@@ -22,6 +22,17 @@ int main(int argc, char *argv[]) {
     setvbuf(stdout, nullptr, _IONBF, 0);
     setvbuf(stderr, nullptr, _IONBF, 0);
 
+#ifdef GCW_ZERO
+    g_cfg.set_data_dir(".");
+    g_cfg.set_config_dir("/usr/local/home/.sdlretro");
+
+#else
+    g_cfg.set_data_dir(".");
+    g_cfg.set_config_dir(".");
+#endif
+
+    libretro::core_manager coreman;
+
 #if SDLRETRO_FRONTEND == 1
     auto impl = drivers::create_driver<drivers::sdl1_impl>();
 #endif
@@ -33,20 +44,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-#ifdef GCW_ZERO
-    const std::string static_root(".");
-    const std::string config_root("/usr/local/home/.sdlretro");
-    libretro::core_manager coreman({static_root, config_root});
-#else
-    const std::string static_root(".");
-    const std::string config_root(".");
-    libretro::core_manager coreman({static_root});
-#endif
-
-    g_cfg.set_filename(config_root + PATH_SEPARATOR_CHAR + "sdlretro.json");
     g_cfg.load();
 
-    impl->set_dirs(static_root, config_root);
     gui::ui_menu menu(impl);
 
     const char *ptr = strrchr(argv[1], '.');

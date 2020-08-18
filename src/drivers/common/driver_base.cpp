@@ -48,6 +48,12 @@ driver_base::driver_base() {
     spdlog::set_pattern("[%m-%d %H:%M:%S %L] %v");
     frame_throttle = std::make_shared<throttle>();
     variables = std::make_unique<libretro::retro_variables>();
+
+    util_mkdir(g_cfg.get_config_dir().c_str());
+    system_dir = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR "system";
+    util_mkdir(system_dir.c_str());
+    save_dir = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR "saves";
+    util_mkdir(save_dir.c_str());
 }
 
 driver_base::~driver_base() {
@@ -59,16 +65,6 @@ driver_base::~driver_base() {
     }
 
     current_driver = nullptr;
-}
-
-void driver_base::set_dirs(const std::string &static_root, const std::string &config_root) {
-    static_dir = static_root;
-    config_dir = config_root;
-    util_mkdir(config_dir.c_str());
-    system_dir = config_root + PATH_SEPARATOR_CHAR "system";
-    util_mkdir(system_dir.c_str());
-    save_dir = config_root + PATH_SEPARATOR_CHAR "saves";
-    util_mkdir(save_dir.c_str());
 }
 
 void driver_base::run(std::function<void()> in_game_menu_cb) {
@@ -180,7 +176,7 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
         info.size = game_data.size();
     } else {
         std::string basename = get_base_name(path);
-        temp_file = config_dir + PATH_SEPARATOR_CHAR "tmp";
+        temp_file = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR "tmp";
         util_mkdir(temp_file.c_str());
         temp_file = temp_file + PATH_SEPARATOR_CHAR + basename + "." + ext;
         if (!util_write_file(temp_file, data)) {
@@ -431,7 +427,7 @@ bool driver_base::load_core(const std::string &path) {
 
     current_driver = this;
 
-    core_cfg_path = config_dir + PATH_SEPARATOR_CHAR + "cfg";
+    core_cfg_path = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "cfg";
     util_mkdir(core_cfg_path.c_str());
     retro_system_info sysinfo = {};
     core->retro_get_system_info(&sysinfo);

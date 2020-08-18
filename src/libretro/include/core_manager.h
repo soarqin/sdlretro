@@ -15,7 +15,7 @@ struct core_info {
 
 class core_manager final {
 public:
-    explicit core_manager(const std::vector<std::string> &search_dirs);
+    explicit core_manager();
     ~core_manager() = default;
 
     /* match libretro cores by rom file extention */

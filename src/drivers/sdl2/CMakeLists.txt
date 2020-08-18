@@ -10,8 +10,8 @@ add_library(driver_sdl2 STATIC
     sdl2_video.h
     sdl2_audio.cpp
     sdl2_audio.h
-    #sdl2_font.cpp
-    #sdl2_font.h
+    sdl2_ttf.cpp
+    sdl2_ttf.h
     )
 
 target_compile_definitions(driver_sdl2 PUBLIC SDL_MAIN_HANDLED)
