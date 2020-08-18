@@ -35,6 +35,7 @@ bool menu_base::enter_menu_loop() {
     if (topmenu) {
         driver->get_video()->leave_menu();
     }
+    leave_menu_loop();
     return ok_pressed;
 }
 

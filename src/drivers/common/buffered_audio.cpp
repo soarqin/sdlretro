@@ -9,7 +9,6 @@
 namespace drivers {
 
 enum :size_t {
-    input_buffer_size = 2048,
     output_buffer_size = 2048,
     resampler_cache_size = 65536,
 };

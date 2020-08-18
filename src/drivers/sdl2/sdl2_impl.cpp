@@ -6,8 +6,6 @@
 #include "throttle.h"
 
 #include <SDL.h>
-#include <cstdint>
-#include <unistd.h>
 
 namespace drivers {
 

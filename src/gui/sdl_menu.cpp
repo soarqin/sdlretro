@@ -3,8 +3,6 @@
 #include "driver_base.h"
 #include "video_base.h"
 
-#include "util.h"
-
 namespace gui {
 
 #ifdef GCW_ZERO
@@ -27,9 +25,9 @@ void sdl_menu::enter() {
     if (!title.empty()) menu_height = menu_height - line_height - 4;
     page_size = (menu_height + line_spacing) / line_height;
 
-    unsigned maxwidth = 0;
+    int maxwidth = 0;
     for (auto &item: items) {
-        uint32_t w = video->get_text_width(item.text.c_str());
+        int w = video->get_text_width(item.text.c_str());
         if (w > maxwidth) maxwidth = w;
     }
     if (item_width == 0 || item_width > maxwidth)

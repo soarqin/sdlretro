@@ -11,8 +11,6 @@
 #include FT_FREETYPE_H
 #endif
 
-#include <climits>
-
 namespace drivers {
 
 enum :uint16_t {
@@ -88,8 +86,8 @@ const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {
     font_info *fi = nullptr;
 #ifdef USE_STB_TRUETYPE
     stbtt_fontinfo *info;
-#endif
     uint32_t index = 0;
+#endif
     for (auto &f: fonts) {
         fi = &f;
 #ifdef USE_STB_TRUETYPE
@@ -97,7 +95,7 @@ const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {
         index = stbtt_FindGlyphIndex(info, ch);
         if (index == 0) continue;
 #else
-        index = FT_Get_Char_Index(f.face, ch);
+        auto index = FT_Get_Char_Index(f.face, ch);
         if (index == 0) continue;
         if (!FT_Load_Glyph(f.face, index, FT_LOAD_DEFAULT)) break;
 #endif

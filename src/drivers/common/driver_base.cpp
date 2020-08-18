@@ -7,7 +7,6 @@
 #include "buffered_audio.h"
 #include "input_base.h"
 #include "throttle.h"
-#include "util.h"
 
 #include <variables.h>
 #include <core.h>
@@ -25,7 +24,7 @@ inline void lowered_string(std::string &s) {
         if (c <= ' ' || c == '\\' || c == '/' || c == ':' || c == '*' || c == '"' || c == '<' || c == '>' || c == '|')
             c = '_';
         else
-            c = std::tolower(c);
+            c = (char)std::tolower(c);
     }
 }
 
@@ -125,6 +124,9 @@ static int16_t RETRO_CALLCONV retro_input_state_cb(unsigned port, unsigned devic
 }
 
 static bool RETRO_CALLCONV retro_set_rumble_state_cb(unsigned port, enum retro_rumble_effect effect, uint16_t strength) {
+    (void)port;
+    (void)effect;
+    (void)strength;
     return false;
 }
 
@@ -149,7 +151,7 @@ bool driver_base::load_game(const std::string &path) {
     return true;
 }
 
-bool driver_base::load_game_from_mem(const std::string &path, const std::string ext, const std::vector<uint8_t> &data) {
+bool driver_base::load_game_from_mem(const std::string &path, const std::string &ext, const std::vector<uint8_t> &data) {
     retro_game_info info = {};
     if (!need_fullpath) {
         game_data.assign(data.begin(), data.end());

@@ -41,7 +41,7 @@ public:
     bool load_game(const std::string &path);
 
     /* load game from memory, use temp file if mem load is not supported */
-    bool load_game_from_mem(const std::string &path, const std::string ext, const std::vector<uint8_t> &data);
+    bool load_game_from_mem(const std::string &path, const std::string &ext, const std::vector<uint8_t> &data);
 
     /* unload game */
     void unload_game();
@@ -53,7 +53,7 @@ public:
     bool env_callback(unsigned cmd, void *data);
     void save_variables_to_cfg();
 
-    inline const std::string &get_system_dir() { return system_dir; }
+    inline const std::string &get_system_dir() const { return system_dir; }
     inline throttle *get_frame_throttle() { return frame_throttle.get(); }
     inline video_base *get_video() { return video.get(); }
     inline buffered_audio *get_audio() { return audio.get(); }

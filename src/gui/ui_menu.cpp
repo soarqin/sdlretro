@@ -3,7 +3,6 @@
 #include "cfg.h"
 
 #include "sdl_menu.h"
-#include "video_base.h"
 #include "driver_base.h"
 
 #include "variables.h"
@@ -22,7 +21,7 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
         items.emplace_back(mi);
     }
     menu.set_items(items);
-    uint32_t w, h;
+    int w, h;
     std::tie(w, h) = g_cfg.get_resolution();
     menu.set_rect(50, 50, w - 100, h - 100);
     if (!menu.enter_menu_loop()) return -1;
@@ -52,7 +51,7 @@ void ui_menu::in_game_menu() {
         };
         menu.set_items(items);
     }
-    uint32_t w, h;
+    int w, h;
     std::tie(w, h) = g_cfg.get_resolution();
     menu.set_rect(50, 50, w - 100, h - 100);
     menu.enter_menu_loop();
@@ -84,7 +83,7 @@ bool ui_menu::global_settings_menu(const menu_item&) {
         },
     };
     menu.set_items(items);
-    uint32_t w, h;
+    int w, h;
     std::tie(w, h) = g_cfg.get_resolution();
     auto border = w / 16;
     menu.set_rect(border, border, w - border * 2, h - border * 2);
@@ -114,7 +113,7 @@ bool ui_menu::core_settings_menu(const menu_item&) {
         items.emplace_back(item);
     }
     menu.set_items(items);
-    uint32_t w, h;
+    int w, h;
     std::tie(w, h) = g_cfg.get_resolution();
     auto border = w / 16;
     menu.set_rect(border, border, w - border * 2, h - border * 2);

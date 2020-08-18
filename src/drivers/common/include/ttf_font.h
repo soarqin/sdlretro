@@ -61,7 +61,7 @@ protected:
 private:
     std::vector<rect_pack_data*> rectpack_data;
 #ifndef USE_STB_TRUETYPE
-    FT_Library ft_lib;
+    FT_Library ft_lib = {};
 #endif
 };
 

@@ -95,7 +95,7 @@ void sdl2_video::draw_text(int x, int y, const char *text, int width, bool shado
 
 }
 
-uint32_t sdl2_video::get_text_width(const char *text) {
+uint32_t sdl2_video::get_text_width(const char *text) const {
     return 0;
 }
 
