@@ -43,4 +43,8 @@ const ttf_font::font_data *sdl2_ttf::make_cache(uint16_t ch) {
     return fd;
 }
 
+void sdl2_ttf::render(int x, int y, const char *text, int width, bool shadow) {
+
+}
+
 }

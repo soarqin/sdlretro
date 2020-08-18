@@ -14,6 +14,8 @@ public:
     inline explicit sdl2_ttf(SDL_Renderer *r): renderer(r) {}
     ~sdl2_ttf() override;
 
+    void render(int x, int y, const char *text, int width = 0, bool shadow = false);
+
 protected:
     const font_data *make_cache(uint16_t) override;
 
