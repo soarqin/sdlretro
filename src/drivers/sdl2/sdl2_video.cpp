@@ -110,12 +110,13 @@ void sdl2_video::render(const void *data, unsigned width, unsigned height, size_
     }
     void *pixels;
     int lock_pitch;
-    SDL_LockTexture(texture, nullptr, &pixels, &lock_pitch);
-    memcpy(pixels, data, pitch * height);
-    SDL_Rect rc {0, 0, (int)width, (int)height};
-    SDL_Rect target_rc {display_rect[0], display_rect[1], display_rect[2], display_rect[3]};
-    SDL_UnlockTexture(texture);
-    SDL_RenderCopy(renderer, texture, &rc, &target_rc);
+    if (SDL_LockTexture(texture, nullptr, &pixels, &lock_pitch) == 0) {
+        memcpy(pixels, data, pitch * height);
+        SDL_Rect rc{0, 0, (int)width, (int)height};
+        SDL_Rect target_rc{display_rect[0], display_rect[1], display_rect[2], display_rect[3]};
+        SDL_UnlockTexture(texture);
+        SDL_RenderCopy(renderer, texture, &rc, &target_rc);
+    }
     SDL_RenderPresent(renderer);
 }
 
@@ -132,7 +133,9 @@ void sdl2_video::flip() {
 }
 
 void sdl2_video::draw_text(int x, int y, const char *text, int width, bool shadow) {
-    ttf->render(x, y, text, width, shadow);
+    if (width == 0) width = (int)curr_width - x;
+    else if (width < 0) width = x - (int)curr_width;
+    ttf->render(x, y, text, width, (int)curr_height - y, shadow);
 }
 
 uint32_t sdl2_video::get_text_width(const char *text) const {
