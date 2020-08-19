@@ -72,7 +72,8 @@ void sdl2_ttf::render(int x, int y, const char *text, int width, int height, boo
             if (fd->advW == 0) continue;
         }
 
-        if (fd->w > nwidth) {
+        int cwidth = mono_width ? std::max(fd->w, mono_width) : fd->w;
+        if (cwidth > nwidth) {
             if (!allow_wrap) break;
             x = ox;
             nwidth = width;

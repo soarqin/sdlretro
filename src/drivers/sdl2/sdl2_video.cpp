@@ -140,12 +140,12 @@ void sdl2_video::draw_text(int x, int y, const char *text, int width, bool shado
 
 uint32_t sdl2_video::get_text_width(const char *text) const {
     uint32_t w = 0;
-    while (*text!=0) {
+    while (*text != 0) {
         uint32_t ch = utf8_to_ucs4(text);
-        if (ch==0 || ch > 0xFFFFu) continue;
+        if (ch == 0 || ch > 0xFFFFu) continue;
         w += ttf->get_char_width(ch);
     }
-    return 0;
+    return w;
 }
 
 }

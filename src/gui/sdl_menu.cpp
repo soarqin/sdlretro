@@ -37,6 +37,7 @@ void sdl_menu::enter() {
 }
 
 void sdl_menu::leave() {
+    driver->get_video()->clear();
 }
 
 void sdl_menu::draw() {
