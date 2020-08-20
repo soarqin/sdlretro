@@ -26,8 +26,9 @@ public:
 
     inline const std::string &get_data_dir() const { return data_dir; }
     void set_data_dir(const std::string &dir);
+    inline const std::string &get_store_dir() const { return store_dir; }
+    void set_store_dir(const std::string &dir);
     inline const std::string &get_config_dir() const { return config_dir; }
-    void set_config_dir(const std::string &dir);
     void get_core_dirs(std::vector<std::string> &dirs) const;
     void set_extra_core_dirs(const std::vector<std::string> &dirs);
     inline std::pair<uint32_t, uint32_t> get_resolution() { return std::make_pair(res_w, res_h); }
@@ -54,6 +55,8 @@ public:
 protected:
     /* dir of static data */
     std::string data_dir;
+    /* dir of dynamic data */
+    std::string store_dir;
     /* dir of config files */
     std::string config_dir;
     /* extra dirs of libretro cores
@@ -80,7 +83,7 @@ protected:
     /* scaling mode
      * 0  IPU scaling
      * 1  Screen center */
-    uint32_t scaling_mode;
+    uint32_t scaling_mode = 0;
     /* basic integer scaler */
     uint32_t scale = DEFAULT_SCALE;
 

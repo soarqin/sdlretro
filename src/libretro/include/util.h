@@ -16,7 +16,8 @@ extern struct retro_vfs_interface vfs_interface;
 #endif
 
 uint64_t get_ticks_usec();
-int util_mkdir(const char *path);
+int util_mkdir(const std::string &path, bool recursive = false);
+bool util_file_exists(const std::string &path);
 uint32_t utf8_to_ucs4(const char *&text);
 
 template<typename T>

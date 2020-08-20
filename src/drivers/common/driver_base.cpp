@@ -49,11 +49,10 @@ driver_base::driver_base() {
     frame_throttle = std::make_shared<throttle>();
     variables = std::make_unique<libretro::retro_variables>();
 
-    util_mkdir(g_cfg.get_config_dir().c_str());
-    system_dir = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR "system";
-    util_mkdir(system_dir.c_str());
-    save_dir = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR "saves";
-    util_mkdir(save_dir.c_str());
+    system_dir = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "system";
+    util_mkdir(system_dir);
+    save_dir = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "saves";
+    util_mkdir(save_dir);
 }
 
 driver_base::~driver_base() {
@@ -176,8 +175,8 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
         info.size = game_data.size();
     } else {
         std::string basename = get_base_name(path);
-        temp_file = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR "tmp";
-        util_mkdir(temp_file.c_str());
+        temp_file = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "tmp";
+        util_mkdir(temp_file);
         temp_file = temp_file + PATH_SEPARATOR_CHAR + basename + "." + ext;
         if (!util_write_file(temp_file, data)) {
             remove(temp_file.c_str());
@@ -366,7 +365,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
             break;
         case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
-            support_achivements = data ? *(bool*)data : true;
+            support_achivements = data == nullptr || *(bool*)data;
             return true;
         case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:
         case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
@@ -427,8 +426,6 @@ bool driver_base::load_core(const std::string &path) {
 
     current_driver = this;
 
-    core_cfg_path = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "cfg";
-    util_mkdir(core_cfg_path.c_str());
     retro_system_info sysinfo = {};
     core->retro_get_system_info(&sysinfo);
     library_name = sysinfo.library_name;
@@ -436,9 +433,11 @@ bool driver_base::load_core(const std::string &path) {
     need_fullpath = sysinfo.need_fullpath;
     std::string name = sysinfo.library_name;
     lowered_string(name);
-    core_cfg_path = core_cfg_path + PATH_SEPARATOR_CHAR + name + ".cfg";
+    core_cfg_path = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "cores";
+    util_mkdir(core_cfg_path);
+    core_cfg_path += PATH_SEPARATOR_CHAR + name + ".json";
     core_save_dir = save_dir + PATH_SEPARATOR_CHAR + name;
-    util_mkdir(core_save_dir.c_str());
+    util_mkdir(core_save_dir);
 
     init_internal();
     return true;

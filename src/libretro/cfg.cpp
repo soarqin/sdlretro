@@ -1,10 +1,10 @@
 #include "cfg.h"
 
-#include <util.h>
+#include "util.h"
 
-#include "json.hpp"
+#include <json.hpp>
+#include <spdlog/spdlog.h>
 
-#include <iostream>
 #include <cstdlib>
 
 cfg g_cfg;
@@ -21,13 +21,26 @@ void cfg::set_data_dir(const std::string &dir) {
     else
         data_dir = n;
 }
-void cfg::set_config_dir(const std::string &dir) {
+
+void cfg::set_store_dir(const std::string &dir) {
     char n[PATH_MAX];
+#ifdef _WIN32
     if (realpath(dir.c_str(), n) == nullptr)
-        config_dir = dir;
+        store_dir = dir;
     else
-        config_dir = n;
+        store_dir = n;
+    util_mkdir(store_dir, true);
+#else
+    util_mkdir(dir, true);
+    if (realpath(dir.c_str(), n) == nullptr)
+        store_dir = dir;
+    else
+        store_dir = n;
+#endif
+    config_dir = store_dir + PATH_SEPARATOR_CHAR + "cfg";
+    util_mkdir(config_dir);
 }
+
 void cfg::set_extra_core_dirs(const std::vector<std::string> &dirs) {
     core_dirs.clear();
     for (const auto &d: dirs) {
@@ -57,6 +70,7 @@ inline T get_value(json &j, const std::string &key, T defval) {
 void cfg::load() {
     json j;
     auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
+    if (!util_file_exists(filename)) return;
     try {
         std::string content;
         if (!util_read_file(filename, content)) {
@@ -64,7 +78,7 @@ void cfg::load() {
         }
         j = json::parse(content);
     } catch(...) {
-        std::cerr << "failed to read config from " << filename << std::endl;
+        spdlog::error("failed to read config from {}", filename);
         return;
     }
 
@@ -77,6 +91,8 @@ void cfg::load() {
         JREAD(resampler_quality, DEFAULT_RESAMPLER_QUALITY);
         JREAD(scaling_mode, 0);
         JREAD(scale, DEFAULT_SCALE);
+        JREAD(integer_scaling, false);
+        JREAD(linear, true);
         JREAD(save_check, 0);
 #undef JREAD
     }
@@ -92,6 +108,8 @@ void cfg::save() {
     JWRITE(resampler_quality);
     JWRITE(scaling_mode);
     JWRITE(scale);
+    JWRITE(integer_scaling);
+    JWRITE(linear);
     JWRITE(save_check);
 #undef JWRITE
     auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
@@ -100,6 +118,6 @@ void cfg::save() {
         if (!util_write_file(filename, content))
             throw std::bad_exception();
     } catch(...) {
-        std::cerr << "failed to write config to " << filename << std::endl;
+        spdlog::error("failed to write config to {}", filename);
     }
 }

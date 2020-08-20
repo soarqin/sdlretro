@@ -14,7 +14,6 @@ namespace drivers {
 
 sdl2_video::sdl2_video() {
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
     window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               curr_width, curr_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -38,6 +37,7 @@ sdl2_video::~sdl2_video() {
 }
 
 bool sdl2_video::resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
     game_pixel_format = pixel_format;
     return true;
 }

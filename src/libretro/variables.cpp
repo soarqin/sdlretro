@@ -3,9 +3,8 @@
 #include "libretro.h"
 #include "util.h"
 
-#include "json.hpp"
-
-#include <iostream>
+#include <json.hpp>
+#include <spdlog/spdlog.h>
 
 namespace libretro {
 
@@ -82,6 +81,7 @@ void retro_variables::load_variables(const retro_variable *vars) {
 }
 
 void retro_variables::load_variables_from_cfg(const std::string &filename) {
+    if (!util_file_exists(filename)) return;
     nlohmann::json j;
     try {
         std::string content;
@@ -89,7 +89,7 @@ void retro_variables::load_variables_from_cfg(const std::string &filename) {
             throw std::bad_exception();
         j = nlohmann::json::parse(content);
     } catch(...) {
-        std::cerr << "failed to read core config from " << filename << std::endl;
+        spdlog::error("failed to read core config from {}", filename);
         return;
     }
     if (!j.is_object()) return;
@@ -120,7 +120,7 @@ void retro_variables::save_variables_to_cfg(const std::string &filename) {
         if (!util_write_file(filename, content))
             throw std::bad_exception();
     } catch(...) {
-        std::cerr << "failed to write config to " << filename << std::endl;
+        spdlog::error("failed to write config to {}", filename);
     }
 }
 

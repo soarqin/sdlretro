@@ -1,1 +1,5 @@
+add_subdirectory(json)
+add_subdirectory(libsamplerate)
 add_subdirectory(miniz)
+add_subdirectory(spdlog)
+add_subdirectory(stb)

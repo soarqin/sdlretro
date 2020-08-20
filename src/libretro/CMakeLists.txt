@@ -20,9 +20,6 @@ add_library(libretro STATIC
     include/core.h
     include/core_manager.h
     include/libretro.h
-
-    # external libs
-    external/json.hpp
     )
 
 if(WIN32)
@@ -31,8 +28,8 @@ elseif(UNIX)
     target_compile_definitions(libretro PRIVATE VFS_UNIX)
 endif()
 
-target_include_directories(libretro PRIVATE external)
 target_include_directories(libretro PUBLIC include)
+target_link_libraries(libretro spdlog::spdlog nlohmann::json)
 if(WIN32)
     target_link_libraries(libretro shlwapi)
 else()

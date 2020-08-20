@@ -24,12 +24,13 @@ int main(int argc, char *argv[]) {
 
 #ifdef GCW_ZERO
     g_cfg.set_data_dir(".");
-    g_cfg.set_config_dir("/usr/local/home/.sdlretro");
-
+    g_cfg.set_config_dir("/usr/local/home/.sdlretro/cfg");
 #else
     g_cfg.set_data_dir(".");
-    g_cfg.set_config_dir(".");
+    g_cfg.set_store_dir(".");
 #endif
+
+    g_cfg.load();
 
     libretro::core_manager coreman;
 
@@ -43,8 +44,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Unable to create driver!\n");
         return 1;
     }
-
-    g_cfg.load();
 
     gui::ui_menu menu(impl);
 
