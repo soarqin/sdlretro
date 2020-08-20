@@ -15,13 +15,17 @@ public:
 
     bool start(bool mono, double sample_rate, unsigned sample_rate_out, double fps);
     void stop();
+    virtual void reset();
 
     void write_samples(const int16_t *data, size_t count);
     void read_samples(int16_t *data, size_t count);
+    void clear_samples();
+    size_t samples_count();
 
 protected:
     virtual bool open(unsigned) = 0;
     virtual void close() = 0;
+    virtual void on_input() {}
 
 public:
     virtual void pause(bool) = 0;

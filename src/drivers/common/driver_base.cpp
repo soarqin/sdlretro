@@ -217,6 +217,7 @@ void driver_base::unload_game() {
 
 void driver_base::reset() {
     core->retro_reset();
+    audio->reset();
 }
 
 static bool camera_start_dummy() { return false; }
@@ -325,7 +326,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
             break;
         case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO: {
-            const auto *info = (const retro_controller_info*)data;
+            // const auto *info = (const retro_controller_info*)data;
             return true;
         }
         case RETRO_ENVIRONMENT_SET_MEMORY_MAPS: {

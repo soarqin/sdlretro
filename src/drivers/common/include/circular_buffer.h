@@ -96,7 +96,7 @@ public:
     size_t size() {
         if (tail >= head)
             return tail - head;
-        return max_size - head - tail;
+        return max_size - (head - tail);
     }
 
     // Return total space of this circular buffer.

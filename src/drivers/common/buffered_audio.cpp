@@ -41,19 +41,26 @@ bool buffered_audio::start(bool mono, double sample_rate_in, unsigned sample_rat
     }
     auto buffer_size = pullup(lround(output_sample_rate / fps));
     buffer.resize(buffer_size * 8);
-    resampler_cache.clear();
+    resampler_cache.reserve(resampler_cache_size);
     return open(buffer_size);
 }
 
 void buffered_audio::stop() {
     close();
+    buffer.clear();
     sample_multiplier = 1;
     sample_cache_size = 0;
 
     src_delete(src_state);
     src_state = nullptr;
     sample_ratio = 1.;
-    resampler_cache.reserve(resampler_cache_size);
+    resampler_cache.clear();
+}
+
+void buffered_audio::reset() {
+    buffer.clear();
+    resampler_cache.clear();
+    src_reset(src_state);
 }
 
 void buffered_audio::write_samples(const int16_t *data, size_t count) {
@@ -147,6 +154,7 @@ void buffered_audio::write_samples(const int16_t *data, size_t count) {
             }
         }
     }
+    on_input();
 }
 
 void buffered_audio::read_samples(int16_t *data, size_t count) {
@@ -155,6 +163,14 @@ void buffered_audio::read_samples(int16_t *data, size_t count) {
     if (read_count < count) {
         memset(data + read_count, 0, (count - read_count) * sizeof(int16_t));
     }
+}
+
+void buffered_audio::clear_samples() {
+    buffer.clear();
+}
+
+size_t buffered_audio::samples_count() {
+    return buffer.size();
 }
 
 }
