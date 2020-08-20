@@ -23,7 +23,8 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
     menu.set_items(items);
     int w, h;
     std::tie(w, h) = g_cfg.get_resolution();
-    menu.set_rect(50, 50, w - 100, h - 100);
+    auto border = w / 16;
+    menu.set_rect(border, border, w - border * 2, h - border * 2);
     if (!menu.enter_menu_loop()) return -1;
     return menu.get_selected();
 }
@@ -53,7 +54,8 @@ void ui_menu::in_game_menu() {
     }
     int w, h;
     std::tie(w, h) = g_cfg.get_resolution();
-    menu.set_rect(50, 50, w - 100, h - 100);
+    auto border = w / 16;
+    menu.set_rect(border, border, w - border * 2, h - border * 2);
     menu.enter_menu_loop();
 }
 
