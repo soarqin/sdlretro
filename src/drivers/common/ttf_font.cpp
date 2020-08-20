@@ -3,9 +3,9 @@
 #include "stb_rect_pack.h"
 
 #ifdef USE_STB_TRUETYPE
-#define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
-#include <fstream>
+#include <util.h>
+#include <cstring>
 #else
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -35,7 +35,7 @@ ttf_font::~ttf_font() {
     for (auto &p: fonts) {
 #ifdef USE_STB_TRUETYPE
         delete static_cast<stbtt_fontinfo *>(p.font);
-		delete p.ttf_buffer;
+		p.ttf_buffer.clear();
 #else
         FT_Done_Face(p.face);
 #endif
@@ -53,23 +53,18 @@ void ttf_font::init(int size, uint8_t width) {
 bool ttf_font::add(const std::string &filename, int index) {
     font_info fi;
 #ifdef USE_STB_TRUETYPE
+    if (!util_read_file(filename, fi.ttf_buffer)) {
+        return false;
+    }
     auto *info = new stbtt_fontinfo;
-	std::ifstream fin(filename, std::ios::binary);
-    if (fin.fail()) return false;
-	fin.seekg(0, std::ios::end);
-	size_t sz = fin.tellg();
-	fi.ttf_buffer = new uint8_t[sz];
-	fin.seekg(0, std::ios::beg);
-	fin.read(reinterpret_cast<char*>(fi.ttf_buffer), sz);
-	fin.close();
-	stbtt_InitFont(info, fi.ttf_buffer, stbtt_GetFontOffsetForIndex(fi.ttf_buffer, index));
+	stbtt_InitFont(info, &fi.ttf_buffer[0], stbtt_GetFontOffsetForIndex(&fi.ttf_buffer[0], index));
 	fi.font_scale = stbtt_ScaleForMappingEmToPixels(info, static_cast<float>(font_size));
 	fi.font = info;
 #else
     if (FT_New_Face(ft_lib, filename.c_str(), index, &fi.face)) return false;
     FT_Set_Pixel_Sizes(fi.face, 0, font_size);
 #endif
-    fonts.push_back(fi);
+    fonts.emplace_back(std::move(fi));
     new_rect_pack();
     return true;
 }

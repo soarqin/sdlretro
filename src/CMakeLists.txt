@@ -1,4 +1,5 @@
 set(SDLRETRO_FRONTEND "SDL1" CACHE STRING "Select frontend (SDL1, SDL2)")
+option(USE_STB_TRUETYPE "Use stb truetype (aka build w/ FreeType)" OFF)
 
 add_subdirectory(libretro)
 add_subdirectory(drivers)

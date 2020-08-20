@@ -31,7 +31,7 @@ protected:
 #ifdef USE_STB_TRUETYPE
         float font_scale = 0.f;
 		void *font = nullptr;
-		uint8_t *ttf_buffer = nullptr;
+		std::vector<uint8_t> ttf_buffer;
 #else
         FT_Face face = nullptr;
 #endif
@@ -57,7 +57,6 @@ protected:
     static uint16_t get_rect_pack_width();
 
 protected:
-    std::string ttf_filename;
     int font_size = 16;
     std::vector<font_info> fonts;
     std::unordered_map<uint16_t, font_data> font_cache;
