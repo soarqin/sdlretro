@@ -21,7 +21,7 @@ protected:
 
 private:
     SDL_Renderer *renderer;
-    std::vector<SDL_Texture*> textures;
+    std::vector<SDL_Texture*> textures, shadows;
 };
 
 }

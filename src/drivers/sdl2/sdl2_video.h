@@ -32,21 +32,32 @@ public:
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
     uint32_t get_text_width(const char *text) const override;
 
-    inline sdl2_ttf *get_ttf() { return ttf.get(); }
+    void enter_menu() override;
+    void leave_menu() override;
+    void predraw_menu() override;
+
+private:
+    void do_render();
 
 private:
     SDL_Window *window = nullptr;
     SDL_Renderer *renderer = nullptr;
-    SDL_Texture *texture = nullptr;
+    SDL_Texture *texture = nullptr, *background = nullptr;
 
     uint32_t curr_width = 0, curr_height = 0;
-    uint32_t game_pitch = 0, game_height = 0, game_pixel_format = 0;
+    uint32_t game_pitch = 0, game_width = 0, game_height = 0, game_pixel_format = 0;
     std::array<int, 4> display_rect = {};
 
-    std::shared_ptr<sdl2_ttf> ttf;
+    /* ttf[0] is regular font
+     * fft[1] is bold font
+     * */
+    std::shared_ptr<sdl2_ttf> ttf[2];
 
     /* indicate wheather frame was drawn, for auto frameskip use */
     bool drawn = false;
+
+    /* check renderer with flag SDL_RENDERER_TARGETTEXTURE */
+    bool support_render_to_texture = false;
 };
 
 }

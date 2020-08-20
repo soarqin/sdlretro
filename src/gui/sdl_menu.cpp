@@ -44,6 +44,7 @@ void sdl_menu::draw() {
     int x = menu_x + indicator_width, y = menu_y;
     auto *video = driver->get_video();
     video->clear();
+    video->predraw_menu();
     if (!title.empty()) {
         video->draw_text(menu_x, y, title.c_str(), 0, true);
         y += line_height + 4;
