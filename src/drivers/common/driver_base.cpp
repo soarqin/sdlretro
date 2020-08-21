@@ -3,7 +3,7 @@
 #include "cfg.h"
 
 #include "video_base.h"
-#include "buffered_audio.h"
+#include "audio_base.h"
 #include "input_base.h"
 #include "throttle.h"
 

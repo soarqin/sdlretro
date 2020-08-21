@@ -12,6 +12,8 @@ add_library(driver_sdl1 STATIC
     sdl1_audio.h
     sdl1_font.cpp
     sdl1_font.h
+
+    circular_buffer.h
     )
 
 target_compile_definitions(driver_sdl1 PUBLIC SDL_MAIN_HANDLED)

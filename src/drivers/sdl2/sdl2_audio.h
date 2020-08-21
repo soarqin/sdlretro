@@ -1,19 +1,19 @@
 #pragma once
 
-#include "buffered_audio.h"
+#include "audio_base.h"
 
 namespace drivers {
 
-class sdl2_audio: public buffered_audio {
+class sdl2_audio: public audio_base {
 public:
-    using buffered_audio::buffered_audio;
+    using audio_base::audio_base;
 
     void reset() override;
 
 protected:
     bool open(unsigned buffer_size) override;
     void close() override;
-    void on_input() override;
+    void on_input(const int16_t *samples, size_t count) override;
 
 /*
 private:

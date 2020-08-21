@@ -1,12 +1,11 @@
 add_library(driver_common STATIC
     # driver files
-    buffered_audio.cpp
+    audio_base.cpp
     driver_base.cpp
     input_base.cpp
     throttle.cpp
     ttf_font.cpp
-    include/buffered_audio.h
-    include/circular_buffer.h
+    include/audio_base.h
     include/driver_base.h
     include/input_base.h
     include/throttle.h

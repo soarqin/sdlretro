@@ -15,7 +15,7 @@ class retro_variables;
 namespace drivers {
 
 class video_base;
-class buffered_audio;
+class audio_base;
 class input_base;
 class throttle;
 
@@ -53,7 +53,7 @@ public:
     inline const std::string &get_system_dir() const { return system_dir; }
     inline throttle *get_frame_throttle() { return frame_throttle.get(); }
     inline video_base *get_video() { return video.get(); }
-    inline buffered_audio *get_audio() { return audio.get(); }
+    inline audio_base *get_audio() { return audio.get(); }
     inline input_base *get_input() { return input.get(); }
     inline libretro::retro_variables *get_variables() { return variables.get(); }
 
@@ -128,7 +128,7 @@ protected:
     std::shared_ptr<video_base> video;
 
     /* buffered_audio for audio input */
-    std::shared_ptr<buffered_audio> audio;
+    std::shared_ptr<audio_base> audio;
 
     /* input_base for contoller input */
     std::shared_ptr<input_base> input;

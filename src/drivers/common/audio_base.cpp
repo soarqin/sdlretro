@@ -1,4 +1,4 @@
-#include "buffered_audio.h"
+#include "audio_base.h"
 
 #include "cfg.h"
 #include "samplerate.h"
@@ -21,7 +21,7 @@ inline unsigned pullup(unsigned rate) {
     return (rate | (rate >> 16U)) + 1U;
 }
 
-bool buffered_audio::start(bool mono, double sample_rate_in, unsigned sample_rate_out, double fps) {
+bool audio_base::start(bool mono, double sample_rate_in, unsigned sample_rate_out, double fps) {
     mono_audio = mono;
     if (sample_rate_out == 0) {
         output_sample_rate = lround(sample_rate_in);
@@ -40,14 +40,12 @@ bool buffered_audio::start(bool mono, double sample_rate_in, unsigned sample_rat
         sample_ratio = output_sample_rate / sample_rate_in;
     }
     auto buffer_size = pullup(lround(output_sample_rate / fps));
-    buffer.resize(buffer_size * 8);
     resampler_cache.reserve(resampler_cache_size);
     return open(buffer_size);
 }
 
-void buffered_audio::stop() {
+void audio_base::stop() {
     close();
-    buffer.clear();
     sample_multiplier = 1;
     sample_cache_size = 0;
 
@@ -57,13 +55,12 @@ void buffered_audio::stop() {
     resampler_cache.clear();
 }
 
-void buffered_audio::reset() {
-    buffer.clear();
+void audio_base::reset() {
     resampler_cache.clear();
     src_reset(src_state);
 }
 
-void buffered_audio::write_samples(const int16_t *data, size_t count) {
+void audio_base::write_samples(const int16_t *data, size_t count) {
     if (!output_sample_rate || !count) return;
     if (src_state) {
         if (resampler_cache.size() < resampler_cache_size) {
@@ -92,10 +89,10 @@ void buffered_audio::write_samples(const int16_t *data, size_t count) {
                         inptr += 2;
                     }
                     src_float_to_short_array(proc_data, proc_data_s, src_data.output_frames_gen);
-                    buffer.push(proc_data_s, src_data.output_frames_gen);
+                    on_input(proc_data_s, src_data.output_frames_gen);
                 } else {
                     src_float_to_short_array(proc_data, proc_data_s, src_data.output_frames_gen * 2);
-                    buffer.push(proc_data_s, src_data.output_frames_gen * 2);
+                    on_input(proc_data_s, src_data.output_frames_gen * 2);
                 }
             }
             if (!src_data.input_frames_used) break;
@@ -115,11 +112,11 @@ void buffered_audio::write_samples(const int16_t *data, size_t count) {
                         *ptr++ = (int16_t)(((int)data[0] + data[1])/2);
                         data += 2;
                     }
-                    buffer.push(monodata, sz);
+                    on_input(monodata, sz);
                     samples -= sz;
                 } while (samples);
             } else {
-                buffer.push(data, count);
+                on_input(data, count);
             }
         } else {
             count /= 2;
@@ -143,34 +140,17 @@ void buffered_audio::write_samples(const int16_t *data, size_t count) {
                     sample_cache_sum[0] = sample_cache_sum[1] = 0;
                     sample_cache_size = 0;
                     if (sample_queue_size == output_buffer_size) {
-                        buffer.push(sample_queue, output_buffer_size);
+                        on_input(sample_queue, output_buffer_size);
                         sample_queue_size = 0;
                     }
                 }
                 count -= to_write;
             } while (count);
             if (sample_queue_size) {
-                buffer.push(sample_queue, sample_queue_size);
+                on_input(sample_queue, sample_queue_size);
             }
         }
     }
-    on_input();
-}
-
-void buffered_audio::read_samples(int16_t *data, size_t count) {
-    if (!count) return;
-    size_t read_count = buffer.pop(data, count);
-    if (read_count < count) {
-        memset(data + read_count, 0, (count - read_count) * sizeof(int16_t));
-    }
-}
-
-void buffered_audio::clear_samples() {
-    buffer.clear();
-}
-
-size_t buffered_audio::samples_count() {
-    return buffer.size();
 }
 
 }

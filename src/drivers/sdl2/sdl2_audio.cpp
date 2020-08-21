@@ -7,7 +7,7 @@
 namespace drivers {
 
 void sdl2_audio::reset() {
-    buffered_audio::reset();
+    audio_base::reset();
     SDL_ClearQueuedAudio(device_id);
 }
 
@@ -38,21 +38,14 @@ void sdl2_audio::pause(bool b) {
     SDL_PauseAudioDevice(device_id, b);
 }
 
-void sdl2_audio::on_input() {
+void sdl2_audio::on_input(const int16_t *samples, size_t count) {
     /* too many queued samples, which indicates that a frame drop occurs,
      * we have to drop queued samples to ensure audio sync
      * TODO: move this to a timer? */
     if (SDL_GetQueuedAudioSize(device_id) > max_queued_samples) {
         SDL_ClearQueuedAudio(device_id);
     }
-    int16_t samples[4096];
-    size_t count = samples_count();
-    while(count > 0) {
-        size_t drain = count < 4096 ? count : 4096;
-        read_samples(samples, drain);
-        SDL_QueueAudio(device_id, samples, drain * sizeof(int16_t));
-        count -= drain;
-    }
+    SDL_QueueAudio(device_id, samples, count * sizeof(int16_t));
 }
 
 /*
