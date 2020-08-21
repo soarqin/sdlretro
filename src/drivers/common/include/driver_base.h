@@ -70,6 +70,7 @@ private:
 
     /* check sram/rtc and save to file if changed */
     void check_save_ram();
+    void check_single_ram(unsigned id, std::vector<uint8_t> &data, const std::string &filename, size_t &pos);
 
     /* post processing for game load */
     void post_load();
@@ -157,9 +158,11 @@ private:
     /* temp file for unzip, would be removed after gameplay */
     std::string temp_file;
 
-    /* save&rtc data */
+    /* save&rtc data and checking progress */
     std::vector<uint8_t> save_data;
     std::vector<uint8_t> rtc_data;
+    size_t check_save_progress = 0;
+    size_t check_rtc_progress = 0;
 
     /* frame countdown for save check */
     uint32_t save_check_countdown = 0;

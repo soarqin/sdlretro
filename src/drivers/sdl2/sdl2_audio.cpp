@@ -2,8 +2,6 @@
 
 #include <util.h>
 
-#include <spdlog/spdlog.h>
-
 #include <SDL.h>
 
 namespace drivers {

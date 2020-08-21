@@ -213,6 +213,8 @@ void driver_base::unload_game() {
     game_rtc_path.clear();
     save_data.clear();
     rtc_data.clear();
+    check_save_progress = 0;
+    check_rtc_progress = 0;
 }
 
 void driver_base::reset() {
@@ -493,30 +495,29 @@ void driver_base::deinit_internal() {
 }
 
 void driver_base::check_save_ram() {
-    // TODO: use progressive check for large sram?
-    size_t sram_size = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
-    if (sram_size) {
-        void *sram = core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-        if (sram_size != save_data.size() || memcmp(sram, save_data.data(), sram_size) != 0) {
-            auto *handle = libretro::vfs_interface.open(game_save_path.c_str(), RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING, 0);
-            if (handle) {
-                libretro::vfs_interface.write(handle, sram, sram_size);
-                libretro::vfs_interface.close(handle);
+    check_single_ram(RETRO_MEMORY_SAVE_RAM, save_data, game_save_path, check_save_progress);
+    check_single_ram(RETRO_MEMORY_RTC, rtc_data, game_rtc_path, check_rtc_progress);
+}
+
+void driver_base::check_single_ram(unsigned int id, std::vector<uint8_t> &data, const std::string &filename, size_t &pos) {
+    size_t size = core->retro_get_memory_size(id);
+    if (size) {
+        void *ram = core->retro_get_memory_data(id);
+        if (size != data.size()) {
+            pos = 0;
+        } else {
+            size_t check_size = (pos + 65536) > size ? size - pos : 65536;
+            spdlog::trace("Checking RAM block {}: from {:x}, length {:x}/{:x}", id, pos, check_size, size);
+            if (memcmp((uint8_t*)ram + pos, data.data() + pos, check_size) == 0) {
+                pos += check_size;
+                if (pos >= size) pos = 0;
+                return;
             }
-            save_data.assign((uint8_t*)sram, (uint8_t*)sram + sram_size);
+            pos = 0;
         }
-    }
-    size_t rtc_size = core->retro_get_memory_size(RETRO_MEMORY_RTC);
-    if (rtc_size) {
-        void *rtc = core->retro_get_memory_data(RETRO_MEMORY_RTC);
-        if (rtc_size != rtc_data.size() || memcmp(rtc, rtc_data.data(), rtc_size) != 0) {
-            auto *handle = libretro::vfs_interface.open(game_rtc_path.c_str(), RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING, 0);
-            if (handle) {
-                libretro::vfs_interface.write(handle, rtc, rtc_size);
-                libretro::vfs_interface.close(handle);
-            }
-            rtc_data.assign((uint8_t*)rtc, (uint8_t*)rtc + rtc_size);
-        }
+        spdlog::trace("RAM changed, saving to {}", filename);
+        data.assign((uint8_t*)ram, (uint8_t*)ram + size);
+        util_write_file(filename, data);
     }
 }
 
