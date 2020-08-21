@@ -23,6 +23,7 @@ public:
     void pause(bool b) override;
 
 private:
+    uint64_t next_check = 0;
     uint32_t device_id = 0;
     uint32_t max_queued_samples = 0;
 };
