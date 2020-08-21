@@ -69,7 +69,7 @@ void sdl2_ttf::render(int x, int y, const char *text, int width, int height, boo
         width = -width;
     }
     while (*text != 0) {
-        uint32_t ch = utf8_to_ucs4(text);
+        uint32_t ch = util::utf8_to_ucs4(text);
         if (ch == 0 || ch > 0xFFFFu) continue;
 
         const font_data *fd;

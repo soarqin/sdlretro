@@ -166,7 +166,7 @@ int RETRO_CALLCONV win32_vfs_stat(const char *path, int32_t *size) {
 }
 
 int RETRO_CALLCONV win32_vfs_mkdir(const char *dir) {
-    return util_mkdir(dir);
+    return util::mkdir(dir);
 }
 
 struct retro_vfs_dir_handle *RETRO_CALLCONV win32_vfs_opendir(const char *dir, bool include_hidden) {

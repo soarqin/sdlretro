@@ -8,11 +8,11 @@ namespace drivers {
 
 void throttle::reset(double fps) {
     frame_time = lround(1000000. / fps);
-    next_frame = get_ticks_usec();
+    next_frame = util::get_ticks_usec();
 }
 
 int64_t throttle::check_wait() {
-    uint64_t now = get_ticks_usec();
+    uint64_t now = util::get_ticks_usec();
     auto result = static_cast<int64_t>(next_frame - now);
     if (result > 0)
         return result;

@@ -29,16 +29,16 @@ void cfg::set_store_dir(const std::string &dir) {
         store_dir = dir;
     else
         store_dir = n;
-    util_mkdir(store_dir, true);
+    util::mkdir(store_dir, true);
 #else
-    util_mkdir(dir, true);
+    util::mkdir(dir, true);
     if (realpath(dir.c_str(), n) == nullptr)
         store_dir = dir;
     else
         store_dir = n;
 #endif
     config_dir = store_dir + PATH_SEPARATOR_CHAR + "cfg";
-    util_mkdir(config_dir);
+    util::mkdir(config_dir);
 }
 
 void cfg::set_extra_core_dirs(const std::vector<std::string> &dirs) {
@@ -70,10 +70,10 @@ inline T get_value(json &j, const std::string &key, T defval) {
 void cfg::load() {
     json j;
     auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
-    if (!util_file_exists(filename)) return;
+    if (!util::file_exists(filename)) return;
     try {
         std::string content;
-        if (!util_read_file(filename, content)) {
+        if (!util::read_file(filename, content)) {
             throw std::bad_exception();
         }
         j = json::parse(content);
@@ -115,7 +115,7 @@ void cfg::save() {
     auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
     try {
         auto content = j.dump(4);
-        if (!util_write_file(filename, content))
+        if (!util::write_file(filename, content))
             throw std::bad_exception();
     } catch(...) {
         spdlog::error("failed to write config to {}", filename);

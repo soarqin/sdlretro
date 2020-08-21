@@ -11,6 +11,8 @@
 #include <unistd.h>
 #endif
 
+namespace util {
+
 static uint64_t ticks_usec_cache = 0ULL;
 
 uint64_t get_ticks_usec() {
@@ -19,7 +21,7 @@ uint64_t get_ticks_usec() {
 #endif
     timespec ts = {};
     clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
-    ticks_usec_cache = ts.tv_sec*1000000ULL + ts.tv_nsec/1000ULL;
+    ticks_usec_cache = ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL;
     return ticks_usec_cache;
 }
 
@@ -28,13 +30,13 @@ uint64_t get_ticks_usec_cache() {
 }
 
 #ifdef _WIN32
-static inline int util_mkdir_unicode(const wchar_t *wpath, bool recursive) {
+static inline int mkdir_unicode(const wchar_t *wpath, bool recursive) {
     if (recursive) {
         wchar_t n[MAX_PATH];
         lstrcpyW(n, wpath);
         PathRemoveFileSpecW(n);
         if (!PathIsDirectoryW(n)) {
-            int ret = util_mkdir_unicode(n, recursive);
+            int ret = mkdir_unicode(n, recursive);
             if (ret != 0) return ret;
         }
     }
@@ -44,11 +46,11 @@ static inline int util_mkdir_unicode(const wchar_t *wpath, bool recursive) {
 }
 #endif
 
-int util_mkdir(const std::string &path, bool recursive) {
+int mkdir(const std::string &path, bool recursive) {
 #ifdef _WIN32
     wchar_t wpath[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, wpath, MAX_PATH);
-    return util_mkdir_unicode(wpath, recursive);
+    return mkdir_unicode(wpath, recursive);
 #else
     if (recursive) {
         auto pos = path.find_last_of('/');
@@ -56,7 +58,7 @@ int util_mkdir(const std::string &path, bool recursive) {
             auto parent = path.substr(0, pos);
             struct stat s = {};
             if (stat(parent.c_str(), &s) == -1) {
-                int ret = util_mkdir(path.substr(0, pos), true);
+                int ret = mkdir(path.substr(0, pos), true);
                 if (ret != 0) return ret;
             } else if (!S_ISDIR(s.st_mode)) {
                 return -1;
@@ -69,7 +71,7 @@ int util_mkdir(const std::string &path, bool recursive) {
 #endif
 }
 
-bool util_file_exists(const std::string &path) {
+bool file_exists(const std::string &path) {
 #ifdef _WIN32
     wchar_t wpath[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, wpath, MAX_PATH);
@@ -159,4 +161,6 @@ uint32_t utf8_to_ucs4(const char *&text) {
     }
     ++text;
     return 0;
+}
+
 }

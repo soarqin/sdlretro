@@ -15,10 +15,6 @@ protected:
     void close() override;
     void on_input(const int16_t *samples, size_t count) override;
 
-/*
-private:
-    static void audio_callback(void *userdata, uint8_t *stream, int len);
-*/
 public:
     void pause(bool b) override;
 

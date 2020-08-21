@@ -15,14 +15,16 @@ extern struct retro_vfs_interface vfs_interface;
 #define PATH_SEPARATOR_CHAR "/"
 #endif
 
+namespace util {
+
 uint64_t get_ticks_usec();
 uint64_t get_ticks_usec_cache();
-int util_mkdir(const std::string &path, bool recursive = false);
-bool util_file_exists(const std::string &path);
+int mkdir(const std::string &path, bool recursive = false);
+bool file_exists(const std::string &path);
 uint32_t utf8_to_ucs4(const char *&text);
 
 template<typename T>
-inline bool util_read_file(const std::string &filename, T &data) {
+inline bool read_file(const std::string &filename, T &data) {
     auto *handle = libretro::vfs_interface.open(filename.c_str(), RETRO_VFS_FILE_ACCESS_READ, 0);
     if (handle == nullptr) return false;
     auto sz = libretro::vfs_interface.size(handle);
@@ -37,10 +39,12 @@ inline bool util_read_file(const std::string &filename, T &data) {
 }
 
 template<typename T>
-inline bool util_write_file(const std::string &filename, T &data) {
+inline bool write_file(const std::string &filename, T &data) {
     auto *handle = libretro::vfs_interface.open(filename.c_str(), RETRO_VFS_FILE_ACCESS_WRITE, 0);
     if (handle == nullptr) return false;
     libretro::vfs_interface.write(handle, &data[0], data.size());
     libretro::vfs_interface.close(handle);
     return true;
+}
+
 }

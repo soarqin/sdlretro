@@ -50,9 +50,9 @@ driver_base::driver_base() {
     variables = std::make_unique<libretro::retro_variables>();
 
     system_dir = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "system";
-    util_mkdir(system_dir);
+    util::mkdir(system_dir);
     save_dir = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "saves";
-    util_mkdir(save_dir);
+    util::mkdir(save_dir);
 }
 
 driver_base::~driver_base() {
@@ -149,7 +149,7 @@ bool driver_base::load_game(const std::string &path) {
     retro_game_info info = {};
     info.path = path.c_str();
     if (!need_fullpath) {
-        if (!util_read_file(path, game_data)) {
+        if (!util::read_file(path, game_data)) {
             spdlog::error("Unable to load {}", path);
             return false;
         }
@@ -176,9 +176,9 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
     } else {
         std::string basename = get_base_name(path);
         temp_file = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "tmp";
-        util_mkdir(temp_file);
+        util::mkdir(temp_file);
         temp_file = temp_file + PATH_SEPARATOR_CHAR + basename + "." + ext;
-        if (!util_write_file(temp_file, data)) {
+        if (!util::write_file(temp_file, data)) {
             remove(temp_file.c_str());
             temp_file.clear();
             return false;
@@ -437,10 +437,10 @@ bool driver_base::load_core(const std::string &path) {
     std::string name = sysinfo.library_name;
     lowered_string(name);
     core_cfg_path = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "cores";
-    util_mkdir(core_cfg_path);
+    util::mkdir(core_cfg_path);
     core_cfg_path += PATH_SEPARATOR_CHAR + name + ".json";
     core_save_dir = save_dir + PATH_SEPARATOR_CHAR + name;
-    util_mkdir(core_save_dir);
+    util::mkdir(core_save_dir);
 
     init_internal();
     return true;
@@ -517,7 +517,7 @@ void driver_base::check_single_ram(unsigned int id, std::vector<uint8_t> &data, 
         }
         spdlog::trace("RAM changed, saving to {}", filename);
         data.assign((uint8_t*)ram, (uint8_t*)ram + size);
-        util_write_file(filename, data);
+        util::write_file(filename, data);
     }
 }
 
@@ -526,8 +526,8 @@ void driver_base::post_load() {
     game_save_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".sav";
     game_rtc_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".rtc";
 
-    util_read_file(game_save_path, save_data);
-    util_read_file(game_rtc_path, rtc_data);
+    util::read_file(game_save_path, save_data);
+    util::read_file(game_rtc_path, rtc_data);
 
     if (!save_data.empty()) {
         size_t sz = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);

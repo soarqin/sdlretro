@@ -81,11 +81,11 @@ void retro_variables::load_variables(const retro_variable *vars) {
 }
 
 void retro_variables::load_variables_from_cfg(const std::string &filename) {
-    if (!util_file_exists(filename)) return;
+    if (!util::file_exists(filename)) return;
     nlohmann::json j;
     try {
         std::string content;
-        if (!util_read_file(filename, content))
+        if (!util::read_file(filename, content))
             throw std::bad_exception();
         j = nlohmann::json::parse(content);
     } catch(...) {
@@ -117,7 +117,7 @@ void retro_variables::save_variables_to_cfg(const std::string &filename) {
     }
     try {
         auto content = j.dump(4);
-        if (!util_write_file(filename, content))
+        if (!util::write_file(filename, content))
             throw std::bad_exception();
     } catch(...) {
         spdlog::error("failed to write config to {}", filename);
