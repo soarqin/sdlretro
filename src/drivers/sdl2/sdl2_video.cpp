@@ -26,6 +26,8 @@ sdl2_video::sdl2_video() {
     spdlog::info("SDL2 Driver: {}", info.name);
     support_render_to_texture = (info.flags & SDL_RENDERER_TARGETTEXTURE) != 0;
 
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
+
     ttf[0] = std::make_shared<sdl2_ttf>(renderer);
     ttf[0]->init(16, 0);
     ttf[0]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "regular.ttf", 0);
@@ -42,7 +44,6 @@ sdl2_video::~sdl2_video() {
 }
 
 bool sdl2_video::resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
     game_pixel_format = pixel_format;
     return true;
 }
@@ -184,6 +185,11 @@ void sdl2_video::leave_menu() {
 
 void sdl2_video::predraw_menu() {
     SDL_RenderCopy(renderer, background, nullptr, nullptr);
+}
+
+void sdl2_video::config_changed() {
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
+    game_width = game_height = game_pitch = 0;
 }
 
 void sdl2_video::do_render() {

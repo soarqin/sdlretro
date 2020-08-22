@@ -4,6 +4,7 @@
 
 #include "sdl_menu.h"
 #include "driver_base.h"
+#include "video_base.h"
 
 #include "variables.h"
 #include "core_manager.h"
@@ -62,7 +63,7 @@ void ui_menu::in_game_menu() {
 enum :size_t {
     check_secs_count = 4
 };
-const uint32_t check_secs[check_secs_count] = {0, 30, 60, 300};
+const uint32_t check_secs[check_secs_count] = {0, 5, 15, 30};
 bool ui_menu::global_settings_menu(const menu_item&) {
     sdl_menu menu(driver, false);
 
@@ -75,14 +76,30 @@ bool ui_menu::global_settings_menu(const menu_item&) {
         check_sec_idx = 0;
     }
     std::vector<menu_item> items = {
-        { menu_values, "SRAM Save Interval", "", check_sec_idx,
-            {"off", "30", "60", "300"},
+        { menu_values, "SRAM/RTC Save Interval", "", check_sec_idx,
+            {"off", "5", "15", "30"},
             [](const menu_item &item)->bool {
                 if (item.selected < check_secs_count)
                     g_cfg.set_save_check(check_secs[item.selected]);
                 return false;
             }
         },
+#if SDLRETRO_FRONTEND == 2
+        { menu_boolean, "Integer Scaling", "", static_cast<size_t>(g_cfg.get_integer_scaling() ? 1 : 0),
+            {}, [&](const menu_item &item)->bool {
+                g_cfg.set_integer_scaling(item.selected != 0);
+                driver->get_video()->config_changed();
+                return false;
+            }
+        },
+        { menu_boolean, "Linear Rendering", "", static_cast<size_t>(g_cfg.get_linear() ? 1 : 0),
+            {}, [&](const menu_item &item)->bool {
+                g_cfg.set_linear(item.selected != 0);
+                driver->get_video()->config_changed();
+                return false;
+            }
+        },
+#endif
     };
     menu.set_items(items);
     int w, h;

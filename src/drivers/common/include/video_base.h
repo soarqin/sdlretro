@@ -16,6 +16,7 @@ public:
     virtual void enter_menu() {}
     virtual void leave_menu() {}
     virtual void predraw_menu() {}
+    virtual void config_changed() {}
 
     virtual void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format)
     { return nullptr; }

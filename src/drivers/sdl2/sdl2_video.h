@@ -35,6 +35,7 @@ public:
     void enter_menu() override;
     void leave_menu() override;
     void predraw_menu() override;
+    void config_changed() override;
 
 private:
     void do_render();
