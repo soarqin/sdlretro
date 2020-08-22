@@ -69,21 +69,28 @@ bool ttf_font::add(const std::string &filename, int index) {
     return true;
 }
 
-uint8_t ttf_font::get_char_width(uint16_t ch) {
+void ttf_font::get_char_width_and_height(uint16_t ch, uint8_t &width, int8_t &t, int8_t &b) {
     const font_data *fd;
     auto ite = font_cache.find(ch);
     if (ite == font_cache.end()) {
         fd = make_cache(ch);
         if (!fd) {
-            return 0;
+            width = t = b = 0;
+            return;
         }
     } else {
         fd = &ite->second;
-        if (fd->advW == 0) return 0;
+        if (fd->advW == 0) {
+            width = t = b = 0;
+            return;
+        }
     }
     if (mono_width)
-        return std::max(fd->advW, mono_width);
-    return fd->advW;
+        width = std::max(fd->advW, mono_width);
+    else
+        width = fd->advW;
+    t = fd->iy0;
+    b = fd->iy0 + fd->h;
 }
 
 const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {

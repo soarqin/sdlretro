@@ -41,7 +41,7 @@ public:
     virtual ~ttf_font();
     void init(int size, uint8_t width = 0);
     bool add(const std::string& filename, int index = 0);
-    uint8_t get_char_width(uint16_t ch);
+    void get_char_width_and_height(uint16_t ch, uint8_t &width, int8_t &t, int8_t &b);
 
 private:
     void new_rect_pack();

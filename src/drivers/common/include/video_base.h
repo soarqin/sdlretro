@@ -23,10 +23,11 @@ public:
     virtual bool frame_drawn() = 0;
     virtual void get_resolution(int &width, int &height) {}
 
+    virtual void draw_rectangle(int x, int y, int w, int h) {}
     /* width: 0=fullscreen -1=fullscreen allow wrap
      *        others: negative = allow wrap */
     virtual void draw_text(int x, int y, const char *text, int width, bool shadow) {}
-    virtual uint32_t get_text_width(const char *text) const { return 0; }
+    virtual void get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const { }
 
     virtual void clear() {}
     virtual void flip() {}

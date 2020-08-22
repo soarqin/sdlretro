@@ -5,18 +5,16 @@
 
 namespace gui {
 
-#ifdef GCW_ZERO
-const int indicator_width = 8;
-#else
-const int indicator_width = 10;
-#endif
+enum {
+    gap_between_key_and_value = 20,
+};
 
 void sdl_menu::enter() {
     auto *video = driver->get_video();
 #ifdef GCW_ZERO
     line_height = 9 + line_spacing;
 #else
-    line_height = 18 + line_spacing;
+    line_height = 20 + line_spacing;
 #endif
     int ww, wh;
     video->get_resolution(ww, wh);
@@ -25,22 +23,33 @@ void sdl_menu::enter() {
     if (!title.empty()) menu_height = menu_height - line_height - 4;
     page_size = (menu_height + line_spacing) / line_height;
 
-    title_x = (menu_width - video->get_text_width(title.c_str())) / 2 + menu_x;
+    uint32_t tw;
+    int32_t tt, tb;
+    video->get_text_width_and_height(title.c_str(), tw, tt, tb);
+    title_x = (menu_width - tw) / 2 + menu_x;
 
-    int maxwidth = 0;
-    int maxvaluewidth = 0;
+    uint32_t maxwidth = 0;
+    top_most = 255;
+    bot_most = -255;
+    uint32_t maxvaluewidth = 0;
     for (auto &item: items) {
-        int w = video->get_text_width(item.text.c_str());
-        if (w > maxwidth) maxwidth = w;
+        video->get_text_width_and_height(item.text.c_str(), tw, tt, tb);
+        if (tw > maxwidth) maxwidth = tw;
+        if (tt < top_most) top_most = tt;
+        if (tb > bot_most) bot_most = tb;
         switch (item.type) {
         case menu_boolean:
-            w = video->get_text_width("yes");
-            if (w > maxvaluewidth) maxvaluewidth = w;
+            video->get_text_width_and_height("yes", tw, tt, tb);
+            if (tw > maxvaluewidth) maxvaluewidth = tw;
+            if (tt < top_most) top_most = tt;
+            if (tb > bot_most) bot_most = tb;
             break;
         case menu_values:
             for (auto &val: item.values) {
-                w = video->get_text_width(val.c_str());
-                if (w > maxvaluewidth) maxvaluewidth = w;
+                video->get_text_width_and_height(val.c_str(), tw, tt, tb);
+                if (tw > maxvaluewidth) maxvaluewidth = tw;
+                if (tt < top_most) top_most = tt;
+                if (tb > bot_most) bot_most = tb;
             }
             break;
         default:
@@ -49,11 +58,11 @@ void sdl_menu::enter() {
     }
     if (item_width == 0 || item_width > maxwidth)
         item_width = maxwidth;
-    auto maxw = indicator_width + item_width + (maxvaluewidth > 0 ? (20 + maxvaluewidth) : 0);
+    auto maxw = item_width + (maxvaluewidth > 0 ? (gap_between_key_and_value + maxvaluewidth) : 0);
     if (maxw > menu_width) key_x = menu_x;
     else key_x = menu_x + (menu_width - maxw) / 2;
-    value_x = key_x + indicator_width + item_width + 20;
-    value_width = maxvaluewidth > 0 ? (menu_x + menu_width - value_x) : 0;
+    value_x = key_x + item_width + gap_between_key_and_value;
+    value_width = maxvaluewidth > 0 ? maxvaluewidth : 0;
 }
 
 void sdl_menu::leave() {
@@ -61,7 +70,7 @@ void sdl_menu::leave() {
 }
 
 void sdl_menu::draw() {
-    int x = key_x + indicator_width, y = menu_y;
+    int x = key_x, y = menu_y;
     auto *video = driver->get_video();
     video->clear();
     video->predraw_menu();
@@ -72,11 +81,12 @@ void sdl_menu::draw() {
     size_t end_index = top_index + page_size;
     if (end_index > items.size()) end_index = items.size();
     for (size_t i = top_index; i < end_index; ++i) {
-        if (i == selected) {
-            video->draw_text(key_x, y, ">", 0, true);
-        }
         auto &item = items[i];
         video->draw_text(x, y, item.text.c_str(), item_width, true);
+        if (i == selected) {
+            video->draw_rectangle(x - 3, y + top_most - 3, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 6, bot_most - top_most + 6);
+            video->draw_rectangle(x - 4, y + top_most - 4, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 8, bot_most - top_most + 8);
+        }
         switch (item.type) {
         case menu_boolean:
             video->draw_text(value_x, y, item.selected ? "yes" : "no", value_width, true);

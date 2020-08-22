@@ -27,10 +27,12 @@ public:
     }
     void clear() override;
     void flip() override;
+
+    void draw_rectangle(int x, int y, int w, int h) override;
     /* width: 0=fullscreen -1=fullscreen allow wrap
      *        others: negative = allow wrap */
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
-    uint32_t get_text_width(const char *text) const override;
+    void get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const override;
 
     void enter_menu() override;
     void leave_menu() override;

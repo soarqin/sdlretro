@@ -27,6 +27,7 @@ sdl2_video::sdl2_video() {
     support_render_to_texture = (info.flags & SDL_RENDERER_TARGETTEXTURE) != 0;
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
+    SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
 
     ttf[0] = std::make_shared<sdl2_ttf>(renderer);
     ttf[0]->init(16, 0);
@@ -137,20 +138,33 @@ void sdl2_video::flip() {
     SDL_RenderPresent(renderer);
 }
 
+void sdl2_video::draw_rectangle(int x, int y, int w, int h) {
+    SDL_Rect rc{x, y, w, h};
+    SDL_RenderDrawRect(renderer, &rc);
+}
+
 void sdl2_video::draw_text(int x, int y, const char *text, int width, bool shadow) {
     if (width == 0) width = (int)curr_width - x;
     else if (width < 0) width = x - (int)curr_width;
     ttf[0]->render(x, y, text, width, (int)curr_height - y, shadow);
 }
 
-uint32_t sdl2_video::get_text_width(const char *text) const {
-    uint32_t w = 0;
+void sdl2_video::get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const {
+    w = 0;
+    t = 255;
+    b = -255;
     while (*text != 0) {
         uint32_t ch = util::utf8_to_ucs4(text);
         if (ch == 0 || ch > 0xFFFFu) continue;
-        w += ttf[0]->get_char_width(ch);
+        uint8_t width;
+        int8_t tt, tb;
+        ttf[0]->get_char_width_and_height(ch, width, tt, tb);
+        if (width) {
+            w += width;
+            if (tt < t) t = tt;
+            if (tb > b) b = tb;
+        }
     }
-    return w;
 }
 
 void sdl2_video::enter_menu() {
