@@ -150,6 +150,39 @@ void sdl1_video::flip() {
     screen_ptr = screen->pixels;
 }
 
+void sdl1_video::draw_rectangle(int x, int y, int w, int h) {
+    unsigned bpp = curr_pixel_format == 1 ? 32 : 16;
+    auto bytespp = screen->format->BytesPerPixel;
+    uint32_t pixel_color;
+    switch(curr_pixel_format) {
+    case 0: pixel_color = 0xDAD6; break;
+    case 1: pixel_color = 0xFFB4B4B4; break;
+    case 2: pixel_color = 0xB5B6; break;
+    }
+    uint8_t *ptr = (uint8_t*)screen_ptr + screen->pitch * y + x * bytespp;
+    int rx = x + w;
+    int by = y + h;
+    for (int cx = x; cx < rx; ++cx) {
+        memcpy(ptr, &pixel_color, bytespp);
+        ptr += bytespp;
+    }
+    ptr = (uint8_t*)screen_ptr + screen->pitch * y + x * bytespp;
+    for (int cy = y + 1; cy <= by; ++cy) {
+        memcpy(ptr, &pixel_color, bytespp);
+        ptr += screen->pitch;
+    }
+    ptr = (uint8_t*)screen_ptr + screen->pitch * by + x * bytespp;
+    for (int cx = x; cx < rx; ++cx) {
+        memcpy(ptr, &pixel_color, bytespp);
+        ptr += bytespp;
+    }
+    ptr = (uint8_t*)screen_ptr + screen->pitch * y + rx * bytespp;
+    for (int cy = y; cy <= by; ++cy) {
+        memcpy(ptr, &pixel_color, bytespp);
+        ptr += screen->pitch;
+    }
+}
+
 void sdl1_video::draw_text(int x, int y, const char *text, int width, bool shadow) {
     if (ttf) {
         ttf->render(screen, x, y, text, width, shadow);
@@ -168,13 +201,22 @@ inline const font_data_t &get_pixel_font_data(uint8_t c) {
 #endif
 }
 
-uint32_t sdl1_video::get_text_width(const char *text) const {
-    uint32_t w = 0;
+void sdl1_video::get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const {
+    w = 0;
+    t = 255;
+    b = -255;
     if (ttf) {
-        while (*text!=0) {
-            uint32_t ch = utf8_to_ucs4(text);
-            if (ch==0 || ch > 0xFFFFu) continue;
-            w += ttf->get_char_width(ch);
+        while (*text != 0) {
+            uint32_t ch = util::utf8_to_ucs4(text);
+            if (ch == 0 || ch > 0xFFFFu) continue;
+            uint8_t width;
+            int8_t tt, tb;
+            ttf->get_char_width_and_height(ch, width, tt, tb);
+            if (width) {
+                w += width;
+                if (tt < t) t = tt;
+                if (tb > b) b = tb;
+            }
         }
     } else {
         while (*text) {
@@ -182,9 +224,10 @@ uint32_t sdl1_video::get_text_width(const char *text) const {
             if (c > 0x7F) continue;
             const auto &fd = get_pixel_font_data(c);
             w += fd.sw;
+            if (fd.y < t) t = fd.y;
+            if (fd.y + fd.h > b) b = fd.y + fd.h;
         }
     }
-    return w;
 }
 
 void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool shadow) {
@@ -283,7 +326,7 @@ void sdl1_video::enter_menu() {
     saved_pixel_format = curr_pixel_format;
     std::tie(curr_width, curr_height) = g_cfg.get_resolution();
     curr_pixel_format = 2;
-    screen = SDL_SetVideoMode(curr_width, curr_height, curr_pixel_format, sdl_video_flags);
+    screen = SDL_SetVideoMode(curr_width, curr_height, curr_pixel_format == 1 ? 32 : 16, sdl_video_flags);
     SDL_LockSurface(screen);
     screen_ptr = screen->pixels;
 }

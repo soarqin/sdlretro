@@ -21,8 +21,9 @@ public:
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
     void get_resolution(int &width, int &height) override { width = curr_width; height = curr_height; }
+    void draw_rectangle(int x, int y, int w, int h) override;
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
-    uint32_t get_text_width(const char *text) const override;
+    void get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const override;
     void clear() override;
     void flip() override;
 

@@ -53,7 +53,7 @@ void ttf_font::init(int size, uint8_t width) {
 bool ttf_font::add(const std::string &filename, int index) {
     font_info fi;
 #ifdef USE_STB_TRUETYPE
-    if (!util_read_file(filename, fi.ttf_buffer)) {
+    if (!util::read_file(filename, fi.ttf_buffer)) {
         return false;
     }
     auto *info = new stbtt_fontinfo;

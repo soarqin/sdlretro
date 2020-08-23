@@ -45,7 +45,7 @@ void sdl1_font::render(SDL_Surface *surface, int x, int y, const char *text, int
     int stride = surface->pitch / surface->format->BytesPerPixel;
 
     while (*text != 0) {
-        uint32_t ch = utf8_to_ucs4(text);
+        uint32_t ch = util::utf8_to_ucs4(text);
         if (ch == 0 || ch > 0xFFFFu) continue;
 
         /* Check if bitmap is already cached */
