@@ -66,7 +66,7 @@ void sdl1_font::render(SDL_Surface *surface, int x, int y, const char *text, int
             if (!allow_wrap) break;
             x = ox;
             nwidth = width;
-            y += font_size;
+            y += font_size + 1;
             if (y + font_size > surface->h)
                 break;
         }

@@ -89,7 +89,7 @@ void sdl2_ttf::render(int x, int y, const char *text, int width, int height, boo
             if (!allow_wrap) break;
             x = ox;
             nwidth = width;
-            y += font_size;
+            y += font_size + 1;
             height -= font_size;
             if (y > height)
                 break;

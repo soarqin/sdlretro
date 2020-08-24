@@ -259,9 +259,9 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool
             x = ox;
             nwidth = width;
 #ifdef GCW_ZERO
-            y += 9;
+            y += 8 + 1;
 #else
-            y += 18;
+            y += 16 + 1;
 #endif
         }
         nwidth -= fd.sw;

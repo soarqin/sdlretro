@@ -60,11 +60,12 @@ bool ttf_font::add(const std::string &filename, int index) {
 	stbtt_InitFont(info, &fi.ttf_buffer[0], stbtt_GetFontOffsetForIndex(&fi.ttf_buffer[0], index));
 	fi.font_scale = stbtt_ScaleForMappingEmToPixels(info, static_cast<float>(font_size));
 	fi.font = info;
+    fonts.emplace_back(std::move(fi));
 #else
     if (FT_New_Face(ft_lib, filename.c_str(), index, &fi.face)) return false;
     FT_Set_Pixel_Sizes(fi.face, 0, font_size);
+    fonts.emplace_back(fi);
 #endif
-    fonts.emplace_back(std::move(fi));
     new_rect_pack();
     return true;
 }
