@@ -4,12 +4,12 @@ add_library(driver_common STATIC
     driver_base.cpp
     input_base.cpp
     throttle.cpp
-    ttf_font.cpp
+    ttf_font_base.cpp
     include/audio_base.h
     include/driver_base.h
     include/input_base.h
     include/throttle.h
-    include/ttf_font.h
+    include/ttf_font_base.h
     include/video_base.h
     )
 

@@ -1,6 +1,6 @@
 #include "sdl1_video.h"
 
-#include "sdl1_font.h"
+#include "sdl1_ttf.h"
 
 #include "cfg.h"
 
@@ -148,6 +148,18 @@ void sdl1_video::flip() {
     SDL_Flip(screen);
     SDL_LockSurface(screen);
     screen_ptr = screen->pixels;
+}
+
+int sdl1_video::get_font_size() const {
+    if (ttf) {
+        return ttf->get_font_size();
+    } else {
+#ifdef GCW_ZERO
+        return 8;
+#else
+        return 16;
+#endif
+    }
 }
 
 void sdl1_video::draw_rectangle(int x, int y, int w, int h) {

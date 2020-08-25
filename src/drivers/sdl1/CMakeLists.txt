@@ -10,8 +10,8 @@ add_library(driver_sdl1 STATIC
     sdl1_video.h
     sdl1_audio.cpp
     sdl1_audio.h
-    sdl1_font.cpp
-    sdl1_font.h
+    sdl1_ttf.cpp
+    sdl1_ttf.h
 
     circular_buffer.h
     )

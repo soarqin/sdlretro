@@ -11,11 +11,7 @@ enum {
 
 void sdl_menu::enter() {
     auto *video = driver->get_video();
-#ifdef GCW_ZERO
-    line_height = 9 + line_spacing;
-#else
-    line_height = 20 + line_spacing;
-#endif
+    line_height = video->get_font_size() + 4 + line_spacing;
     int ww, wh;
     video->get_resolution(ww, wh);
     if (menu_width == 0) menu_width = ww - menu_x;
@@ -70,7 +66,7 @@ void sdl_menu::leave() {
 }
 
 void sdl_menu::draw() {
-    int x = key_x, y = menu_y;
+    int x = key_x, y = menu_y + driver->get_video()->get_font_size();
     auto *video = driver->get_video();
     video->clear();
     video->predraw_menu();

@@ -13,8 +13,8 @@ sdl2_ttf::~sdl2_ttf() {
     textures.clear();
 }
 
-const ttf_font::font_data *sdl2_ttf::make_cache(uint16_t ch) {
-    const auto *fd = ttf_font::make_cache(ch);
+const ttf_font_base::font_data *sdl2_ttf::make_cache(uint16_t ch) {
+    const auto *fd = ttf_font_base::make_cache(ch);
     if (fd == nullptr) return fd;
     if (fd->rpidx >= textures.size()) {
         textures.resize(fd->rpidx + 1);

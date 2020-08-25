@@ -138,6 +138,10 @@ void sdl2_video::flip() {
     SDL_RenderPresent(renderer);
 }
 
+int sdl2_video::get_font_size() const {
+    return ttf[0]->get_font_size();
+}
+
 void sdl2_video::draw_rectangle(int x, int y, int w, int h) {
     SDL_Rect rc{x, y, w, h};
     SDL_RenderDrawRect(renderer, &rc);

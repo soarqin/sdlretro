@@ -1,4 +1,4 @@
-#include "sdl1_font.h"
+#include "sdl1_ttf.h"
 
 #include "util.h"
 
@@ -6,7 +6,7 @@
 
 namespace drivers {
 
-void sdl1_font::calc_depth_color(SDL_Surface *surface) {
+void sdl1_ttf::calc_depth_color(SDL_Surface *surface) {
     surface_bpp = surface->format->BitsPerPixel;
     for (uint16_t i = 0; i < 256; ++i) {
         uint8_t c;
@@ -20,7 +20,7 @@ void sdl1_font::calc_depth_color(SDL_Surface *surface) {
     }
 }
 
-void sdl1_font::render(SDL_Surface *surface, int x, int y, const char *text, int width, bool shadow) {
+void sdl1_ttf::render(SDL_Surface *surface, int x, int y, const char *text, int width, bool shadow) {
     if (surface->format->BitsPerPixel != surface_bpp) {
         calc_depth_color(surface);
     }

@@ -1,4 +1,4 @@
-#include "ttf_font.h"
+#include "ttf_font_base.h"
 
 #include "stb_rect_pack.h"
 
@@ -23,13 +23,13 @@ struct rect_pack_data {
     uint8_t pixels[TTF_RECTPACK_WIDTH * TTF_RECTPACK_WIDTH];
 };
 
-ttf_font::ttf_font() {
+ttf_font_base::ttf_font_base() {
 #ifndef USE_STB_TRUETYPE
     FT_Init_FreeType(&ft_lib);
 #endif
 }
 
-ttf_font::~ttf_font() {
+ttf_font_base::~ttf_font_base() {
     for (auto *&p: rectpack_data) delete p;
     rectpack_data.clear();
     for (auto &p: fonts) {
@@ -45,12 +45,12 @@ ttf_font::~ttf_font() {
 #endif
 }
 
-void ttf_font::init(int size, uint8_t width) {
+void ttf_font_base::init(int size, uint8_t width) {
     font_size = size;
     mono_width = width;
 }
 
-bool ttf_font::add(const std::string &filename, int index) {
+bool ttf_font_base::add(const std::string &filename, int index) {
     font_info fi;
 #ifdef USE_STB_TRUETYPE
     if (!util::read_file(filename, fi.ttf_buffer)) {
@@ -70,7 +70,7 @@ bool ttf_font::add(const std::string &filename, int index) {
     return true;
 }
 
-void ttf_font::get_char_width_and_height(uint16_t ch, uint8_t &width, int8_t &t, int8_t &b) {
+void ttf_font_base::get_char_width_and_height(uint16_t ch, uint8_t &width, int8_t &t, int8_t &b) {
     const font_data *fd;
     auto ite = font_cache.find(ch);
     if (ite == font_cache.end()) {
@@ -94,7 +94,7 @@ void ttf_font::get_char_width_and_height(uint16_t ch, uint8_t &width, int8_t &t,
     b = fd->iy0 + fd->h;
 }
 
-const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {
+const ttf_font_base::font_data *ttf_font_base::make_cache(uint16_t ch) {
     font_info *fi = nullptr;
 #ifdef USE_STB_TRUETYPE
     stbtt_fontinfo *info;
@@ -174,17 +174,17 @@ const ttf_font::font_data *ttf_font::make_cache(uint16_t ch) {
     return fd;
 }
 
-void ttf_font::new_rect_pack() {
+void ttf_font_base::new_rect_pack() {
     auto *rpd = new rect_pack_data;
     stbrp_init_target(&rpd->context, TTF_RECTPACK_WIDTH, TTF_RECTPACK_WIDTH, rpd->nodes, TTF_RECTPACK_WIDTH);
     rectpack_data.push_back(rpd);
 }
 
-const uint8_t *ttf_font::get_rect_pack_data(uint8_t idx, int16_t x, int16_t y) {
+const uint8_t *ttf_font_base::get_rect_pack_data(uint8_t idx, int16_t x, int16_t y) {
     return &rectpack_data[idx]->pixels[y * TTF_RECTPACK_WIDTH + x];
 }
 
-uint16_t ttf_font::get_rect_pack_width() {
+uint16_t ttf_font_base::get_rect_pack_width() {
     return TTF_RECTPACK_WIDTH;
 }
 

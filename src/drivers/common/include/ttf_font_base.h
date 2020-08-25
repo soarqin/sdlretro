@@ -17,7 +17,7 @@ namespace drivers {
 
 struct rect_pack_data;
 
-class ttf_font {
+class ttf_font_base {
 protected:
     struct font_data {
         int16_t rpx, rpy;
@@ -37,8 +37,8 @@ protected:
 #endif
     };
 public:
-    ttf_font();
-    virtual ~ttf_font();
+    ttf_font_base();
+    virtual ~ttf_font_base();
     void init(int size, uint8_t width = 0);
     bool add(const std::string& filename, int index = 0);
     void get_char_width_and_height(uint16_t ch, uint8_t &width, int8_t &t, int8_t &b);

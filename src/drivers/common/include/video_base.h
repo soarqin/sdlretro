@@ -23,6 +23,7 @@ public:
     virtual bool frame_drawn() = 0;
     virtual void get_resolution(int &width, int &height) {}
 
+    virtual int get_font_size() const { return 0; }
     virtual void draw_rectangle(int x, int y, int w, int h) {}
     /* width: 0=fullscreen -1=fullscreen allow wrap
      *        others: negative = allow wrap */

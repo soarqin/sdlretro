@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ttf_font.h>
+#include <ttf_font_base.h>
 
 extern "C" {
 typedef struct SDL_Surface SDL_Surface;
@@ -9,7 +9,7 @@ typedef struct SDL_Rect SDL_Rect;
 
 namespace drivers {
 
-class sdl1_font: public ttf_font {
+class sdl1_ttf: public ttf_font_base {
 public:
     void calc_depth_color(SDL_Surface *surface);
 

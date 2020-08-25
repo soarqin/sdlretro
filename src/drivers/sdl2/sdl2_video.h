@@ -28,6 +28,7 @@ public:
     void clear() override;
     void flip() override;
 
+    int get_font_size() const override;
     void draw_rectangle(int x, int y, int w, int h) override;
     /* width: 0=fullscreen -1=fullscreen allow wrap
      *        others: negative = allow wrap */
