@@ -31,11 +31,11 @@ bool sdl2_impl::process_events() {
         case SDL_QUIT:
             return true;
         case SDL_KEYDOWN:
-            if (event.key.keysym.sym ==
+            if (event.key.keysym.scancode ==
 #ifdef GCW_ZERO
-                SDLK_HOME
+                SDL_SCANCODE_HOME
 #else
-                SDLK_ESCAPE
+                SDL_SCANCODE_ESCAPE
 #endif
                 ) {
                 if (!menu_button_pressed)

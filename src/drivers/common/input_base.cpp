@@ -26,8 +26,15 @@ int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, 
         case RETRO_DEVICE_KEYBOARD:
             return 0;
         case RETRO_DEVICE_ANALOG:
-            if (pad_enabled[port] && index <= RETRO_DEVICE_INDEX_ANALOG_BUTTON && id <= RETRO_DEVICE_ID_ANALOG_Y) {
-                return analog_axis[port][index][id];
+            if (!pad_enabled[port]) return 0;
+            if (index <= RETRO_DEVICE_INDEX_ANALOG_RIGHT) {
+                if (id <= RETRO_DEVICE_ID_ANALOG_Y)
+                    return analog_axis[port][index][id];
+            } else if (index == RETRO_DEVICE_INDEX_ANALOG_BUTTON) {
+                if (id==RETRO_DEVICE_ID_JOYPAD_MASK) {
+                    return pad_states[port];
+                }
+                return (pad_states[port] & (1 << id)) ? 1 : 0;
             }
             return 0;
         default:
