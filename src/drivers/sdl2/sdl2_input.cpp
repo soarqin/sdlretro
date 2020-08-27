@@ -58,17 +58,18 @@ void sdl2_input::input_poll() {
     uint16_t state = 0;
 
     SDL_JoystickUpdate();
-    for (int idx = 0; idx < 2; ++idx) {
-        if (!pad_enabled[idx]) continue;
+    for (size_t z = 0; z < 2; ++z) {
+        auto &port = ports[z];
+        if (!port.enabled) continue;
         for (uint32_t i = 0; i < 16; ++i) {
             if (keys[keymap[i]]) state |= 1U << i;
         }
-        pad_states[idx] = static_cast<int16_t>(state);
+        port.states = static_cast<int16_t>(state);
 
-        analog_axis[idx][0][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 0);
-        analog_axis[idx][0][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 1);
-        analog_axis[idx][1][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 2);
-        analog_axis[idx][1][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 3);
+        port.analog_axis[0][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[z], 0);
+        port.analog_axis[0][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[z], 1);
+        port.analog_axis[1][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[z], 2);
+        port.analog_axis[1][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[z], 3);
     }
 }
 

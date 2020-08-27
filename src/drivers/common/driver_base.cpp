@@ -259,7 +259,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: {
             const auto *inp = (const retro_input_descriptor*)data;
             while (inp->description != nullptr) {
-                input->add_button(inp->port, inp->device, inp->index, inp->id, inp->description);
+                input->add_button_desc(inp->port, inp->device, inp->index, inp->id, inp->description);
                 ++inp;
             }
             return true;
