@@ -58,7 +58,7 @@ void sdl2_input::input_poll() {
     uint16_t state = 0;
 
     SDL_JoystickUpdate();
-    for (size_t z = 0; z < 2; ++z) {
+    for (size_t z = 0; z < ports.size(); ++z) {
         auto &port = ports[z];
         if (!port.enabled) continue;
         for (uint32_t i = 0; i < 16; ++i) {

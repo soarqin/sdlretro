@@ -42,6 +42,20 @@ bool sdl2_impl::process_events() {
                     menu_button_pressed = true;
                 else
                     return true;
+            } else {
+                input->on_joybtn(event.key.keysym.scancode, true);
+            }
+            break;
+        case SDL_KEYUP:
+            if (event.key.keysym.scancode ==
+#ifdef GCW_ZERO
+                SDL_SCANCODE_HOME
+#else
+                SDL_SCANCODE_ESCAPE
+#endif
+                ) {
+            } else {
+                input->on_joybtn(event.key.keysym.scancode, false);
             }
             break;
         default: break;
