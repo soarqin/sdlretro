@@ -43,7 +43,7 @@ bool sdl2_impl::process_events() {
                 else
                     return true;
             } else {
-                input->on_joybtn(event.key.keysym.scancode, true);
+                input->on_key(event.key.keysym.scancode, true);
             }
             break;
         case SDL_KEYUP:
@@ -55,7 +55,7 @@ bool sdl2_impl::process_events() {
 #endif
                 ) {
             } else {
-                input->on_joybtn(event.key.keysym.scancode, false);
+                input->on_key(event.key.keysym.scancode, false);
             }
             break;
         default: break;

@@ -48,8 +48,27 @@ sdl2_input::sdl2_input() {
 #endif
     if (!SDL_WasInit(SDL_INIT_JOYSTICK))
         SDL_InitSubSystem(SDL_INIT_JOYSTICK);
-    for (int i = 0; i < 2; ++i)
-        joystick[i] = SDL_JoystickOpen(i);
+    auto sz = SDL_NumJoysticks();
+    gamepad.resize(sz);
+    for (int i = 0; i < sz; ++i) {
+        auto handle = SDL_GameControllerOpen(i);
+        auto &pad = gamepad[i];
+        if (handle) {
+            pad.handle = handle;
+            pad.name = SDL_GameControllerName(handle);
+        } else {
+            pad.handle = nullptr;
+            pad.name.clear();
+        }
+    }
+}
+
+sdl2_input::~sdl2_input() {
+    for (int i = 0; i < 2; ++i) {
+        if (gamepad[i].handle) {
+            SDL_GameControllerClose(gamepad[i].handle);
+        }
+    }
 }
 
 void sdl2_input::input_poll() {
@@ -66,10 +85,10 @@ void sdl2_input::input_poll() {
         }
         port.states = static_cast<int16_t>(state);
 
-        port.analog_axis[0][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[z], 0);
-        port.analog_axis[0][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[z], 1);
-        port.analog_axis[1][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[z], 2);
-        port.analog_axis[1][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[z], 3);
+        port.analog_axis[0][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTX);
+        port.analog_axis[0][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTY);
+        port.analog_axis[1][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTX);
+        port.analog_axis[1][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTY);
     }
 }
 
