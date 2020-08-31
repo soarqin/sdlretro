@@ -58,6 +58,17 @@ bool sdl2_impl::process_events() {
                 input->on_key(event.key.keysym.scancode, false);
             }
             break;
+        case SDL_MOUSEBUTTONDOWN:
+            input->on_mouse(event.button.button, true);
+            break;
+        case SDL_MOUSEBUTTONUP:
+            input->on_mouse(event.button.button, false);
+        case SDL_CONTROLLERBUTTONDOWN:
+            input->on_joybtn(event.cbutton.which, event.cbutton.button, true);
+            break;
+        case SDL_CONTROLLERBUTTONUP:
+            input->on_joybtn(event.cbutton.which, event.cbutton.button, true);
+            break;
         default: break;
         }
     }

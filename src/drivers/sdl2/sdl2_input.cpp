@@ -46,11 +46,12 @@ sdl2_input::sdl2_input() {
         SDL_SCANCODE_X, // RETRO_DEVICE_ID_JOYPAD_R3
     };
 #endif
-    if (!SDL_WasInit(SDL_INIT_JOYSTICK))
-        SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+    if (!SDL_WasInit(SDL_INIT_GAMECONTROLLER))
+        SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
     auto sz = SDL_NumJoysticks();
     gamepad.resize(sz);
     for (int i = 0; i < sz; ++i) {
+        if (!SDL_IsGameController(i)) continue;
         auto handle = SDL_GameControllerOpen(i);
         auto &pad = gamepad[i];
         if (handle) {
@@ -76,7 +77,7 @@ void sdl2_input::input_poll() {
     const uint8_t *keys = SDL_GetKeyboardState(&numkeys);
     uint16_t state = 0;
 
-    SDL_JoystickUpdate();
+    SDL_GameControllerUpdate();
     for (size_t z = 0; z < ports.size(); ++z) {
         auto &port = ports[z];
         if (!port.enabled) continue;
