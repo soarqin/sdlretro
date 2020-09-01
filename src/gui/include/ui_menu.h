@@ -19,7 +19,7 @@ struct menu_item;
 
 class ui_menu {
 public:
-    inline explicit ui_menu(std::shared_ptr<drivers::driver_base> driver): driver(std::move(driver)) {}
+    explicit ui_menu(std::shared_ptr<drivers::driver_base> drv);
     virtual ~ui_menu() = default;
 
     /* select core from menu, return -1 if `cancel` is pressed */

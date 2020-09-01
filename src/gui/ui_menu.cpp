@@ -5,20 +5,38 @@
 #include "sdl_menu.h"
 #include "driver_base.h"
 #include "video_base.h"
+#include "input_base.h"
 
+#include "libretro.h"
 #include "variables.h"
 #include "core_manager.h"
 
 namespace gui {
 
+ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(drv)) {
+    driver->set_input_scene(drivers::input_scene_menu);
+    auto *input = driver->get_input();
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "UP");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN, "DOWN");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "LEFT");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "RIGHT");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L, "L1");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R, "R1");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2, "L2");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2, "R2");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, "A");
+    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, "B");
+}
+
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
+    driver->set_input_scene(drivers::input_scene_menu);
     sdl_menu menu(driver, true);
 
     menu.set_title("[SELECT CORE TO USE]");
 
     std::vector<menu_item> items;
     for (const auto *core: core_list) {
-        menu_item mi = { menu_static, core->name + ' ' + core->version };
+        menu_item mi = {menu_static, core->name + ' ' + core->version};
         items.emplace_back(mi);
     }
     menu.set_items(items);
@@ -27,10 +45,12 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
     auto border = w / 16;
     menu.set_rect(border, border, w - border * 2, h - border * 2);
     if (!menu.enter_menu_loop()) return -1;
+    driver->set_input_scene(drivers::input_scene_game);
     return menu.get_selected();
 }
 
 void ui_menu::in_game_menu() {
+    driver->set_input_scene(drivers::input_scene_menu);
     sdl_menu menu(driver, true);
 
     menu.set_title("[IN-GAME MENU]");
@@ -39,17 +59,32 @@ void ui_menu::in_game_menu() {
     const auto &vars = vari->get_variables();
     if (vars.empty()) {
         std::vector<menu_item> items = {
-            {menu_static, "Global Settings", "", 0, {}, [this](const menu_item &item) { return global_settings_menu(item); } },
-            {menu_static, "Reset", "", 0, {}, [this](const menu_item&) { driver->reset(); return true; } },
-            {menu_static, "Exit", "", 0, {}, [this](const menu_item&) { driver->shutdown(); return true; } },
+            {menu_static, "Global Settings", "", 0, {},
+             [this](const menu_item &item) { return global_settings_menu(item); }},
+            {menu_static, "Reset", "", 0, {}, [this](const menu_item &) {
+                driver->reset();
+                return true;
+            }},
+            {menu_static, "Exit", "", 0, {}, [this](const menu_item &) {
+                driver->shutdown();
+                return true;
+            }},
         };
         menu.set_items(items);
     } else {
         std::vector<menu_item> items = {
-            {menu_static, "Global Settings", "", 0, {}, [this](const menu_item &item) { return global_settings_menu(item); } },
-            {menu_static, "Core Settings", "", 0, {}, [this](const menu_item &item) { return core_settings_menu(item); } },
-            {menu_static, "Reset", "", 0, {}, [this](const menu_item&) { driver->reset(); return true; } },
-            {menu_static, "Exit", "", 0, {}, [this](const menu_item&) { driver->shutdown(); return true; } },
+            {menu_static, "Global Settings", "", 0, {},
+             [this](const menu_item &item) { return global_settings_menu(item); }},
+            {menu_static, "Core Settings", "", 0, {},
+             [this](const menu_item &item) { return core_settings_menu(item); }},
+            {menu_static, "Reset", "", 0, {}, [this](const menu_item &) {
+                driver->reset();
+                return true;
+            }},
+            {menu_static, "Exit", "", 0, {}, [this](const menu_item &) {
+                driver->shutdown();
+                return true;
+            }},
         };
         menu.set_items(items);
     }
@@ -58,13 +93,14 @@ void ui_menu::in_game_menu() {
     auto border = w / 16;
     menu.set_rect(border, border, w - border * 2, h - border * 2);
     menu.enter_menu_loop();
+    driver->set_input_scene(drivers::input_scene_game);
 }
 
-enum :size_t {
+enum : size_t {
     check_secs_count = 4
 };
 const uint32_t check_secs[check_secs_count] = {0, 5, 15, 30};
-bool ui_menu::global_settings_menu(const menu_item&) {
+bool ui_menu::global_settings_menu(const menu_item &) {
     sdl_menu menu(driver, false);
 
     menu.set_title("[GLOBAL SETTINGS]");
@@ -76,28 +112,28 @@ bool ui_menu::global_settings_menu(const menu_item&) {
         check_sec_idx = 0;
     }
     std::vector<menu_item> items = {
-        { menu_values, "SRAM/RTC Save Interval", "", check_sec_idx,
-            {"off", "5", "15", "30"},
-            [](const menu_item &item)->bool {
-                if (item.selected < check_secs_count)
-                    g_cfg.set_save_check(check_secs[item.selected]);
-                return false;
-            }
+        {menu_values, "SRAM/RTC Save Interval", "", check_sec_idx,
+         {"off", "5", "15", "30"},
+         [](const menu_item &item) -> bool {
+             if (item.selected < check_secs_count)
+                 g_cfg.set_save_check(check_secs[item.selected]);
+             return false;
+         }
         },
 #if SDLRETRO_FRONTEND == 2
-        { menu_boolean, "Integer Scaling", "", static_cast<size_t>(g_cfg.get_integer_scaling() ? 1 : 0),
-            {}, [&](const menu_item &item)->bool {
-                g_cfg.set_integer_scaling(item.selected != 0);
-                driver->get_video()->config_changed();
-                return false;
-            }
+        {menu_boolean, "Integer Scaling", "", static_cast<size_t>(g_cfg.get_integer_scaling() ? 1 : 0),
+         {}, [&](const menu_item &item) -> bool {
+            g_cfg.set_integer_scaling(item.selected != 0);
+            driver->get_video()->config_changed();
+            return false;
+        }
         },
-        { menu_boolean, "Linear Rendering", "", static_cast<size_t>(g_cfg.get_linear() ? 1 : 0),
-            {}, [&](const menu_item &item)->bool {
-                g_cfg.set_linear(item.selected != 0);
-                driver->get_video()->config_changed();
-                return false;
-            }
+        {menu_boolean, "Linear Rendering", "", static_cast<size_t>(g_cfg.get_linear() ? 1 : 0),
+         {}, [&](const menu_item &item) -> bool {
+            g_cfg.set_linear(item.selected != 0);
+            driver->get_video()->config_changed();
+            return false;
+        }
         },
 #endif
     };
@@ -112,7 +148,7 @@ bool ui_menu::global_settings_menu(const menu_item&) {
     return false;
 }
 
-bool ui_menu::core_settings_menu(const menu_item&) {
+bool ui_menu::core_settings_menu(const menu_item &) {
     auto *vari = driver->get_variables();
     const auto &vars = vari->get_variables();
     if (vars.empty()) return false;
@@ -122,10 +158,10 @@ bool ui_menu::core_settings_menu(const menu_item&) {
 
     std::vector<menu_item> items;
     for (auto &var: vars) {
-        menu_item item = { menu_values, var.label, var.info, var.curr_index };
+        menu_item item = {menu_values, var.label, var.info, var.curr_index};
         for (auto &opt: var.options)
             item.values.push_back(opt.first);
-        item.callback = [this, &vari, &var](const menu_item &item)->bool {
+        item.callback = [this, &vari, &var](const menu_item &item) -> bool {
             vari->set_variable(var.name, item.selected);
             return false;
         };

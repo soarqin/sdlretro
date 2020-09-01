@@ -44,13 +44,19 @@ void input_base::add_button_desc(uint8_t port, uint8_t device, uint8_t index, ui
     if (p.device != device) {
         if (p.device != 0)
             spdlog::log(spdlog::level::warn, "Got different device type for port {}: original is {}, new is {}", port, p.device, device);
+        p.device = device;
     }
-    switch(device) {
-    case RETRO_DEVICE_JOYPAD:
-        index = RETRO_DEVICE_INDEX_ANALOG_BUTTON;
-        break;
-    default:
-        break;
+    if (device == RETRO_DEVICE_ANALOG) {
+        /* remap device index like this:
+         *   RETRO_DEVICE_INDEX_ANALOG_BUTTON -> 0
+         *   RETRO_DEVICE_INDEX_ANALOG_LEFT   -> 1
+         *   RETRO_DEVICE_INDEX_ANALOG_RIGHT  -> 2
+         */
+        if (index < RETRO_DEVICE_INDEX_ANALOG_BUTTON) {
+            ++index;
+        } else if (index == RETRO_DEVICE_INDEX_ANALOG_BUTTON) {
+            index = 0;
+        }
     }
     auto value = button_packed_value(index, id);
     p.available = true;
@@ -86,16 +92,26 @@ void input_base::on_input(uint32_t id, bool pressed) {
     if (ite == key_mapping.end()) return;
     auto *btn = std::get<2>(ite->second);
     if (btn == nullptr) return;
-    switch(btn->index) {
-    case RETRO_DEVICE_INDEX_ANALOG_BUTTON:
+    auto &port = ports[btn->port];
+    switch(port.device) {
+    case RETRO_DEVICE_JOYPAD:
         if (pressed)
-            ports[btn->port].states |= 1U << btn->id;
+            port.states |= 1U << btn->id;
         else
-            ports[btn->port].states &= ~(1U << btn->id);
+            port.states &= ~(1U << btn->id);
         break;
-    case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-    case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-        ports[btn->port].analog_axis[btn->index][btn->id & 1] = pressed ? ((btn->id >> 1) ? -0x8000 : 0x7FFF) : 0;
+    case RETRO_DEVICE_ANALOG:
+        /* process remapped index */
+        if (btn->index == 0) {
+            if (pressed)
+                port.states |= 1U << btn->id;
+            else
+                port.states &= ~(1U << btn->id);
+        } else {
+            if (btn->index <= RETRO_DEVICE_INDEX_ANALOG_BUTTON) {
+                port.analog_axis[btn->index - 1][btn->id & 1] = pressed ? ((btn->id >> 1) ? -0x8000 : 0x7FFF) : 0;
+            }
+        }
         break;
     default:
         break;

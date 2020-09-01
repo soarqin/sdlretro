@@ -14,12 +14,14 @@ sdl2_impl::sdl2_impl() {
         return;
     }
     video = std::make_shared<sdl2_video>();
-    input = std::make_shared<sdl2_input>();
+    input_scenes[input_scene_menu] = std::make_shared<sdl2_input>();
+    input_scenes[input_scene_game] = std::make_shared<sdl2_input>();
 }
 
 sdl2_impl::~sdl2_impl() {
     video.reset();
-    input.reset();
+    input_scenes[input_scene_menu].reset();
+    input_scenes[input_scene_game].reset();
     audio.reset();
     SDL_Quit();
 }
@@ -31,21 +33,6 @@ bool sdl2_impl::process_events() {
         case SDL_QUIT:
             return true;
         case SDL_KEYDOWN:
-            if (event.key.keysym.scancode ==
-#ifdef GCW_ZERO
-                SDL_SCANCODE_HOME
-#else
-                SDL_SCANCODE_ESCAPE
-#endif
-                ) {
-                if (!menu_button_pressed)
-                    menu_button_pressed = true;
-                else
-                    return true;
-            } else {
-                input->on_key(event.key.keysym.scancode, true);
-            }
-            break;
         case SDL_KEYUP:
             if (event.key.keysym.scancode ==
 #ifdef GCW_ZERO
@@ -54,20 +41,23 @@ bool sdl2_impl::process_events() {
                 SDL_SCANCODE_ESCAPE
 #endif
                 ) {
+                if (event.type == SDL_KEYDOWN) {
+                    if (!menu_button_pressed)
+                        menu_button_pressed = true;
+                    else
+                        return true;
+                }
             } else {
-                input->on_key(event.key.keysym.scancode, false);
+                input->on_key(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
-            input->on_mouse(event.button.button, true);
-            break;
         case SDL_MOUSEBUTTONUP:
-            input->on_mouse(event.button.button, false);
-        case SDL_CONTROLLERBUTTONDOWN:
-            input->on_joybtn(event.cbutton.which, event.cbutton.button, true);
+            input->on_mouse(event.button.button, event.type == SDL_MOUSEBUTTONDOWN);
             break;
+        case SDL_CONTROLLERBUTTONDOWN:
         case SDL_CONTROLLERBUTTONUP:
-            input->on_joybtn(event.cbutton.which, event.cbutton.button, true);
+            input->on_joybtn(event.cbutton.which, event.cbutton.button, event.type == SDL_CONTROLLERBUTTONDOWN);
             break;
         default: break;
         }

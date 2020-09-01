@@ -24,7 +24,6 @@ public:
     void input_poll() override;
 
 private:
-    std::array<int, 16> keymap = {};
     std::vector<sdl2_game_pad> gamepad = {};
 };
 

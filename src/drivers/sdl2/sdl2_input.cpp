@@ -7,6 +7,7 @@
 namespace drivers {
 
 sdl2_input::sdl2_input() {
+    std::array<uint16_t, 16>
 #ifdef GCW_ZERO
     keymap = {
         SDLK_LALT,   // RETRO_DEVICE_ID_JOYPAD_B
@@ -62,30 +63,40 @@ sdl2_input::sdl2_input() {
             pad.name.clear();
         }
     }
-}
-
-sdl2_input::~sdl2_input() {
-    for (int i = 0; i < 2; ++i) {
-        if (gamepad[i].handle) {
-            SDL_GameControllerClose(gamepad[i].handle);
-        }
+    for (size_t i = 0; i < keymap.size(); ++i) {
+        map_key(keymap[i], 0, i);
     }
 }
 
+sdl2_input::~sdl2_input() {
+    for (auto &pad: gamepad) {
+        if (pad.handle) {
+            SDL_GameControllerClose(pad.handle);
+        }
+    }
+    gamepad.clear();
+}
+
 void sdl2_input::input_poll() {
+    /*
     int numkeys;
     const uint8_t *keys = SDL_GetKeyboardState(&numkeys);
     uint16_t state = 0;
+     */
 
     SDL_GameControllerUpdate();
+    size_t pad_count = gamepad.size();
     for (size_t z = 0; z < ports.size(); ++z) {
         auto &port = ports[z];
         if (!port.enabled) continue;
+        /*
         for (uint32_t i = 0; i < 16; ++i) {
             if (keys[keymap[i]]) state |= 1U << i;
         }
         port.states = static_cast<int16_t>(state);
+         */
 
+        if (z >= pad_count || !gamepad[z].handle) continue;
         port.analog_axis[0][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTX);
         port.analog_axis[0][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTY);
         port.analog_axis[1][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTX);
