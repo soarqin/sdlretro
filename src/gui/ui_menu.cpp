@@ -16,6 +16,7 @@ namespace gui {
 ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(drv)) {
     driver->set_input_scene(drivers::input_scene_menu);
     auto *input = driver->get_input();
+    input->clear_button_desc();
     input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "UP");
     input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN, "DOWN");
     input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "LEFT");
@@ -26,6 +27,7 @@ ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(dr
     input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2, "R2");
     input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, "A");
     input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, "B");
+    driver->set_input_scene(drivers::input_scene_game);
 }
 
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {

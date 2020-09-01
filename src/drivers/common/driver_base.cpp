@@ -430,6 +430,7 @@ bool driver_base::load_core(const std::string &path) {
     if (!core) return false;
 
     current_driver = this;
+    input->clear_button_desc();
 
     retro_system_info sysinfo = {};
     core->retro_get_system_info(&sysinfo);
