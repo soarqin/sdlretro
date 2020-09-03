@@ -61,36 +61,35 @@ void input_base::add_button_desc(uint8_t port, uint8_t device, uint8_t index, ui
     auto value = button_packed_value(index, id);
     p.available = true;
     p.buttons[value] = std::move(bt);
-    for (auto &m: key_mapping) {
-        if (std::get<0>(m.second) == port && std::get<1>(m.second) == value) {
-            std::get<2>(m.second) = &p.buttons[value];
-        }
+    auto ite = rev_key_mapping.find((static_cast<uint64_t>(port) << 32) | static_cast<uint64_t>(value));
+    if (ite != rev_key_mapping.end()) {
+        key_mapping[ite->second] = &p.buttons[value];
+        if (!p.enabled) p.enabled = true;
     }
 }
 
 void input_base::clear_button_desc() {
-    for (auto &m: key_mapping) {
-        std::get<2>(m.second) = nullptr;
-    }
+    key_mapping.clear();
     ports.clear();
 }
 
-void input_base::add_mapping(uint32_t from, uint8_t to_port, uint16_t to_id) {
+void input_base::add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id) {
     if (to_port < ports.size()) {
         auto &port = ports[to_port];
         auto ite = port.buttons.find(to_id);
         if (ite != port.buttons.end()) {
-            key_mapping[from] = std::make_tuple(to_port, to_id, &ite->second);
+            key_mapping[from] = &ite->second;
+            if (!port.enabled) port.enabled = true;
             return;
         }
     }
-    key_mapping[from] = std::make_tuple(to_port, to_id, nullptr);
+    rev_key_mapping[(static_cast<uint64_t>(to_port) << 32) | static_cast<uint64_t>(to_id)] = from;
 }
 
-void input_base::on_input(uint32_t id, bool pressed) {
+void input_base::on_input(uint64_t id, bool pressed) {
     auto ite = key_mapping.find(id);
     if (ite == key_mapping.end()) return;
-    auto *btn = std::get<2>(ite->second);
+    auto *btn = ite->second;
     if (btn == nullptr) return;
     auto &port = ports[btn->port];
     switch(port.device) {

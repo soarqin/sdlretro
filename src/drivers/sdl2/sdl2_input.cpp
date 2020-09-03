@@ -50,18 +50,21 @@ sdl2_input::sdl2_input() {
     if (!SDL_WasInit(SDL_INIT_GAMECONTROLLER))
         SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
     auto sz = SDL_NumJoysticks();
-    gamepad.resize(sz);
+    gamepad.clear();
     for (int i = 0; i < sz; ++i) {
         if (!SDL_IsGameController(i)) continue;
         auto handle = SDL_GameControllerOpen(i);
-        auto &pad = gamepad[i];
+        sdl2_game_pad pad;
         if (handle) {
             pad.handle = handle;
+            pad.device_id = SDL_JoystickGetDeviceInstanceID(i);
             pad.name = SDL_GameControllerName(handle);
         } else {
             pad.handle = nullptr;
+            pad.device_id = 0;
             pad.name.clear();
         }
+        gamepad.emplace_back(pad);
     }
     for (size_t i = 0; i < keymap.size(); ++i) {
         map_key(keymap[i], 0, i);
@@ -101,6 +104,51 @@ void sdl2_input::input_poll() {
         port.analog_axis[0][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTY);
         port.analog_axis[1][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTX);
         port.analog_axis[1][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTY);
+    }
+}
+
+void sdl2_input::port_connected(int index) {
+    if (!SDL_IsGameController(index)) return;
+    auto handle = SDL_GameControllerOpen(index);
+    if (!handle) return;
+
+    sdl2_game_pad *pad = nullptr;
+    for (auto &p: gamepad) {
+        if (p.handle != nullptr) continue;
+        pad = &p;
+        break;
+    }
+    if (pad == nullptr) {
+        gamepad.resize(gamepad.size() + 1);
+        pad = &gamepad.back();
+    }
+
+    pad->handle = handle;
+    pad->device_id = SDL_JoystickGetDeviceInstanceID(index);
+    pad->name = SDL_GameControllerName(handle);
+}
+
+void sdl2_input::port_disconnected(int device_id) {
+    int found_port = -1;
+    for (size_t i = 0; i < gamepad.size(); ++i) {
+        auto &pad = gamepad[i];
+        if (pad.device_id == device_id) {
+            SDL_GameControllerClose(pad.handle);
+            pad.handle = nullptr;
+            pad.device_id = 0;
+            pad.name.clear();
+            found_port = i;
+            break;
+        }
+    }
+    if (found_port < 0) return;
+    ++found_port;
+    for (auto ite = key_mapping.begin(); ite != key_mapping.end();) {
+        if ((ite->first >> 16) == found_port) {
+            ite = key_mapping.erase(ite);
+        } else {
+            ++ite;
+        }
     }
 }
 

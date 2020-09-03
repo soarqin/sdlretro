@@ -59,6 +59,12 @@ bool sdl2_impl::process_events() {
         case SDL_CONTROLLERBUTTONUP:
             input->on_joybtn(event.cbutton.which, event.cbutton.button, event.type == SDL_CONTROLLERBUTTONDOWN);
             break;
+        case SDL_CONTROLLERDEVICEADDED:
+            input->port_connected(event.cdevice.which);
+            break;
+        case SDL_CONTROLLERDEVICEREMOVED:
+            input->port_disconnected(event.cdevice.which);
+            break;
         default: break;
         }
     }
