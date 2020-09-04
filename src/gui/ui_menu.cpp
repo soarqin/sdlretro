@@ -39,39 +39,29 @@ void ui_menu::in_game_menu() {
 
     menu.set_title("[IN-GAME MENU]");
 
+    std::vector<menu_item> items = {
+        {menu_static, "Global Settings", "", 0, {},
+         [this](const menu_item &item) { return global_settings_menu(); }},
+        {menu_static, "Core Settings", "", 0, {},
+         [this](const menu_item &item) { return core_settings_menu(); }},
+        {menu_static, "Input Settings", "", 0, {},
+         [this](const menu_item &item) { return input_settings_menu(); }},
+        {menu_static, "Reset Game", "", 0, {}, [this](const menu_item &) {
+            driver->reset();
+            return true;
+        }},
+        {menu_static, "Exit", "", 0, {}, [this](const menu_item &) {
+            driver->shutdown();
+            return true;
+        }},
+    };
     auto *vari = driver->get_variables();
     const auto &vars = vari->get_variables();
     if (vars.empty()) {
-        std::vector<menu_item> items = {
-            {menu_static, "Global Settings", "", 0, {},
-             [this](const menu_item &item) { return global_settings_menu(item); }},
-            {menu_static, "Reset", "", 0, {}, [this](const menu_item &) {
-                driver->reset();
-                return true;
-            }},
-            {menu_static, "Exit", "", 0, {}, [this](const menu_item &) {
-                driver->shutdown();
-                return true;
-            }},
-        };
-        menu.set_items(items);
-    } else {
-        std::vector<menu_item> items = {
-            {menu_static, "Global Settings", "", 0, {},
-             [this](const menu_item &item) { return global_settings_menu(item); }},
-            {menu_static, "Core Settings", "", 0, {},
-             [this](const menu_item &item) { return core_settings_menu(item); }},
-            {menu_static, "Reset", "", 0, {}, [this](const menu_item &) {
-                driver->reset();
-                return true;
-            }},
-            {menu_static, "Exit", "", 0, {}, [this](const menu_item &) {
-                driver->shutdown();
-                return true;
-            }},
-        };
-        menu.set_items(items);
+        /* remove `Core Settings` from menu */
+        items.erase(items.begin() + 1);
     }
+    menu.set_items(items);
     int w, h;
     std::tie(w, h) = g_cfg.get_resolution();
     auto border = w / 16;
@@ -79,11 +69,12 @@ void ui_menu::in_game_menu() {
     menu.enter_menu_loop();
 }
 
-enum : size_t {
-    check_secs_count = 4
-};
-const uint32_t check_secs[check_secs_count] = {0, 5, 15, 30};
-bool ui_menu::global_settings_menu(const menu_item &) {
+bool ui_menu::global_settings_menu() {
+    enum :size_t {
+        check_secs_count = 4
+    };
+    static const uint32_t check_secs[check_secs_count] = {0, 5, 15, 30};
+
     sdl_menu menu(driver, false);
 
     menu.set_title("[GLOBAL SETTINGS]");
@@ -131,7 +122,7 @@ bool ui_menu::global_settings_menu(const menu_item &) {
     return false;
 }
 
-bool ui_menu::core_settings_menu(const menu_item &) {
+bool ui_menu::core_settings_menu() {
     auto *vari = driver->get_variables();
     const auto &vars = vari->get_variables();
     if (vars.empty()) return false;
@@ -158,6 +149,10 @@ bool ui_menu::core_settings_menu(const menu_item &) {
     menu.set_item_width(w - border * 2 - 90);
     menu.enter_menu_loop();
     driver->save_variables_to_cfg();
+    return false;
+}
+
+bool ui_menu::input_settings_menu() {
     return false;
 }
 

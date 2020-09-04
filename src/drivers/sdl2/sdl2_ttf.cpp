@@ -41,9 +41,10 @@ const ttf_font_base::font_data *sdl2_ttf::make_cache(uint16_t ch) {
     auto pix_spacing = pitch - fd->w * 4;
     auto *pixels = (uint8_t*)data + fd->rpx * 4 + fd->rpy * pitch;
     auto *shpixels = (uint8_t*)shdata + fd->rpx * 4 + fd->rpy * pitch;
+    auto pixel_color = color;
     for (uint32_t j = 0; j < fd->h; ++j) {
         for (uint32_t i = 0; i < fd->w; ++i) {
-            *(uint32_t*)pixels = 0xFFFFFFu | (((uint32_t)*src_ptr) << 24);
+            *(uint32_t*)pixels = pixel_color | (((uint32_t)*src_ptr) << 24);
             *(uint32_t*)shpixels = ((uint32_t)*src_ptr) << 24;
             pixels += 4;
             shpixels += 4;
@@ -105,6 +106,10 @@ void sdl2_ttf::render(int x, int y, const char *text, int width, int height, boo
         x += fd->advW;
         nwidth -= fd->advW;
     }
+}
+
+void sdl2_ttf::set_draw_color(uint8_t r, uint8_t g, uint8_t b) {
+    color = (static_cast<uint32_t>(r) << 16) | (static_cast<uint32_t>(g) << 16) | static_cast<uint32_t>(b);
 }
 
 }

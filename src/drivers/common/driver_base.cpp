@@ -505,17 +505,17 @@ void driver_base::check_single_ram(unsigned int id, std::vector<uint8_t> &data, 
     if (size) {
         void *ram = core->retro_get_memory_data(id);
         if (size != data.size()) {
-            pos = 0;
-        } else {
-            size_t check_size = (pos + 65536) > size ? size - pos : 65536;
-            spdlog::trace("Checking RAM block {}: from {:x}, length {:x}/{:x}", id, pos, check_size, size);
-            if (memcmp((uint8_t*)ram + pos, data.data() + pos, check_size) == 0) {
-                pos += check_size;
-                if (pos >= size) pos = 0;
-                return;
-            }
-            pos = 0;
+            data.resize(size, 0);
+            if (size <= pos) pos = 0;
         }
+        size_t check_size = (pos + 65536) > size ? size - pos : 65536;
+        spdlog::trace("Checking RAM block {}: from 0x{:x}, length 0x{:x}/0x{:x}", id, pos, check_size, size);
+        if (memcmp((uint8_t*)ram + pos, data.data() + pos, check_size) == 0) {
+            pos += check_size;
+            if (pos >= size) pos = 0;
+            return;
+        }
+        pos = 0;
         spdlog::trace("RAM changed, saving to {}", filename);
         data.assign((uint8_t*)ram, (uint8_t*)ram + size);
         util::write_file(filename, data);

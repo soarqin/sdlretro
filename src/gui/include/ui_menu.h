@@ -28,8 +28,10 @@ public:
     /* enter ingame menu */
     void in_game_menu();
 
-    bool global_settings_menu(const menu_item&);
-    bool core_settings_menu(const menu_item&);
+protected:
+    bool global_settings_menu();
+    bool core_settings_menu();
+    bool input_settings_menu();
 
 private:
     std::shared_ptr<drivers::driver_base> driver;

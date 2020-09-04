@@ -27,7 +27,6 @@ sdl2_video::sdl2_video() {
     support_render_to_texture = (info.flags & SDL_RENDERER_TARGETTEXTURE) != 0;
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
-    SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
 
     ttf[0] = std::make_shared<sdl2_ttf>(renderer);
     ttf[0]->init(16, 0);
@@ -131,6 +130,7 @@ void *sdl2_video::get_framebuffer(unsigned int *width, unsigned int *height, siz
 }
 
 void sdl2_video::clear() {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 }
 
@@ -140,6 +140,10 @@ void sdl2_video::flip() {
 
 int sdl2_video::get_font_size() const {
     return ttf[0]->get_font_size();
+}
+
+void sdl2_video::set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
 }
 
 void sdl2_video::draw_rectangle(int x, int y, int w, int h) {

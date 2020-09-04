@@ -80,6 +80,7 @@ void sdl_menu::draw() {
         auto &item = items[i];
         video->draw_text(x, y, item.text.c_str(), item_width, true);
         if (i == selected) {
+            video->set_draw_color(0xB4, 0xB4, 0xB4, 0xFF);
             video->draw_rectangle(x - 3, y + top_most - 3, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 6, bot_most - top_most + 6);
             video->draw_rectangle(x - 4, y + top_most - 4, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 8, bot_most - top_most + 8);
         }

@@ -24,6 +24,7 @@ public:
     virtual void get_resolution(int &width, int &height) {}
 
     virtual int get_font_size() const { return 0; }
+    virtual void set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { }
     virtual void draw_rectangle(int x, int y, int w, int h) {}
     /* width: 0=fullscreen -1=fullscreen allow wrap
      *        others: negative = allow wrap */
