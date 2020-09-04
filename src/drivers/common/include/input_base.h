@@ -13,8 +13,6 @@ struct output_button_t {
 
     uint8_t port;
 
-    bool available;
-
     std::string description;
 };
 
@@ -42,10 +40,21 @@ public:
     /* virtual method called on gamepad disconnected */
     virtual void port_disconnected(int device_id) = 0;
 
+    void on_key(uint16_t id, bool pressed) {
+        on_input(id, pressed);
+    }
+    void on_mouse(uint16_t id, bool pressed) {
+        on_input(1024 + id, pressed);
+    }
+    void on_joybtn(int device_id, uint16_t id, bool pressed) {
+        on_input((static_cast<uint64_t>(device_id) << 16) | static_cast<uint64_t>(id), pressed);
+    }
+
     int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id);
 
     void add_button_desc(uint8_t port, uint8_t device, uint8_t index, uint16_t id, const std::string &desc);
     void clear_button_desc();
+    void clear_menu_button_desc();
 
     inline void map_key(uint16_t from_id, uint8_t to_port, uint16_t to_id) {
         add_mapping(from_id, to_port, to_id);
@@ -59,18 +68,8 @@ public:
         add_mapping((static_cast<uint64_t>(from_device_id) << 16) | static_cast<uint64_t>(from_id), to_port, to_id);
     }
 
-    inline int16_t get_pad_states(unsigned index) { return ports[index].states; }
-
-    inline void on_key(uint16_t id, bool pressed) {
-        on_input(id, pressed);
-    }
-    inline void on_mouse(uint16_t id, bool pressed) {
-        on_input(1024 + id, pressed);
-
-    }
-    inline void on_joybtn(int device_id, uint16_t id, bool pressed) {
-        on_input((static_cast<uint64_t>(device_id) << 16) | static_cast<uint64_t>(id), pressed);
-    }
+    inline int16_t get_menu_pad_states() const { return port_menu.states; }
+    inline void set_in_menu(bool b) { in_menu = b; }
 
 private:
     void add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id);
@@ -82,10 +81,13 @@ protected:
     }
 
 protected:
-    std::map<uint64_t, output_button_t*> key_mapping;
-    std::map<uint64_t, uint64_t> rev_key_mapping;
+    std::map<uint64_t, output_button_t*> game_mapping, menu_mapping;
+    std::map<uint64_t, uint64_t> rev_game_mapping, rev_menu_mapping;
 
     std::vector<input_port_t> ports;
+    input_port_t port_menu {};
+
+    bool in_menu = false;
 };
 
 }

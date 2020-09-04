@@ -56,8 +56,6 @@ driver_base::driver_base() {
 }
 
 driver_base::~driver_base() {
-    input.reset();
-
     deinit_internal();
 
     if (core) {

@@ -66,12 +66,6 @@ public:
     /* load core from path */
     bool load_core(const std::string &path);
 
-    /* set current input scene */
-    inline void set_input_scene(size_t scene) {
-        if (scene < input_scene_count)
-            input = input_scenes[scene];
-    }
-
     /* process events, for menu use, return true for QUIT event */
     virtual bool process_events() { return false; }
 
@@ -143,9 +137,7 @@ protected:
     /* buffered_audio for audio input */
     std::shared_ptr<audio_base> audio;
 
-    /* input scenes */
-    std::shared_ptr<input_base> input_scenes[input_scene_count];
-    /* current input scene for contoller input */
+    /* input device handling */
     std::shared_ptr<input_base> input;
 
     /* varaibles */

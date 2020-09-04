@@ -68,6 +68,7 @@ sdl2_input::sdl2_input() {
     }
     for (size_t i = 0; i < keymap.size(); ++i) {
         map_key(keymap[i], 0, i);
+        map_key(keymap[i], 0xFF, i);
     }
 }
 
@@ -143,9 +144,9 @@ void sdl2_input::port_disconnected(int device_id) {
     }
     if (found_port < 0) return;
     ++found_port;
-    for (auto ite = key_mapping.begin(); ite != key_mapping.end();) {
+    for (auto ite = game_mapping.begin(); ite != game_mapping.end();) {
         if ((ite->first >> 16) == found_port) {
-            ite = key_mapping.erase(ite);
+            ite = game_mapping.erase(ite);
         } else {
             ++ite;
         }

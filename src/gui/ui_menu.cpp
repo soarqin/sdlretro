@@ -5,7 +5,6 @@
 #include "sdl_menu.h"
 #include "driver_base.h"
 #include "video_base.h"
-#include "input_base.h"
 
 #include "libretro.h"
 #include "variables.h"
@@ -14,24 +13,9 @@
 namespace gui {
 
 ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(drv)) {
-    driver->set_input_scene(drivers::input_scene_menu);
-    auto *input = driver->get_input();
-    input->clear_button_desc();
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "UP");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN, "DOWN");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "LEFT");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "RIGHT");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L, "L1");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R, "R1");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2, "L2");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2, "R2");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, "A");
-    input->add_button_desc(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, "B");
-    driver->set_input_scene(drivers::input_scene_game);
 }
 
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
-    driver->set_input_scene(drivers::input_scene_menu);
     sdl_menu menu(driver, true);
 
     menu.set_title("[SELECT CORE TO USE]");
@@ -47,12 +31,10 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
     auto border = w / 16;
     menu.set_rect(border, border, w - border * 2, h - border * 2);
     if (!menu.enter_menu_loop()) return -1;
-    driver->set_input_scene(drivers::input_scene_game);
     return menu.get_selected();
 }
 
 void ui_menu::in_game_menu() {
-    driver->set_input_scene(drivers::input_scene_menu);
     sdl_menu menu(driver, true);
 
     menu.set_title("[IN-GAME MENU]");
@@ -95,7 +77,6 @@ void ui_menu::in_game_menu() {
     auto border = w / 16;
     menu.set_rect(border, border, w - border * 2, h - border * 2);
     menu.enter_menu_loop();
-    driver->set_input_scene(drivers::input_scene_game);
 }
 
 enum : size_t {

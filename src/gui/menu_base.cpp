@@ -10,8 +10,26 @@
 
 namespace gui {
 
+menu_base::menu_base(std::shared_ptr<drivers::driver_base> d, bool t) : driver(std::move(d)), topmenu(t) {
+}
+
 bool menu_base::enter_menu_loop() {
     if (topmenu) {
+        auto *input = driver->get_input();
+        input->clear_menu_button_desc();
+
+        input->set_in_menu(true);
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "UP");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN, "DOWN");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "LEFT");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "RIGHT");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L, "L1");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R, "R1");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2, "L2");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2, "R2");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, "A");
+        input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, "B");
+
         driver->get_video()->enter_menu();
     }
 
@@ -34,6 +52,7 @@ bool menu_base::enter_menu_loop() {
 
     if (topmenu) {
         driver->get_video()->leave_menu();
+        driver->get_input()->set_in_menu(false);
     }
     leave_menu_loop();
     return ok_pressed;
@@ -142,7 +161,7 @@ void menu_base::value_inc() {
 bool menu_base::poll_input() {
     auto *input = driver->get_input();
     input->input_poll();
-    auto states = input->get_pad_states(0);
+    auto states = input->get_menu_pad_states();
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_UP)) {
         move_up();
         return true;

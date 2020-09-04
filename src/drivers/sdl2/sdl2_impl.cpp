@@ -14,14 +14,12 @@ sdl2_impl::sdl2_impl() {
         return;
     }
     video = std::make_shared<sdl2_video>();
-    input_scenes[input_scene_menu] = std::make_shared<sdl2_input>();
-    input_scenes[input_scene_game] = std::make_shared<sdl2_input>();
+    input = std::make_shared<sdl2_input>();
 }
 
 sdl2_impl::~sdl2_impl() {
     video.reset();
-    input_scenes[input_scene_menu].reset();
-    input_scenes[input_scene_game].reset();
+    input.reset();
     audio.reset();
     SDL_Quit();
 }

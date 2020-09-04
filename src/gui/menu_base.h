@@ -57,7 +57,7 @@ struct menu_item {
 
 class menu_base {
 public:
-    inline menu_base(std::shared_ptr<drivers::driver_base> d, bool t): driver(std::move(d)), topmenu(t) {}
+    menu_base(std::shared_ptr<drivers::driver_base> d, bool t);
     virtual ~menu_base() = default;
 
     inline void set_title(const std::string &text) { title = text; }
