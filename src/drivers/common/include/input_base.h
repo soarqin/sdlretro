@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <tuple>
+#include <functional>
 
 namespace drivers {
 
@@ -16,7 +16,7 @@ struct output_button_t {
     std::string description;
 };
 
-struct input_port_t {
+struct output_port_t {
     bool available = false;
     bool enabled = false;
 
@@ -27,8 +27,19 @@ struct input_port_t {
     int16_t analog_axis[2][2] = {};
 };
 
+struct input_button_t {
+    uint64_t value;
+    std::string name;
+};
+
 class input_base {
 public:
+    enum input_mode {
+        mode_game,  /* game */
+        mode_menu,  /* menu */
+        mode_input, /* wait for input, used for settings */
+    };
+
     virtual ~input_base() = default;
 
     /* virtual method for input poll callback use */
@@ -40,13 +51,25 @@ public:
     /* virtual method called on gamepad disconnected */
     virtual void port_disconnected(int device_id) = 0;
 
-    void on_key(uint16_t id, bool pressed) {
+    /* virtual methods to translate name <-> code */
+    virtual void get_input_name(uint64_t input, std::string &device_name, std::string &name) const = 0;
+    virtual uint64_t get_input_from_name(const std::string &device_name, const std::string &name) const = 0;
+
+    inline uint64_t get_last_input() const {
+        return last_input;
+    }
+
+    inline void clear_last_input() {
+        last_input = 0;
+    }
+
+    inline void on_key(uint16_t id, bool pressed) {
         on_input(id, pressed);
     }
-    void on_mouse(uint16_t id, bool pressed) {
+    inline void on_mouse(uint16_t id, bool pressed) {
         on_input(1024 + id, pressed);
     }
-    void on_joybtn(int device_id, uint16_t id, bool pressed) {
+    inline void on_joybtn(int device_id, uint16_t id, bool pressed) {
         on_input((static_cast<uint64_t>(device_id) << 16) | static_cast<uint64_t>(id), pressed);
     }
 
@@ -64,15 +87,22 @@ public:
         add_mapping(1024 + from_id, to_port, to_id);
     }
 
-    inline void map_joybtn(uint8_t from_device_id, uint16_t from_id, uint8_t to_port, uint16_t to_id) {
+    inline void map_joybtn(uint32_t from_device_id, uint16_t from_id, uint8_t to_port, uint16_t to_id) {
         add_mapping((static_cast<uint64_t>(from_device_id) << 16) | static_cast<uint64_t>(from_id), to_port, to_id);
     }
 
     inline int16_t get_menu_pad_states() const { return port_menu.states; }
-    inline void set_in_menu(bool b) { in_menu = b; }
+    inline void set_input_mode(input_mode m) { mode = m; }
+
+    void foreach_mapping(std::function<void(const output_button_t &output, const input_button_t &input)> cb) const;
+
+    void add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id);
+    void remove_mapping(uint8_t to_port, uint16_t to_id);
+
+    void save_to_cfg();
+    void load_from_cfg();
 
 private:
-    void add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id);
     void on_input(uint64_t id, bool pressed);
 
 protected:
@@ -84,10 +114,11 @@ protected:
     std::map<uint64_t, output_button_t*> game_mapping, menu_mapping;
     std::map<uint64_t, uint64_t> rev_game_mapping, rev_menu_mapping;
 
-    std::vector<input_port_t> ports;
-    input_port_t port_menu {};
+    std::vector<output_port_t> ports;
+    output_port_t port_menu {};
 
-    bool in_menu = false;
+    input_mode mode = mode_game;
+    uint64_t last_input = 0;
 };
 
 }

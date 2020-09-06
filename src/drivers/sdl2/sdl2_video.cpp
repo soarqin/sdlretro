@@ -151,10 +151,15 @@ void sdl2_video::draw_rectangle(int x, int y, int w, int h) {
     SDL_RenderDrawRect(renderer, &rc);
 }
 
+void sdl2_video::fill_rectangle(int x, int y, int w, int h) {
+    SDL_Rect rc{x, y, w, h};
+    SDL_RenderFillRect(renderer, &rc);
+}
+
 void sdl2_video::draw_text(int x, int y, const char *text, int width, bool shadow) {
     if (width == 0) width = (int)curr_width - x;
     else if (width < 0) width = x - (int)curr_width;
-    ttf[0]->render(x, y, text, width, (int)curr_height - y, shadow);
+    ttf[0]->render(x, y, text, width, (int)curr_height + ttf[0]->get_font_size() - y, shadow);
 }
 
 void sdl2_video::get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const {
@@ -215,9 +220,19 @@ void sdl2_video::config_changed() {
 }
 
 void sdl2_video::do_render() {
+    clear();
+
     SDL_Rect rc{0, 0, (int)game_width, (int)game_height};
     SDL_Rect target_rc{display_rect[0], display_rect[1], display_rect[2], display_rect[3]};
     SDL_RenderCopy(renderer, texture, &rc, &target_rc);
+
+    if (messages.empty()) return;
+    uint32_t lh = ttf[0]->get_font_size() + 2;
+    uint32_t y = curr_height - 5 - (messages.size() - 1) * lh;
+    for (auto &m: messages) {
+        draw_text(5, y, m.first.c_str(), 0, true);
+        y += lh;
+    }
 }
 
 }

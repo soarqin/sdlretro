@@ -14,11 +14,11 @@ menu_base::menu_base(std::shared_ptr<drivers::driver_base> d, bool t) : driver(s
 }
 
 bool menu_base::enter_menu_loop() {
+    auto *input = driver->get_input();
     if (topmenu) {
-        auto *input = driver->get_input();
         input->clear_menu_button_desc();
 
-        input->set_in_menu(true);
+        input->set_input_mode(drivers::input_base::mode_menu);
         input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "UP");
         input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN, "DOWN");
         input->add_button_desc(0xFF, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "LEFT");
@@ -33,6 +33,11 @@ bool menu_base::enter_menu_loop() {
         driver->get_video()->enter_menu();
     }
 
+    do {
+        driver->process_events();
+        input->input_poll();
+        usleep(50000);
+    } while(input->get_menu_pad_states() != 0);
     enter();
     running = true;
     draw();
@@ -45,14 +50,14 @@ bool menu_base::enter_menu_loop() {
         }
         if (poll_input()) {
             draw();
-            usleep(125000);
+            usleep(100000);
         }
     }
     leave();
 
     if (topmenu) {
         driver->get_video()->leave_menu();
-        driver->get_input()->set_in_menu(false);
+        driver->get_input()->set_input_mode(drivers::input_base::mode_game);
     }
     leave_menu_loop();
     return ok_pressed;
@@ -161,6 +166,29 @@ void menu_base::value_inc() {
 bool menu_base::poll_input() {
     auto *input = driver->get_input();
     input->input_poll();
+    if (in_input_mode) {
+        uint64_t id;
+        if ((id = input->get_last_input()) == 0) {
+            return false;
+        }
+
+        std::string device_name, name;
+        input->get_input_name(id, device_name, name);
+
+        auto &item = items[selected];
+        if (item.type == menu_input) {
+            item.selected = id;
+            item.str = device_name.empty() ? name : (name + " (" + device_name + ')');
+            if (item.callback) {
+                item.callback(item);
+            }
+        }
+
+        in_input_mode = false;
+        input->clear_last_input();
+        input->set_input_mode(drivers::input_base::mode_menu);
+        return true;
+    }
     auto states = input->get_menu_pad_states();
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_UP)) {
         move_up();
@@ -196,7 +224,8 @@ bool menu_base::poll_input() {
     }
     if (states & (1<<RETRO_DEVICE_ID_JOYPAD_A)) {
         auto &item = items[selected];
-        if (item.type == menu_static) {
+        switch (item.type) {
+        case menu_static:
             if (item.callback) {
                 if (item.callback(item)) {
                     running = false;
@@ -207,6 +236,18 @@ bool menu_base::poll_input() {
             ok_pressed = true;
             running = false;
             return false;
+        case menu_input:
+            do {
+                driver->process_events();
+                input->input_poll();
+                usleep(50000);
+            } while(input->get_menu_pad_states() != 0);
+            input->clear_last_input();
+            input->set_input_mode(drivers::input_base::mode_input);
+            in_input_mode = true;
+            return true;
+        default:
+            break;
         }
         /* TODO: handle menu_path */
     }

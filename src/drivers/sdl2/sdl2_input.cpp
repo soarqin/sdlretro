@@ -66,8 +66,12 @@ sdl2_input::sdl2_input() {
         }
         gamepad.emplace_back(pad);
     }
+    load_from_cfg();
+    bool do_default_mapping = rev_game_mapping.empty();
     for (size_t i = 0; i < keymap.size(); ++i) {
-        map_key(keymap[i], 0, i);
+        if (do_default_mapping) {
+            map_key(keymap[i], 0, i);
+        }
         map_key(keymap[i], 0xFF, i);
     }
 }
@@ -151,6 +155,76 @@ void sdl2_input::port_disconnected(int device_id) {
             ++ite;
         }
     }
+}
+
+const char *INPUT_NAME_KEYBOARD = "keyboard";
+const char *INPUT_NAME_MOUSE = "mouse";
+const char *INPUT_NAME_MOUSE_LEFT = "Left";
+const char *INPUT_NAME_MOUSE_RIGHT = "Right";
+const char *INPUT_NAME_MOUSE_MIDDLE = "Middle";
+
+void sdl2_input::get_input_name(uint64_t input, std::string &device_name, std::string &name) const {
+    if (input == 0) {
+        device_name = "";
+        name = "(none)";
+        return;
+    }
+    auto id = static_cast<uint16_t>(input & 0xFFFFULL);
+    auto device = static_cast<uint32_t>(input >> 16);
+    if (device == 0) {
+        if (id < 1024) {
+            device_name = INPUT_NAME_KEYBOARD;
+            name = SDL_GetScancodeName(static_cast<SDL_Scancode>(id));
+        } else {
+            device_name = INPUT_NAME_MOUSE;
+            switch (id - 1024) {
+            case SDL_BUTTON_LEFT:
+                name = INPUT_NAME_MOUSE_LEFT;
+                break;
+            case SDL_BUTTON_RIGHT:
+                name = INPUT_NAME_MOUSE_RIGHT;
+                break;
+            case SDL_BUTTON_MIDDLE:
+                name = INPUT_NAME_MOUSE_MIDDLE;
+                break;
+            default:
+                name = "Unknown";
+                break;
+            }
+        }
+    } else {
+        auto *c = SDL_GameControllerFromInstanceID(device);
+        if (c == nullptr) {
+            device_name = "Unknown";
+        } else {
+            device_name = SDL_GameControllerName(c);
+        }
+        name = SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(id));
+    }
+}
+
+uint64_t sdl2_input::get_input_from_name(const std::string &device_name, const std::string &name) const {
+    if (device_name == INPUT_NAME_KEYBOARD) {
+        return SDL_GetScancodeFromName(name.c_str());
+    } else if (device_name == INPUT_NAME_MOUSE) {
+        if (name == INPUT_NAME_MOUSE_LEFT) {
+            return 1024 + SDL_BUTTON_LEFT;
+        } else if (name == INPUT_NAME_MOUSE_RIGHT) {
+            return 1024 + SDL_BUTTON_RIGHT;
+        } else if (name == INPUT_NAME_MOUSE_MIDDLE) {
+            return 1024 + SDL_BUTTON_MIDDLE;
+        } else {
+            return 1024 + 10;
+        }
+    } else if (!gamepad.empty()) {
+        for (auto &gp: gamepad) {
+            if (gp.name == device_name) {
+                return (static_cast<uint64_t>(gp.device_id) << 16) | static_cast<uint64_t>(SDL_GameControllerGetButtonFromString(name.c_str()));
+            }
+        }
+        return (static_cast<uint64_t>(gamepad[0].device_id) << 16) | static_cast<uint64_t>(SDL_GameControllerGetButtonFromString(name.c_str()));
+    }
+    return 0;
 }
 
 }

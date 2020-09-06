@@ -17,6 +17,7 @@ enum menu_type {
     menu_static = 0,
     menu_boolean,
     menu_values,
+    menu_input,
     menu_path,
 };
 
@@ -27,12 +28,12 @@ struct menu_item {
     std::string text;
     /* description displayed aside */
     std::string description;
-    /* current selected index
-     * for menu_boolean, its 0 or 1
-     * for menu_values, its index in member `values`
+    /* for menu_boolean, it's 0 or 1
+     * for menu_values, it's current selected index in member `values`
+     * for menu_input, it's input code for certain input implementation
      * ignored for menu_static and menu_path
      */
-    size_t selected;
+    uint64_t selected;
     /* used for menu_values */
     std::vector<std::string> values;
 
@@ -51,8 +52,10 @@ struct menu_item {
      */
     void *data;
 
-    /* use for menu_path, store selected path */
-    std::string path;
+    /* for menu_path:  store selected path
+     * for menu_input: store input key/button name
+     */
+    std::string str;
 };
 
 class menu_base {
@@ -83,6 +86,7 @@ public:
     void value_inc();
 
     inline size_t get_selected() const { return selected; }
+    inline std::vector<menu_item> &get_items() { return items; }
 
 protected:
     inline void set_ok_pressed(bool b) { ok_pressed = b; }
@@ -110,6 +114,7 @@ protected:
     int menu_width = 0, menu_height = 0;
     int line_spacing = 2;
     int item_width = 0;
+    bool in_input_mode = false;
 
 private:
     bool running = false;

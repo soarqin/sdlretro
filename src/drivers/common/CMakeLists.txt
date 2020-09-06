@@ -5,6 +5,7 @@ add_library(driver_common STATIC
     input_base.cpp
     throttle.cpp
     ttf_font_base.cpp
+    video_base.cpp
     include/audio_base.h
     include/driver_base.h
     include/input_base.h

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <cstdint>
 #include <cstdlib>
 
 namespace drivers {
@@ -26,6 +28,7 @@ public:
     virtual int get_font_size() const { return 0; }
     virtual void set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { }
     virtual void draw_rectangle(int x, int y, int w, int h) {}
+    virtual void fill_rectangle(int x, int y, int w, int h) {}
     /* width: 0=fullscreen -1=fullscreen allow wrap
      *        others: negative = allow wrap */
     virtual void draw_text(int x, int y, const char *text, int width, bool shadow) {}
@@ -34,22 +37,14 @@ public:
     virtual void clear() {}
     virtual void flip() {}
 
-    inline void set_message(const char *text, unsigned frames) {
-        message_text = text;
-        message_frames = frames;
-    }
-    inline void message_frame_pass() {
-        if (message_frames && --message_frames == 0) {
-            message_text.clear();
-        }
-    }
+    void add_message(const char *text, uint32_t frames);
+    void message_frame_pass();
     inline void set_skip_frame() { skip_frame = true; }
     inline void set_aspect_ratio(float ratio) { aspect_ratio = ratio; }
 
 protected:
     bool skip_frame = false;
-    std::string message_text;
-    unsigned message_frames = 0;
+    std::vector<std::pair<std::string, uint32_t>> messages;
     float aspect_ratio = 0.f;
 };
 

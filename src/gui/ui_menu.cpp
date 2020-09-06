@@ -4,6 +4,7 @@
 
 #include "sdl_menu.h"
 #include "driver_base.h"
+#include "input_base.h"
 #include "video_base.h"
 
 #include "libretro.h"
@@ -153,6 +154,46 @@ bool ui_menu::core_settings_menu() {
 }
 
 bool ui_menu::input_settings_menu() {
+    sdl_menu menu(driver, false);
+
+    menu.set_title("[INPUT SETTINGS]");
+
+    std::vector<menu_item> items;
+    auto *input = driver->get_input();
+    input->foreach_mapping([&](const drivers::output_button_t &o, const drivers::input_button_t &i) {
+        menu_item item = {menu_input, o.description, "", i.value};
+        item.str = i.name;
+        item.data = const_cast<void*>(static_cast<const void*>(&o));
+        item.callback = [&menu, &input](const menu_item &item) -> bool {
+            const auto *o = static_cast<const drivers::output_button_t*>(item.data);
+            input->remove_mapping(o->port, o->id);
+            input->add_mapping(item.selected, o->port, o->id);
+            for (auto &p: menu.get_items()) {
+                if (&p != &item && p.selected == item.selected) {
+                    p.selected = 0;
+                    std::string device_name;
+                    input->get_input_name(p.selected, device_name, p.str);
+                    if (!device_name.empty()) {
+                        p.str += " (";
+                        p.str += device_name;
+                        p.str += ')';
+                    }
+                }
+            }
+            return false;
+        };
+        items.emplace_back(item);
+    });
+
+    menu.set_items(items);
+    int w, h;
+    std::tie(w, h) = g_cfg.get_resolution();
+    auto border = w / 16;
+    menu.set_rect(border, border, w - border * 2, h - border * 2);
+    menu.set_item_width(w - border * 2 - 90);
+    menu.enter_menu_loop();
+
+    input->save_to_cfg();
     return false;
 }
 

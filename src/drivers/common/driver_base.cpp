@@ -237,7 +237,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         case RETRO_ENVIRONMENT_SET_MESSAGE: {
             const auto *msg = (const retro_message*)data;
-            video->set_message(msg->msg, msg->frames);
+            video->add_message(msg->msg, msg->frames);
             return true;
         }
         case RETRO_ENVIRONMENT_SHUTDOWN:
@@ -557,7 +557,7 @@ void driver_base::post_load() {
 
     char library_message[256];
     snprintf(library_message, 256, "Loaded core: %s", library_name.c_str());
-    video->set_message(library_message, lround(fps * 5));
+    video->add_message(library_message, lround(fps * 5));
 }
 
 bool driver_base::run_frame(std::function<void()> &in_game_menu_cb, bool check) {

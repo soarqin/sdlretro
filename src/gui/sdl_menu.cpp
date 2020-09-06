@@ -48,6 +48,12 @@ void sdl_menu::enter() {
                 if (tb > bot_most) bot_most = tb;
             }
             break;
+        case menu_input:
+            video->get_text_width_and_height(std::string(20, 'a').c_str(), tw, tt, tb);
+            if (tw > maxvaluewidth) maxvaluewidth = tw;
+            if (tt < top_most) top_most = tt;
+            if (tb > bot_most) bot_most = tb;
+            break;
         default:
             break;
         }
@@ -55,10 +61,18 @@ void sdl_menu::enter() {
     if (item_width == 0 || item_width > maxwidth)
         item_width = maxwidth;
     auto maxw = item_width + (maxvaluewidth > 0 ? (gap_between_key_and_value + maxvaluewidth) : 0);
-    if (maxw > menu_width) key_x = menu_x;
-    else key_x = menu_x + (menu_width - maxw) / 2;
+    if (maxw > menu_width) {
+        key_x = menu_x;
+        if (maxvaluewidth > 0) {
+            value_width = menu_width - gap_between_key_and_value - item_width;
+        } else {
+            value_width = 0;
+        }
+    } else {
+        key_x = menu_x + (menu_width - maxw) / 2;
+        value_width = maxvaluewidth > 0 ? maxvaluewidth : 0;
+    }
     value_x = key_x + item_width + gap_between_key_and_value;
-    value_width = maxvaluewidth > 0 ? maxvaluewidth : 0;
 }
 
 void sdl_menu::leave() {
@@ -66,8 +80,8 @@ void sdl_menu::leave() {
 }
 
 void sdl_menu::draw() {
-    int x = key_x, y = menu_y + driver->get_video()->get_font_size();
     auto *video = driver->get_video();
+    int x = key_x, y = menu_y + video->get_font_size();
     video->clear();
     video->predraw_menu();
     if (!title.empty()) {
@@ -91,10 +105,29 @@ void sdl_menu::draw() {
         case menu_values:
             video->draw_text(value_x, y, item.values[item.selected].c_str(), value_width, true);
             break;
+        case menu_input:
+            video->draw_text(value_x, y, item.str.c_str(), value_width, true);
+            break;
         default:
             break;
         }
         y += line_height;
+    }
+    if (in_input_mode) {
+        const char *dialog_text = "Press a key/button...";
+        uint32_t tw;
+        int32_t tt, tb;
+        video->get_text_width_and_height(dialog_text, tw, tt, tb);
+
+        int ww, wh;
+        video->get_resolution(ww, wh);
+
+        int dx = (ww - (int)tw) / 2;
+        int dy = (wh - (tb - tt)) / 2 + video->get_font_size();
+
+        video->set_draw_color(0x20, 0x20, 0x20, 0xC0);
+        video->fill_rectangle(dx - 2, dy + tt - 2, (int)tw + 2, tb - tt + 4);
+        video->draw_text(dx, dy, dialog_text, 0, false);
     }
     video->flip();
 }
