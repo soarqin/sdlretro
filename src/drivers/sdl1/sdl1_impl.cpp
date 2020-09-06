@@ -34,23 +34,36 @@ bool sdl1_impl::process_events() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
-            case SDL_QUIT:
-                return true;
-            case SDL_KEYDOWN:
-                if (event.key.keysym.sym ==
+        case SDL_QUIT:
+            return true;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+            if (event.key.keysym.sym ==
 #ifdef GCW_ZERO
-                    SDLK_HOME
+                SDLK_HOME
 #else
-                    SDLK_ESCAPE
+                SDLK_ESCAPE
 #endif
-                    ) {
+                ) {
+                if (event.type == SDL_KEYDOWN) {
                     if (!menu_button_pressed)
                         menu_button_pressed = true;
                     else
                         return true;
                 }
-                break;
-            default: break;
+            } else {
+                input->on_key(event.key.keysym.sym, event.type == SDL_KEYDOWN);
+            }
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+            input->on_mouse(event.button.button, event.type == SDL_MOUSEBUTTONDOWN);
+            break;
+        case SDL_JOYBUTTONDOWN:
+        case SDL_JOYBUTTONUP:
+            input->on_joybtn(event.jbutton.which, event.jbutton.button, event.type == SDL_JOYBUTTONDOWN);
+            break;
+        default: break;
         }
     }
     return false;

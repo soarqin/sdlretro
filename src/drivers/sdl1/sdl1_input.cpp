@@ -50,26 +50,38 @@ sdl1_input::sdl1_input() {
         SDL_InitSubSystem(SDL_INIT_JOYSTICK);
     for (int i = 0; i < 2; ++i)
         joystick[i] = SDL_JoystickOpen(i);
+    for (size_t i = 0; i < keymap.size(); ++i) {
+        map_key(keymap[i], 0, i);
+        map_key(keymap[i], 0xFF, i);
+    }
 }
 
 void sdl1_input::input_poll() {
-    int numkeys;
-    uint8_t *keys = SDL_GetKeyState(&numkeys);
-    uint16_t state = 0;
-
     SDL_JoystickUpdate();
-    for (int idx = 0; idx < 2; ++idx) {
-        if (!pad_enabled[idx]) continue;
-        for (uint32_t i = 0; i < 16; ++i) {
-            if (keys[keymap[i]]) state |= 1U << i;
-        }
-        pad_states[idx] = static_cast<int16_t>(state);
+    for (size_t z = 0; z < ports.size(); ++z) {
+        auto &port = ports[z];
+        if (!port.enabled) continue;
 
-        analog_axis[idx][0][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 0);
-        analog_axis[idx][0][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 1);
-        analog_axis[idx][1][0] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 2);
-        analog_axis[idx][1][1] = SDL_JoystickGetAxis((SDL_Joystick*)joystick[idx], 3);
+        if (joystick[z]) {
+            port.analog_axis[0][0] = SDL_JoystickGetAxis((SDL_Joystick *)joystick[z], 0);
+            port.analog_axis[0][1] = SDL_JoystickGetAxis((SDL_Joystick *)joystick[z], 1);
+            port.analog_axis[1][0] = SDL_JoystickGetAxis((SDL_Joystick *)joystick[z], 2);
+            port.analog_axis[1][1] = SDL_JoystickGetAxis((SDL_Joystick *)joystick[z], 3);
+        }
     }
+}
+
+void sdl1_input::port_connected(int index) {
+}
+
+void sdl1_input::port_disconnected(int device_id) {
+}
+
+void sdl1_input::get_input_name(uint64_t input, std::string &device_name, std::string &name) const {
+}
+
+uint64_t sdl1_input::get_input_from_name(const std::string &device_name, const std::string &name) const {
+    return 0;
 }
 
 }

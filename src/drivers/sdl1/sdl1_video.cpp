@@ -124,8 +124,13 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
         }
     #undef CODE_WITH_TYPE
     }
-    if (message_frames) {
-        draw_text(0, curr_height * scale - 20, message_text.c_str(), 0, true);
+    if (!messages.empty()) {
+        uint32_t lh = get_font_size() + 2;
+        uint32_t y = (curr_height - 5 - (messages.size() - 1) * lh) * scale;
+        for (auto &m: messages) {
+            draw_text(5, y, m.first.c_str(), 0, true);
+            y += lh;
+        }
     }
     flip();
 }
