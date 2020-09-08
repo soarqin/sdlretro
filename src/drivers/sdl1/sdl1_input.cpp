@@ -7,6 +7,23 @@
 namespace drivers {
 
 sdl1_input::sdl1_input() {
+    if (!SDL_WasInit(SDL_INIT_JOYSTICK))
+        SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+    for (int i = 0; i < 2; ++i)
+        joystick[i] = SDL_JoystickOpen(i);
+}
+
+sdl1_input::~sdl1_input() {
+    for (int i = 0; i < 2; ++i) {
+        if (joystick[i]) {
+            SDL_JoystickClose(joystick[i]);
+            joystick[i] = nullptr;
+        }
+    }
+}
+
+void sdl1_input::post_init() {
+    input_base::post_init();
 #ifdef GCW_ZERO
     keymap = {
         SDLK_LALT,   // RETRO_DEVICE_ID_JOYPAD_B
@@ -46,10 +63,6 @@ sdl1_input::sdl1_input() {
         SDLK_x, // RETRO_DEVICE_ID_JOYPAD_R3
     };
 #endif
-    if (!SDL_WasInit(SDL_INIT_JOYSTICK))
-        SDL_InitSubSystem(SDL_INIT_JOYSTICK);
-    for (int i = 0; i < 2; ++i)
-        joystick[i] = SDL_JoystickOpen(i);
     for (size_t i = 0; i < keymap.size(); ++i) {
         map_key(keymap[i], 0, i);
         map_key(keymap[i], 0xFF, i);
@@ -63,10 +76,10 @@ void sdl1_input::input_poll() {
         if (!port.enabled) continue;
 
         if (joystick[z]) {
-            port.analog_axis[0][0] = SDL_JoystickGetAxis((SDL_Joystick *)joystick[z], 0);
-            port.analog_axis[0][1] = SDL_JoystickGetAxis((SDL_Joystick *)joystick[z], 1);
-            port.analog_axis[1][0] = SDL_JoystickGetAxis((SDL_Joystick *)joystick[z], 2);
-            port.analog_axis[1][1] = SDL_JoystickGetAxis((SDL_Joystick *)joystick[z], 3);
+            port.analog_axis[0][0] = SDL_JoystickGetAxis(joystick[z], 0);
+            port.analog_axis[0][1] = SDL_JoystickGetAxis(joystick[z], 1);
+            port.analog_axis[1][0] = SDL_JoystickGetAxis(joystick[z], 2);
+            port.analog_axis[1][1] = SDL_JoystickGetAxis(joystick[z], 3);
         }
     }
 }

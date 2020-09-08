@@ -15,6 +15,7 @@ sdl2_impl::sdl2_impl() {
     }
     video = std::make_shared<sdl2_video>();
     input = std::make_shared<sdl2_input>();
+    input->post_init();
 }
 
 sdl2_impl::~sdl2_impl() {

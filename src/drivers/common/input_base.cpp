@@ -11,6 +11,10 @@ using json = nlohmann::json;
 
 namespace drivers {
 
+void input_base::post_init() {
+    load_from_cfg();
+}
+
 int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
     auto &p = port == 0xFF ? port_menu : ports[port];
     if (!p.enabled) return 0;

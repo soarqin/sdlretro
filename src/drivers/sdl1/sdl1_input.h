@@ -4,11 +4,19 @@
 
 #include <array>
 
+extern "C" {
+typedef struct _SDL_Joystick SDL_Joystick;
+}
+
 namespace drivers {
 
 class sdl1_input: public input_base {
 public:
     sdl1_input();
+
+    ~sdl1_input() override;
+
+    void post_init() override;
 
     void input_poll() override;
 
@@ -21,7 +29,7 @@ public:
 
 private:
     std::array<int, 16> keymap = {};
-    std::array<void*, 2> joystick = {};
+    std::array<SDL_Joystick*, 2> joystick = {};
 };
 
 }

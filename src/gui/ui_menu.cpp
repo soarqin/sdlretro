@@ -45,8 +45,10 @@ void ui_menu::in_game_menu() {
          [this](const menu_item &item) { return global_settings_menu(); }},
         {menu_static, "Core Settings", "", 0, {},
          [this](const menu_item &item) { return core_settings_menu(); }},
+#if SDLRETRO_FRONTEND > 1
         {menu_static, "Input Settings", "", 0, {},
          [this](const menu_item &item) { return input_settings_menu(); }},
+#endif
         {menu_static, "Reset Game", "", 0, {}, [this](const menu_item &) {
             driver->reset();
             return true;

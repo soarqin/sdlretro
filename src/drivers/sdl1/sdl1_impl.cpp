@@ -21,6 +21,7 @@ sdl1_impl::sdl1_impl() {
     SDL_WM_SetCaption("SDLRetro", nullptr);
     video = std::make_shared<sdl1_video>();
     input = std::make_shared<sdl1_input>();
+    input->post_init();
 }
 
 sdl1_impl::~sdl1_impl() {

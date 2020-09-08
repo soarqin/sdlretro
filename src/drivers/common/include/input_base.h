@@ -42,6 +42,9 @@ public:
 
     virtual ~input_base() = default;
 
+    /* virtual method for doing post-init(load input.json first) jobs */
+    virtual void post_init();
+
     /* virtual method for input poll callback use */
     virtual void input_poll() = 0;
 

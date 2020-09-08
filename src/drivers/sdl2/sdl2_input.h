@@ -22,6 +22,8 @@ public:
     sdl2_input();
     ~sdl2_input() override;
 
+    void post_init() override;
+
     void input_poll() override;
     void port_connected(int index) override;
     void port_disconnected(int device_id) override;

@@ -7,6 +7,39 @@
 namespace drivers {
 
 sdl2_input::sdl2_input() {
+    if (!SDL_WasInit(SDL_INIT_GAMECONTROLLER))
+        SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+    auto sz = SDL_NumJoysticks();
+    gamepad.clear();
+    for (int i = 0; i < sz; ++i) {
+        if (!SDL_IsGameController(i)) continue;
+        auto handle = SDL_GameControllerOpen(i);
+        sdl2_game_pad pad;
+        if (handle) {
+            pad.handle = handle;
+            pad.device_id = SDL_JoystickGetDeviceInstanceID(i);
+            pad.name = SDL_GameControllerName(handle);
+        } else {
+            pad.handle = nullptr;
+            pad.device_id = 0;
+            pad.name.clear();
+        }
+        gamepad.emplace_back(pad);
+    }
+}
+
+sdl2_input::~sdl2_input() {
+    for (auto &pad: gamepad) {
+        if (pad.handle) {
+            SDL_GameControllerClose(pad.handle);
+        }
+    }
+    gamepad.clear();
+}
+
+void sdl2_input::post_init() {
+    input_base::post_init();
+
     std::array<uint16_t, 16>
 #ifdef GCW_ZERO
     keymap = {
@@ -28,7 +61,7 @@ sdl2_input::sdl2_input() {
         SDLK_KP_PERIOD, // RETRO_DEVICE_ID_JOYPAD_R3
     };
 #else
-    keymap = {
+        keymap = {
         SDL_SCANCODE_K, // RETRO_DEVICE_ID_JOYPAD_B
         SDL_SCANCODE_J, // RETRO_DEVICE_ID_JOYPAD_Y
         SDL_SCANCODE_C, // RETRO_DEVICE_ID_JOYPAD_SELECT
@@ -47,26 +80,7 @@ sdl2_input::sdl2_input() {
         SDL_SCANCODE_X, // RETRO_DEVICE_ID_JOYPAD_R3
     };
 #endif
-    if (!SDL_WasInit(SDL_INIT_GAMECONTROLLER))
-        SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
-    auto sz = SDL_NumJoysticks();
-    gamepad.clear();
-    for (int i = 0; i < sz; ++i) {
-        if (!SDL_IsGameController(i)) continue;
-        auto handle = SDL_GameControllerOpen(i);
-        sdl2_game_pad pad;
-        if (handle) {
-            pad.handle = handle;
-            pad.device_id = SDL_JoystickGetDeviceInstanceID(i);
-            pad.name = SDL_GameControllerName(handle);
-        } else {
-            pad.handle = nullptr;
-            pad.device_id = 0;
-            pad.name.clear();
-        }
-        gamepad.emplace_back(pad);
-    }
-    load_from_cfg();
+
     bool do_default_mapping = rev_game_mapping.empty();
     for (size_t i = 0; i < keymap.size(); ++i) {
         if (do_default_mapping) {
@@ -74,15 +88,6 @@ sdl2_input::sdl2_input() {
         }
         map_key(keymap[i], 0xFF, i);
     }
-}
-
-sdl2_input::~sdl2_input() {
-    for (auto &pad: gamepad) {
-        if (pad.handle) {
-            SDL_GameControllerClose(pad.handle);
-        }
-    }
-    gamepad.clear();
 }
 
 void sdl2_input::input_poll() {
