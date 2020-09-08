@@ -90,27 +90,30 @@ bool ui_menu::global_settings_menu() {
     }
     std::vector<menu_item> items = {
         {menu_values, "SRAM/RTC Save Interval", "", check_sec_idx,
-         {"off", "5", "15", "30"},
-         [](const menu_item &item) -> bool {
-             if (item.selected < check_secs_count)
-                 g_cfg.set_save_check(check_secs[item.selected]);
-             return false;
-         }
+            {"off", "5", "15", "30"},
+            [](const menu_item &item) -> bool {
+                if (item.selected < check_secs_count) {
+                    g_cfg.set_save_check(check_secs[item.selected]);
+                }
+                return false;
+            }
         },
 #if SDLRETRO_FRONTEND == 2
         {menu_boolean, "Integer Scaling", "", static_cast<size_t>(g_cfg.get_integer_scaling() ? 1 : 0),
-         {}, [&](const menu_item &item) -> bool {
-            g_cfg.set_integer_scaling(item.selected != 0);
-            driver->get_video()->config_changed();
-            return false;
-        }
+            {},
+            [&](const menu_item &item) -> bool {
+                g_cfg.set_integer_scaling(item.selected != 0);
+                driver->get_video()->config_changed();
+                return false;
+            }
         },
         {menu_boolean, "Linear Rendering", "", static_cast<size_t>(g_cfg.get_linear() ? 1 : 0),
-         {}, [&](const menu_item &item) -> bool {
-            g_cfg.set_linear(item.selected != 0);
-            driver->get_video()->config_changed();
-            return false;
-        }
+            {},
+            [&](const menu_item &item) -> bool {
+                g_cfg.set_linear(item.selected != 0);
+                driver->get_video()->config_changed();
+                return false;
+            }
         },
 #endif
     };
