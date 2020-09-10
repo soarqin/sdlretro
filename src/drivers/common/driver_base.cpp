@@ -356,15 +356,15 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             *(unsigned*)data = RETRO_LANGUAGE_ENGLISH;
             return true;
         case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
-            /*
+        /*
         {
             auto *fb = (retro_framebuffer*)data;
             fb->data = video->get_framebuffer(&fb->width, &fb->height, &fb->pitch, (int*)&fb->format);
             if (fb->data)
                 return true;
-        }
-             */
             return false;
+        }
+        */
         case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
             break;
         case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
