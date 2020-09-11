@@ -70,6 +70,9 @@ void ui_menu::in_game_menu() {
         /* remove `Core Settings` from menu */
         items.erase(items.begin() + 1);
     }
+    if (global_language_list.size() < 2) {
+        items.erase(items.end() - 3);
+    }
     menu.set_items(items);
     int w, h;
     std::tie(w, h) = g_cfg.get_resolution();

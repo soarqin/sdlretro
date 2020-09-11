@@ -113,7 +113,7 @@ protected:
     std::vector<menu_item> items;
     int menu_x = 0, menu_y = 0;
     int menu_width = 0, menu_height = 0;
-    int line_spacing = 2;
+    int line_spacing = 4;
     int item_width = 0;
     bool in_input_mode = false;
 
