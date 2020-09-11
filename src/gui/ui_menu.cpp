@@ -3,6 +3,7 @@
 #include "cfg.h"
 
 #include "sdl_menu.h"
+#include "i18n.h"
 #include "driver_base.h"
 #include "input_base.h"
 #include "video_base.h"
@@ -13,13 +14,16 @@
 
 namespace gui {
 
+std::vector<drivers::language_info> global_language_list;
+
 ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(drv)) {
+    drivers::i18n::get_language_list(global_language_list);
 }
 
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
     sdl_menu menu(driver, true);
 
-    menu.set_title("[SELECT CORE TO USE]");
+    menu.set_title("[SELECT CORE TO USE]"_i18n);
 
     std::vector<menu_item> items;
     for (const auto *core: core_list) {
@@ -38,22 +42,22 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
 void ui_menu::in_game_menu() {
     sdl_menu menu(driver, true);
 
-    menu.set_title("[IN-GAME MENU]");
+    menu.set_title("[IN-GAME MENU]"_i18n);
 
     std::vector<menu_item> items = {
-        {menu_static, "Global Settings", "", 0, {},
+        {menu_static, "Global Settings"_i18n, "", 0, {},
          [this](const menu_item &item) { return global_settings_menu(); }},
-        {menu_static, "Core Settings", "", 0, {},
+        {menu_static, "Core Settings"_i18n, "", 0, {},
          [this](const menu_item &item) { return core_settings_menu(); }},
 #if SDLRETRO_FRONTEND > 1
-        {menu_static, "Input Settings", "", 0, {},
+        {menu_static, "Input Settings"_i18n, "", 0, {},
          [this](const menu_item &item) { return input_settings_menu(); }},
 #endif
-        {menu_static, "Reset Game", "", 0, {}, [this](const menu_item &) {
+        {menu_static, "Reset Game"_i18n, "", 0, {}, [this](const menu_item &) {
             driver->reset();
             return true;
         }},
-        {menu_static, "Exit", "", 0, {}, [this](const menu_item &) {
+        {menu_static, "Exit"_i18n, "", 0, {}, [this](const menu_item &) {
             driver->shutdown();
             return true;
         }},
@@ -80,7 +84,7 @@ bool ui_menu::global_settings_menu() {
 
     sdl_menu menu(driver, false);
 
-    menu.set_title("[GLOBAL SETTINGS]");
+    menu.set_title("[GLOBAL SETTINGS]"_i18n);
 
     size_t check_sec_idx;
     const uint32_t *n = std::lower_bound(check_secs, check_secs + check_secs_count, g_cfg.get_save_check());
@@ -88,9 +92,27 @@ bool ui_menu::global_settings_menu() {
     if (check_sec_idx >= check_secs_count) {
         check_sec_idx = 0;
     }
+    std::vector<std::string> lvalues;
+    auto lang = g_cfg.get_language();
+    size_t idx = 0, lindex = 0;
+    for (auto &l: global_language_list) {
+        lvalues.emplace_back(l.name);
+        if (l.id == lang) {
+            lindex = idx;
+        }
+        ++idx;
+    }
     std::vector<menu_item> items = {
-        {menu_values, "SRAM/RTC Save Interval", "", check_sec_idx,
-            {"off", "5", "15", "30"},
+        {menu_values, "Language"_i18n, "", lindex,
+            lvalues,
+            [](const menu_item &item) -> bool {
+                auto &l = global_language_list[item.selected];
+                drivers::i18n_obj.set_language(l.id);
+                return false;
+            }
+        },
+        {menu_values, "SRAM/RTC Save Interval"_i18n, "", check_sec_idx,
+            {"off"_i18n, "5", "15", "30"},
             [](const menu_item &item) -> bool {
                 if (item.selected < check_secs_count) {
                     g_cfg.set_save_check(check_secs[item.selected]);
@@ -99,7 +121,7 @@ bool ui_menu::global_settings_menu() {
             }
         },
 #if SDLRETRO_FRONTEND == 2
-        {menu_boolean, "Integer Scaling", "", static_cast<size_t>(g_cfg.get_integer_scaling() ? 1 : 0),
+        {menu_boolean, "Integer Scaling"_i18n, "", static_cast<size_t>(g_cfg.get_integer_scaling() ? 1 : 0),
             {},
             [&](const menu_item &item) -> bool {
                 g_cfg.set_integer_scaling(item.selected != 0);
@@ -107,7 +129,7 @@ bool ui_menu::global_settings_menu() {
                 return false;
             }
         },
-        {menu_boolean, "Linear Rendering", "", static_cast<size_t>(g_cfg.get_linear() ? 1 : 0),
+        {menu_boolean, "Linear Rendering"_i18n, "", static_cast<size_t>(g_cfg.get_linear() ? 1 : 0),
             {},
             [&](const menu_item &item) -> bool {
                 g_cfg.set_linear(item.selected != 0);
@@ -134,7 +156,7 @@ bool ui_menu::core_settings_menu() {
     if (vars.empty()) return false;
     sdl_menu menu(driver, false);
 
-    menu.set_title("[CORE SETTINGS]");
+    menu.set_title("[CORE SETTINGS]"_i18n);
 
     std::vector<menu_item> items;
     for (auto &var: vars) {
@@ -161,7 +183,7 @@ bool ui_menu::core_settings_menu() {
 bool ui_menu::input_settings_menu() {
     sdl_menu menu(driver, false);
 
-    menu.set_title("[INPUT SETTINGS]");
+    menu.set_title("[INPUT SETTINGS]"_i18n);
 
     std::vector<menu_item> items;
     auto *input = driver->get_input();

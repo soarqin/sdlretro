@@ -6,6 +6,7 @@
 #if SDLRETRO_FRONTEND == 2
 #include <sdl2_impl.h>
 #endif
+#include <i18n.h>
 #include <core_manager.h>
 #include <util.h>
 #include <ui_menu.h>
@@ -37,6 +38,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     g_cfg.load();
+    drivers::i18n_obj.set_language(g_cfg.get_language());
 
     libretro::core_manager coreman;
 

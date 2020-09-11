@@ -94,6 +94,7 @@ void cfg::load() {
         JREAD(integer_scaling, false);
         JREAD(linear, true);
         JREAD(save_check, 0);
+        JREAD(language, 0);
 #undef JREAD
     }
 }
@@ -111,6 +112,7 @@ void cfg::save() {
     JWRITE(integer_scaling);
     JWRITE(linear);
     JWRITE(save_check);
+    JWRITE(language);
 #undef JWRITE
     auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
     try {

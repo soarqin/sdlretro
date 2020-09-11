@@ -353,7 +353,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             *(const char**)data = "sdlretro";
             return true;
         case RETRO_ENVIRONMENT_GET_LANGUAGE:
-            *(unsigned*)data = RETRO_LANGUAGE_ENGLISH;
+            *(unsigned*)data = g_cfg.get_language();
             return true;
         case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
         /*

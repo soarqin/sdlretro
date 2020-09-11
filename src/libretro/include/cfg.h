@@ -52,6 +52,9 @@ public:
     inline uint32_t get_save_check() const { return save_check; }
     inline void set_save_check(uint32_t c) { save_check = c; }
 
+    inline int get_language() const { return language; }
+    inline void set_language(int lang) { language = lang; }
+
 protected:
     /* dir of static data */
     std::string data_dir;
@@ -96,6 +99,11 @@ protected:
 
     /* save check interval in seconds, set to 0 to disable it */
     uint32_t save_check = 0;
+
+    /* ui langauge
+     * check enum retro_language in libretro.h
+     * */
+    int language;
 };
 
 extern cfg g_cfg;
