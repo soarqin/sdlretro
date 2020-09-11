@@ -32,6 +32,7 @@ protected:
     bool global_settings_menu();
     bool core_settings_menu();
     bool input_settings_menu();
+    bool language_settings_menu();
 
 private:
     std::shared_ptr<drivers::driver_base> driver;

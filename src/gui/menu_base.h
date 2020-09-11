@@ -72,7 +72,7 @@ public:
 
     /* enter menu loop
      * return if `OK` is pressed and use get_selected() to fetch index*/
-    bool enter_menu_loop();
+    bool enter_menu_loop(size_t sel = 0);
     /* call this to leave menu loop */
     void leave_menu_loop();
     /* regular operations */
@@ -90,6 +90,7 @@ public:
 
 protected:
     inline void set_ok_pressed(bool b) { ok_pressed = b; }
+    void set_selected(size_t sel);
 
 protected:
     /* called when entering menu, doing initialization here */

@@ -13,7 +13,7 @@ namespace gui {
 menu_base::menu_base(std::shared_ptr<drivers::driver_base> d, bool t) : driver(std::move(d)), topmenu(t) {
 }
 
-bool menu_base::enter_menu_loop() {
+bool menu_base::enter_menu_loop(size_t sel) {
     auto *input = driver->get_input();
     if (topmenu) {
         input->clear_menu_button_desc();
@@ -39,6 +39,7 @@ bool menu_base::enter_menu_loop() {
         usleep(50000);
     } while(input->get_menu_pad_states() != 0);
     enter();
+    set_selected(sel);
     running = true;
     draw();
     while (running) {
@@ -160,6 +161,22 @@ void menu_base::value_inc() {
         break;
     default:
         break;
+    }
+}
+
+void menu_base::set_selected(size_t sel) {
+    if (selected == sel) return;
+    size_t sz = items.size();
+    if (sel >= sz) {
+        move_first();
+        return;
+    }
+    selected = sel;
+    auto page_size = page_count();
+    if (selected < top_index + 1) {
+        top_index = selected ? selected - 1 : selected;
+    } else if (top_index + page_size <= selected + 1) {
+        top_index = selected + 1 >= page_size ? (selected + 1 == sz ? selected + 1 - page_size : selected + 2 - page_size) : 0;
     }
 }
 

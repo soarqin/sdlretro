@@ -53,6 +53,8 @@ void ui_menu::in_game_menu() {
         {menu_static, "Input Settings"_i18n, "", 0, {},
          [this](const menu_item &item) { return input_settings_menu(); }},
 #endif
+        {menu_static, "Language"_i18n, "", 0, {},
+         [this](const menu_item &item) { return language_settings_menu(); }},
         {menu_static, "Reset Game"_i18n, "", 0, {}, [this](const menu_item &) {
             driver->reset();
             return true;
@@ -92,25 +94,7 @@ bool ui_menu::global_settings_menu() {
     if (check_sec_idx >= check_secs_count) {
         check_sec_idx = 0;
     }
-    std::vector<std::string> lvalues;
-    auto lang = g_cfg.get_language();
-    size_t idx = 0, lindex = 0;
-    for (auto &l: global_language_list) {
-        lvalues.emplace_back(l.name);
-        if (l.id == lang) {
-            lindex = idx;
-        }
-        ++idx;
-    }
     std::vector<menu_item> items = {
-        {menu_values, "Language"_i18n, "", lindex,
-            lvalues,
-            [](const menu_item &item) -> bool {
-                auto &l = global_language_list[item.selected];
-                drivers::i18n_obj.set_language(l.id);
-                return false;
-            }
-        },
         {menu_values, "SRAM/RTC Save Interval"_i18n, "", check_sec_idx,
             {"off"_i18n, "5", "15", "30"},
             [](const menu_item &item) -> bool {
@@ -221,6 +205,38 @@ bool ui_menu::input_settings_menu() {
     menu.enter_menu_loop();
 
     input->save_to_cfg();
+    return false;
+}
+
+bool ui_menu::language_settings_menu() {
+    sdl_menu menu(driver, false);
+
+    menu.set_title("[LANGUAGE]"_i18n);
+
+    std::vector<std::string> lvalues;
+    auto lang = g_cfg.get_language();
+    size_t idx = 0, lindex = 0;
+    std::vector<menu_item> items;
+
+    for (auto &l: global_language_list) {
+        menu_item item = {menu_static, l.name, ""};
+        item.callback = [&l](const menu_item &item) -> bool {
+            drivers::i18n_obj.set_language(l.id);
+            return true;
+        };
+        items.emplace_back(item);
+        if (l.id == lang) {
+            lindex = idx;
+        }
+        ++idx;
+    }
+    menu.set_items(items);
+    int w, h;
+    std::tie(w, h) = g_cfg.get_resolution();
+    auto border = w / 16;
+    menu.set_rect(border, border, w - border * 2, h - border * 2);
+    menu.set_item_width(w - border * 2 - 90);
+    menu.enter_menu_loop(lindex);
     return false;
 }
 
