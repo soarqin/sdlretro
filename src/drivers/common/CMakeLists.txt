@@ -2,14 +2,12 @@ add_library(driver_common STATIC
     # driver files
     audio_base.cpp
     driver_base.cpp
-    i18n.cpp
     input_base.cpp
     throttle.cpp
     ttf_font_base.cpp
     video_base.cpp
     include/audio_base.h
     include/driver_base.h
-    include/i18n.h
     include/input_base.h
     include/throttle.h
     include/ttf_font_base.h

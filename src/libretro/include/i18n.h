@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <string>
 
-namespace drivers {
+namespace libretro {
 
 struct language_info {
     int id;
@@ -37,10 +37,10 @@ private:
 
 extern i18n i18n_obj;
 
-#define _I18N(t) ::drivers::i18n_obj.get_text(t)
+#define _I18N(t) ::libretro::i18n_obj.get_text(t)
 
 }
 
 inline const char *operator "" _i18n(const char *t, size_t) {
-    return ::drivers::i18n_obj.get_text(t);
+    return ::libretro::i18n_obj.get_text(t);
 }

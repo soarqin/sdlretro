@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     g_cfg.load();
-    drivers::i18n_obj.set_language(g_cfg.get_language());
+    libretro::i18n_obj.set_language(g_cfg.get_language());
 
     libretro::core_manager coreman;
 

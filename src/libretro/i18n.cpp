@@ -9,7 +9,7 @@
 
 #include <cstring>
 
-namespace drivers {
+namespace libretro {
 
 size_t xxh_hasher::operator()(const std::string &s) const noexcept {
     return static_cast<size_t>(XXH64(s.c_str(), s.length(), 0));

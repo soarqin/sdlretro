@@ -1,8 +1,10 @@
 add_library(libretro STATIC
     # config
     cfg.cpp
+    i18n.cpp
     variables.cpp
     include/cfg.h
+    include/i18n.h
     include/variables.h
 
     # utils

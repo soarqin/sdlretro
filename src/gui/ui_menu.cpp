@@ -14,10 +14,10 @@
 
 namespace gui {
 
-std::vector<drivers::language_info> global_language_list;
+std::vector<::libretro::language_info> global_language_list;
 
 ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(drv)) {
-    drivers::i18n::get_language_list(global_language_list);
+    ::libretro::i18n::get_language_list(global_language_list);
 }
 
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
@@ -224,7 +224,7 @@ bool ui_menu::language_settings_menu() {
     for (auto &l: global_language_list) {
         menu_item item = {menu_static, l.name, ""};
         item.callback = [&l](const menu_item &item) -> bool {
-            drivers::i18n_obj.set_language(l.id);
+            ::libretro::i18n_obj.set_language(l.id);
             return true;
         };
         items.emplace_back(item);
