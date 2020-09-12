@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
             if (!mz_zip_reader_init_file(&arc, argv[1], 0)) break;
             auto num_files = mz_zip_reader_get_num_files(&arc);
             if (num_files == 0) {
-                spdlog::error("Empty zip file!\n");
+                spdlog::error("Empty zip file!");
                 mz_zip_reader_end(&arc);
                 return 1;
             }
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
         ext = ptr + 1;
         core_list = coreman.match_cores_by_extension(ext);
         if (core_list.empty()) {
-            spdlog::error("Cannot find core for file extension %s!\n", ext.c_str());
+            spdlog::error("Cannot find core for file extension {}!", ext.c_str());
             return 1;
         }
     }
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
         }
     }
     if (!impl->load_core(core_list[index]->filepath)) {
-        spdlog::error("Unable to load core from `%s`!\n", core_list[index]->filepath.c_str());
+        spdlog::error("Unable to load core from `{}`!", core_list[index]->filepath.c_str());
         return 1;
     }
 

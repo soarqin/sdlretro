@@ -23,7 +23,7 @@ ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(dr
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
     sdl_menu menu(driver, true);
 
-    menu.set_title("[SELECT CORE TO USE]"_i18n);
+    menu.set_title(std::string("[") + "Select Core to Use"_i18n + "]");
 
     std::vector<menu_item> items;
     for (const auto *core: core_list) {
@@ -42,7 +42,7 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
 void ui_menu::in_game_menu() {
     sdl_menu menu(driver, true);
 
-    menu.set_title("[IN-GAME MENU]"_i18n);
+    menu.set_title(std::string("[") + "In-Game Menu"_i18n + "]");
 
     std::vector<menu_item> items = {
         {menu_static, "Global Settings"_i18n, "", 0, {},
@@ -89,7 +89,7 @@ bool ui_menu::global_settings_menu() {
 
     sdl_menu menu(driver, false);
 
-    menu.set_title("[GLOBAL SETTINGS]"_i18n);
+    menu.set_title(std::string("[") + "Global Settings"_i18n + "]");
 
     size_t check_sec_idx;
     const uint32_t *n = std::lower_bound(check_secs, check_secs + check_secs_count, g_cfg.get_save_check());
@@ -143,14 +143,14 @@ bool ui_menu::core_settings_menu() {
     if (vars.empty()) return false;
     sdl_menu menu(driver, false);
 
-    menu.set_title("[CORE SETTINGS]"_i18n);
+    menu.set_title(std::string("[") + "Core Settings"_i18n + "]");
 
     std::vector<menu_item> items;
     for (auto &var: vars) {
         menu_item item = {menu_values, var.label, var.info, var.curr_index};
         for (auto &opt: var.options)
             item.values.push_back(opt.first);
-        item.callback = [this, &vari, &var](const menu_item &item) -> bool {
+        item.callback = [&vari, &var](const menu_item &item) -> bool {
             vari->set_variable(var.name, item.selected);
             return false;
         };
@@ -170,7 +170,7 @@ bool ui_menu::core_settings_menu() {
 bool ui_menu::input_settings_menu() {
     sdl_menu menu(driver, false);
 
-    menu.set_title("[INPUT SETTINGS]"_i18n);
+    menu.set_title(std::string("[") + "Input Settings"_i18n + "]");
 
     std::vector<menu_item> items;
     auto *input = driver->get_input();
@@ -214,7 +214,7 @@ bool ui_menu::input_settings_menu() {
 bool ui_menu::language_settings_menu() {
     sdl_menu menu(driver, false);
 
-    menu.set_title("[LANGUAGE]"_i18n);
+    menu.set_title(std::string("[") + "Language"_i18n + "]");
 
     std::vector<std::string> lvalues;
     auto lang = g_cfg.get_language();

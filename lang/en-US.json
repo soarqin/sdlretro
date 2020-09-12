@@ -1,0 +1,17 @@
+{
+    "Loaded core: %s": "Loaded core: %s",
+    "on": "on",
+    "off": "off",
+    "Press a key/button...": "Press a key/button...",
+    "Select Core to Use": "Select Core to Use",
+    "In-Game Menu": "In-Game Menu",
+    "Global Settings": "Global Settings",
+    "Core Settings": "Core Settings",
+    "Input Settings": "Input Settings",
+    "Language": "Language",
+    "Reset Game": "Reset Game",
+    "Exit": "Exit",
+    "SRAM/RTC Save Interval": "SRAM/RTC Save Interval",
+    "Integer Scaling": "Integer Scaling",
+    "Linear Rendering": "Linear Rendering"
+}

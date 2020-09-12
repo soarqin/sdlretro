@@ -3,6 +3,8 @@
 #include "driver_base.h"
 #include "video_base.h"
 
+#include "i18n.h"
+
 namespace gui {
 
 enum {
@@ -35,7 +37,7 @@ void sdl_menu::enter() {
         if (tb > bot_most) bot_most = tb;
         switch (item.type) {
         case menu_boolean:
-            video->get_text_width_and_height("yes", tw, tt, tb);
+            video->get_text_width_and_height("on"_i18n, tw, tt, tb);
             if (tw > maxvaluewidth) maxvaluewidth = tw;
             if (tt < top_most) top_most = tt;
             if (tb > bot_most) bot_most = tb;
@@ -100,7 +102,7 @@ void sdl_menu::draw() {
         }
         switch (item.type) {
         case menu_boolean:
-            video->draw_text(value_x, y, item.selected ? "yes" : "no", value_width, true);
+            video->draw_text(value_x, y, item.selected ? "on"_i18n : "off"_i18n, value_width, true);
             break;
         case menu_values:
             video->draw_text(value_x, y, item.values[item.selected].c_str(), value_width, true);
@@ -114,7 +116,7 @@ void sdl_menu::draw() {
         y += line_height;
     }
     if (in_input_mode) {
-        const char *dialog_text = "Press a key/button...";
+        const char *dialog_text = "Press a key/button..."_i18n;
         uint32_t tw;
         int32_t tt, tb;
         video->get_text_width_and_height(dialog_text, tw, tt, tb);

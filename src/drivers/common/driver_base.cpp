@@ -8,6 +8,7 @@
 #include "throttle.h"
 
 #include <variables.h>
+#include <i18n.h>
 #include <core.h>
 #include <util.h>
 
@@ -556,7 +557,7 @@ void driver_base::post_load() {
     video->resolution_changed(base_width, base_height, pixel_format);
 
     char library_message[256];
-    snprintf(library_message, 256, "Loaded core: %s", library_name.c_str());
+    snprintf(library_message, 256, "Loaded core: %s"_i18n, library_name.c_str());
     video->add_message(library_message, lround(fps * 5));
 }
 
