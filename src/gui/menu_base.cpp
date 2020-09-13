@@ -10,7 +10,7 @@
 
 namespace gui {
 
-menu_base::menu_base(std::shared_ptr<drivers::driver_base> d, bool t) : driver(std::move(d)), topmenu(t) {
+menu_base::menu_base(std::shared_ptr<drivers::driver_base> d, bool t, std::function<void(menu_base&)> init_func) : driver(std::move(d)), topmenu(t), init_fn(init_func) {
 }
 
 bool menu_base::enter_menu_loop(size_t sel) {
@@ -34,27 +34,33 @@ bool menu_base::enter_menu_loop(size_t sel) {
     }
 
     do {
-        driver->process_events();
-        input->input_poll();
-        usleep(50000);
-    } while(input->get_menu_pad_states() != 0);
-    enter();
-    set_selected(sel);
-    running = true;
-    draw();
-    while (running) {
-        usleep(50000);
-        if (driver->process_events()) {
-            running = false;
-            ok_pressed = false;
-            break;
+        force_refreshing = false;
+        if (init_fn)
+            init_fn(*this);
+        do {
+            driver->process_events();
+            input->input_poll();
+            usleep(50000);
+        } while (input->get_menu_pad_states() != 0);
+        enter();
+        set_selected(sel);
+        running = true;
+        draw();
+        while (running && !force_refreshing) {
+            usleep(50000);
+            if (driver->process_events()) {
+                running = false;
+                ok_pressed = false;
+                break;
+            }
+            if (poll_input() && running && !force_refreshing) {
+                draw();
+                usleep(100000);
+            }
         }
-        if (poll_input()) {
-            draw();
-            usleep(100000);
-        }
-    }
-    leave();
+        sel = selected;
+        leave();
+    } while (force_refreshing);
 
     if (topmenu) {
         driver->get_video()->leave_menu();
