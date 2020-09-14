@@ -44,6 +44,7 @@ public:
 private:
     void do_render();
     void init_opengl();
+    void uninit_opengl();
 
 private:
     SDL_Window *window = nullptr;
@@ -51,6 +52,7 @@ private:
 
     uint32_t shader_direct_draw = 0, shader_texture = 0, shader_texture_with_color = 0;
     uint32_t vao_texture = 0, vbo_texture = 0, ebo_texture = 0;
+    uint32_t texture_game = 0;
 
     uint32_t curr_width = 0, curr_height = 0;
     uint32_t game_pitch = 0, game_width = 0, game_height = 0, game_pixel_format = 0;

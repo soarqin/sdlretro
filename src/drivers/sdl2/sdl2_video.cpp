@@ -72,7 +72,7 @@ void sdl2_video::render(const void *data, unsigned width, unsigned height, size_
         pitch_in_pixel = pitch >> 1;
         break;
     }
-    if (width != game_width || height != game_height || pitch_in_pixel != game_pixel_format) {
+    if (width != game_width || height != game_height || pitch_in_pixel != game_pitch) {
         if (texture) SDL_DestroyTexture(texture);
         game_width = width;
         game_height = height;
