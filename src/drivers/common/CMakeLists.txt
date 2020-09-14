@@ -14,7 +14,7 @@ add_library(driver_common STATIC
     include/video_base.h
     )
 
-if(USE_STB_TRUETYPE)
+if(SDLRETRO_USE_STB_TRUETYPE)
     target_compile_definitions(driver_common PRIVATE USE_STB_TRUETYPE)
 else()
     find_package(Freetype REQUIRED)

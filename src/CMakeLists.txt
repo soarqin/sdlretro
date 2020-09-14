@@ -5,7 +5,7 @@ else()
 endif()
 
 set(SDLRETRO_FRONTEND "${DEFAULT_FRONTEND}" CACHE STRING "Select frontend (SDL1, SDL2)")
-option(USE_STB_TRUETYPE "Use stb truetype (aka build w/o FreeType)" OFF)
+option(SDLRETRO_USE_STB_TRUETYPE "Use stb truetype (aka build w/o FreeType)" OFF)
 
 add_subdirectory(libretro)
 add_subdirectory(drivers)
