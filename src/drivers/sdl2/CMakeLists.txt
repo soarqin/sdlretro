@@ -1,7 +1,19 @@
 find_package(SDL2 REQUIRED)
 
-if(SDLRETRO_FRONTEND STREQUAL "SDL2")
-    option(SDLRETRO_USE_OPENGL "Use OpenGL for rendering" OFF)
+option(SDLRETRO_USE_OPENGL "Use OpenGL for rendering" OFF)
+
+if (SDLRETRO_USE_OPENGL)
+    set(video_src
+        sdl2_video_ogl.cpp
+        sdl2_video_ogl.h
+        sdl2_ttf_ogl.cpp
+        sdl2_ttf_ogl.h)
+else()
+    set(video_src
+        sdl2_video.cpp
+        sdl2_video.h
+        sdl2_ttf.cpp
+        sdl2_ttf.h)
 endif()
 
 add_library(driver_sdl2 STATIC
@@ -10,12 +22,9 @@ add_library(driver_sdl2 STATIC
 
     sdl2_input.cpp
     sdl2_input.h
-    sdl2_video.cpp
-    sdl2_video.h
+    ${video_src}
     sdl2_audio.cpp
     sdl2_audio.h
-    sdl2_ttf.cpp
-    sdl2_ttf.h
     )
 
 target_compile_definitions(driver_sdl2 PUBLIC SDL_MAIN_HANDLED)
