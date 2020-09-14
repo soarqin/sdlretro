@@ -22,7 +22,7 @@ target_compile_definitions(driver_sdl2 PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(driver_sdl2 PUBLIC include)
 target_link_libraries(driver_sdl2 driver_common SDL2::SDL2)
 
-
 if(SDLRETRO_USE_OPENGL)
     target_compile_definitions(driver_sdl2 PRIVATE USE_OPENGL)
+    target_link_libraries(driver_sdl2 glad)
 endif()
