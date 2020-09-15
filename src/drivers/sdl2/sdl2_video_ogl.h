@@ -50,9 +50,13 @@ private:
     SDL_Window *window = nullptr;
     SDL_GLContext context = nullptr;
 
-    uint32_t shader_direct_draw = 0, shader_texture = 0, shader_texture_with_color = 0;
+    uint32_t shader_direct_draw = 0, shader_texture = 0, shader_font = 0;
+    uint32_t vao_draw = 0, vbo_draw = 0;
     uint32_t vao_texture = 0, vbo_texture = 0, ebo_texture = 0;
+    uint32_t vao_font = 0, vbo_font = 0, ebo_font = 0;
     uint32_t texture_game = 0;
+    uint32_t uniform_font_color = 0;
+    float draw_color[4] = {1.f, 1.f, 1.f, 1.f};
 
     uint32_t curr_width = 0, curr_height = 0;
     uint32_t game_pitch = 0, game_width = 0, game_height = 0, game_pixel_format = 0;

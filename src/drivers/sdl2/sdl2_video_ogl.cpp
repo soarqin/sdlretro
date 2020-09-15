@@ -86,9 +86,15 @@ inline uint32_t compile_shader(const char *vertex_shader_source,
 }
 
 sdl2_video_ogl::sdl2_video_ogl() {
+#ifdef USE_GLES
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#else
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#endif
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
@@ -103,21 +109,26 @@ sdl2_video_ogl::sdl2_video_ogl() {
     context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, context);
 
+#ifdef USE_GLES
+    gladLoadGLES2Loader(SDL_GL_GetProcAddress);
+#else
     gladLoadGLLoader(SDL_GL_GetProcAddress);
+#endif
     glViewport(0, 0, curr_width, curr_height);
     SDL_GL_SetSwapInterval(1);
 
     init_opengl();
 
-    ttf[0] = std::make_shared<sdl2_ttf_ogl>();
+    ttf[0] = std::make_shared<sdl2_ttf_ogl>(shader_font, vao_font, vbo_font, uniform_font_color);
     ttf[0]->init(16, 0);
     ttf[0]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "regular.ttf", 0);
-    ttf[1] = std::make_shared<sdl2_ttf_ogl>();
+    ttf[1] = std::make_shared<sdl2_ttf_ogl>(shader_font, vao_font, vbo_font, uniform_font_color);
     ttf[1]->init(16, 0);
     ttf[1]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "bold.ttf", 0);
 }
 
 sdl2_video_ogl::~sdl2_video_ogl() {
+    uninit_opengl();
     SDL_GL_DeleteContext(context);
     SDL_DestroyWindow(window);
 }
@@ -250,23 +261,52 @@ int sdl2_video_ogl::get_font_size() const {
 }
 
 void sdl2_video_ogl::set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    /*
-    SDL_SetRenderDrawColor(renderer, r, g, b, a);
-     */
+    draw_color[0] = (float)r / 255.f;
+    draw_color[1] = (float)g / 255.f;
+    draw_color[2] = (float)b / 255.f;
+    draw_color[3] = (float)a / 255.f;
 }
 
 void sdl2_video_ogl::draw_rectangle(int x, int y, int w, int h) {
-    SDL_Rect rc{x, y, w, h};
-    /*
-    SDL_RenderDrawRect(renderer, &rc);
-     */
+    auto x1 = (float)x - 0.5f, y1 = (float)y - 0.5f, x2 = (float)(x + w) + 0.5f, y2 = (float)(y + h) + 0.5f;
+    float vertices[] = {
+        x1, y1, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
+        x2, y1, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
+        x2, y2, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
+        x1, y2, draw_color[0], draw_color[1], draw_color[2], draw_color[3]
+    };
+    glUseProgram(shader_direct_draw);
+    glBindVertexArray(vao_draw);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_draw);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glDrawArrays(GL_LINE_LOOP, 0, 4);
+    glBindVertexArray(0);
+    glUseProgram(0);
 }
 
 void sdl2_video_ogl::fill_rectangle(int x, int y, int w, int h) {
-    SDL_Rect rc{x, y, w, h};
-    /*
-    SDL_RenderFillRect(renderer, &rc);
-     */
+    auto x1 = (float)x, y1 = (float)y, x2 = (float)(x + w), y2 = (float)(y + h);
+    float vertices[] = {
+        x1, y1, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
+        x2, y1, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
+        x1, y2, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
+        x2, y2, draw_color[0], draw_color[1], draw_color[2], draw_color[3]
+    };
+    glUseProgram(shader_direct_draw);
+    glBindVertexArray(vao_draw);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_draw);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+    glUseProgram(0);
 }
 
 void sdl2_video_ogl::draw_text(int x, int y, const char *text, int width, bool shadow) {
@@ -351,12 +391,6 @@ void sdl2_video_ogl::do_render() {
     glBindVertexArray(vao_texture);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-    /*
-    SDL_Rect rc{0, 0, (int)game_width, (int)game_height};
-    SDL_Rect target_rc{display_rect[0], display_rect[1], display_rect[2], display_rect[3]};
-    SDL_RenderCopy(renderer, texture, &rc, &target_rc);
-     */
-
     if (messages.empty()) return;
     uint32_t lh = ttf[0]->get_font_size() + 2;
     uint32_t y = curr_height - 5 - (messages.size() - 1) * lh;
@@ -367,8 +401,16 @@ void sdl2_video_ogl::do_render() {
 }
 
 void sdl2_video_ogl::init_opengl() {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+#ifdef USE_GLES
+#define GLSL_VERSION_STR "300 es"
+#else
+#define GLSL_VERSION_STR "150 core"
+#endif
     shader_direct_draw = compile_shader(
-        "#version 150 core\n"
+        "#version " GLSL_VERSION_STR "\n"
         "in vec2 aPos;\n"
         "in vec4 aColor;\n"
         "out vec4 outColor;\n"
@@ -378,7 +420,10 @@ void sdl2_video_ogl::init_opengl() {
         "  gl_Position = projMat * vec4(aPos, 0.0, 1.0);\n"
         "  outColor = aColor;\n"
         "}",
-        "#version 150 core\n"
+        "#version " GLSL_VERSION_STR "\n"
+        "#ifdef GL_ES\n"
+        "precision mediump float;\n"
+        "#endif\n"
         "out vec4 fragColor;\n"
         "in vec4 outColor;\n"
         "void main()\n"
@@ -386,7 +431,7 @@ void sdl2_video_ogl::init_opengl() {
         "  fragColor = outColor;\n"
         "}");
     shader_texture = compile_shader(
-        "#version 150 core\n"
+        "#version " GLSL_VERSION_STR "\n"
         "in vec2 aPos;\n"
         "in vec2 aTexCoord;\n"
         "out vec2 texCoord;\n"
@@ -395,7 +440,10 @@ void sdl2_video_ogl::init_opengl() {
         "  gl_Position = vec4(aPos, 0.0, 1.0);\n"
         "  texCoord = aTexCoord.xy;\n"
         "}",
-        "#version 150 core\n"
+        "#version " GLSL_VERSION_STR "\n"
+        "#ifdef GL_ES\n"
+        "precision mediump float;\n"
+        "#endif\n"
         "out vec4 fragColor;\n"
         "in vec2 texCoord;\n"
         "uniform sampler2D texture0;\n"
@@ -403,38 +451,50 @@ void sdl2_video_ogl::init_opengl() {
         "{\n"
         "  fragColor = texture(texture0, texCoord);\n"
         "}");
-    shader_texture_with_color = compile_shader(
-        "#version 150 core\n"
+    shader_font = compile_shader(
+        "#version " GLSL_VERSION_STR "\n"
         "in vec2 aPos;\n"
         "in vec2 aTexCoord;\n"
-        "in vec4 aColor;\n"
         "out vec2 texCoord;\n"
-        "out vec4 outColor;\n"
+        "uniform mat4 projMat;\n"
         "void main()\n"
         "{\n"
-        "  gl_Position = vec4(aPos, 0.0, 1.0);\n"
+        "  gl_Position = projMat * vec4(aPos, 0.0, 1.0);\n"
         "  texCoord = aTexCoord.xy;\n"
-        "  outColor = aColor;\n"
         "}",
-        "#version 150 core\n"
+        "#version " GLSL_VERSION_STR "\n"
+        "#ifdef GL_ES\n"
+        "precision mediump float;\n"
+        "#endif\n"
         "out vec4 fragColor;\n"
         "in vec2 texCoord;\n"
-        "in vec4 outColor;\n"
         "uniform sampler2D texture0;\n"
+        "uniform vec3 outColor;\n"
         "void main()\n"
         "{\n"
-        "  fragColor = texture(texture0, texCoord) * outColor;\n"
+        "  fragColor = vec4(outColor, texture(texture0, texCoord).r);\n"
         "}");
 
-    glGenVertexArrays(1, &vao_texture);
-    glGenBuffers(1, &vbo_texture);
-    glGenBuffers(1, &ebo_texture);
-    glBindVertexArray(vao_texture);
+    glGenVertexArrays(1, &vao_draw);
+    glGenBuffers(1, &vbo_draw);
+
     const unsigned int indices[] = {
         0, 1, 2, // first triangle
         0, 2, 3  // second triangle
     };
+    glGenVertexArrays(1, &vao_texture);
+    glGenBuffers(1, &vbo_texture);
+    glGenBuffers(1, &ebo_texture);
+    glBindVertexArray(vao_texture);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_texture);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBindVertexArray(0);
+
+    glGenVertexArrays(1, &vao_font);
+    glGenBuffers(1, &vbo_font);
+    glGenBuffers(1, &ebo_font);
+    glBindVertexArray(vao_font);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_font);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     glBindVertexArray(0);
 
@@ -448,24 +508,46 @@ void sdl2_video_ogl::init_opengl() {
     glUniform1i(glGetUniformLocation(shader_texture, "texture0"), 0);
     glUseProgram(0);
 
+    glUseProgram(shader_font);
+    glUniform1i(glGetUniformLocation(shader_font, "texture0"), 0);
+    glUseProgram(0);
+
     mat4f proj_mat;
     gl_ortho_mat(proj_mat, 0.0f, (float)curr_width, (float)curr_height, 0.0f, 0.0f, 1.0f);
     glUseProgram(shader_direct_draw);
-    glUniformMatrix4fv(glGetUniformLocation(shader_direct_draw, "projMat" ), 1, GL_FALSE, proj_mat);
+    glUniformMatrix4fv(glGetUniformLocation(shader_direct_draw, "projMat"), 1, GL_FALSE, proj_mat);
+    glUseProgram(0);
+    glUseProgram(shader_font);
+    glUniformMatrix4fv(glGetUniformLocation(shader_font, "projMat"), 1, GL_FALSE, proj_mat);
+    uniform_font_color = glGetUniformLocation(shader_font, "outColor");
     glUseProgram(0);
 }
 
 void sdl2_video_ogl::uninit_opengl() {
     glDeleteTextures(1, &texture_game);
     texture_game = 0;
+
+    glDeleteBuffers(1, &ebo_font);
+    ebo_font = 0;
+    glDeleteBuffers(1, &vbo_font);
+    vbo_font = 0;
+    glDeleteVertexArrays(1, &vao_font);
+    vao_font = 0;
+
     glDeleteBuffers(1, &ebo_texture);
     ebo_texture = 0;
     glDeleteBuffers(1, &vbo_texture);
     vbo_texture = 0;
     glDeleteVertexArrays(1, &vao_texture);
     vao_texture = 0;
-    glDeleteProgram(shader_texture_with_color);
-    shader_texture_with_color = 0;
+
+    glDeleteBuffers(1, &vbo_draw);
+    vbo_draw = 0;
+    glDeleteVertexArrays(1, &vao_draw);
+    vao_draw = 0;
+
+    glDeleteProgram(shader_font);
+    shader_font = 0;
     glDeleteProgram(shader_texture);
     shader_texture = 0;
     glDeleteProgram(shader_direct_draw);
