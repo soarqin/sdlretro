@@ -12,6 +12,31 @@
 
 namespace drivers {
 
+using mat4f = float[16];
+
+inline void gl_ortho_mat(mat4f &out, float left, float right, float bottom, float top, float znear, float zfar)
+{
+    out[0] = 2.0f / (right - left);
+    out[1] = 0.0f;
+    out[2] = 0.0f;
+    out[3] = 0.0f;
+
+    out[4] = 0.0f;
+    out[5] = 2.0f / (top - bottom);
+    out[6] = 0.0f;
+    out[7] = 0.0f;
+
+    out[8] = 0.0f;
+    out[9] = 0.0f;
+    out[10] = -2.0f / (zfar - znear);
+    out[11] = 0.0f;
+
+    out[12] = -(right + left) / (right - left);
+    out[13] = -(top + bottom) / (top - bottom);
+    out[14] = -(zfar + znear) / (zfar - znear);
+    out[15] = 1.0f;
+}
+
 inline uint32_t compile_shader(const char *vertex_shader_source,
                    const char *fragment_shader_source) {
     uint32_t vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -175,18 +200,32 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
         glEnableVertexAttribArray(1);
         glBindVertexArray(0);
+
+        glBindTexture(GL_TEXTURE_2D, texture_game);
+        switch (game_pixel_format) {
+        case 0:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, nullptr);
+            break;
+        case 1:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            break;
+        default:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, nullptr);
+            break;
+        }
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_game);
     switch (game_pixel_format) {
     case 0:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, data);
         break;
     case 1:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
         break;
     default:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
         break;
     }
     do_render();
@@ -330,12 +369,13 @@ void sdl2_video_ogl::do_render() {
 void sdl2_video_ogl::init_opengl() {
     shader_direct_draw = compile_shader(
         "#version 150 core\n"
-        "in vec3 aPos;\n"
+        "in vec2 aPos;\n"
         "in vec4 aColor;\n"
         "out vec4 outColor;\n"
+        "uniform mat4 projMat;\n"
         "void main()\n"
         "{\n"
-        "  gl_Position = vec4(aPos, 1.0);\n"
+        "  gl_Position = projMat * vec4(aPos, 0.0, 1.0);\n"
         "  outColor = aColor;\n"
         "}",
         "#version 150 core\n"
@@ -406,6 +446,12 @@ void sdl2_video_ogl::init_opengl() {
 
     glUseProgram(shader_texture);
     glUniform1i(glGetUniformLocation(shader_texture, "texture0"), 0);
+    glUseProgram(0);
+
+    mat4f proj_mat;
+    gl_ortho_mat(proj_mat, 0.0f, (float)curr_width, (float)curr_height, 0.0f, 0.0f, 1.0f);
+    glUseProgram(shader_direct_draw);
+    glUniformMatrix4fv(glGetUniformLocation(shader_direct_draw, "projMat" ), 1, GL_FALSE, proj_mat);
     glUseProgram(0);
 }
 
