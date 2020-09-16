@@ -6,6 +6,13 @@
 
 namespace drivers {
 
+sdl1_ttf::~sdl1_ttf() {
+    for (auto &p: pixels) {
+        delete[] p;
+    }
+    pixels.clear();
+}
+
 void sdl1_ttf::calc_depth_color(SDL_Surface *surface) {
     surface_bpp = surface->format->BitsPerPixel;
     for (uint16_t i = 0; i < 256; ++i) {
@@ -24,6 +31,7 @@ void sdl1_ttf::render(SDL_Surface *surface, int x, int y, const char *text, int 
     if (surface->format->BitsPerPixel != surface_bpp) {
         calc_depth_color(surface);
     }
+    auto rpw = get_rect_pack_width();
 
     bool allow_wrap = false;
     int nwidth;
@@ -72,9 +80,9 @@ void sdl1_ttf::render(SDL_Surface *surface, int x, int y, const char *text, int 
         }
         nwidth -= cwidth;
     #define CODE_WITH_TYPE(TYPE) \
-        TYPE *outptr = static_cast<TYPE*>(surface->pixels) + stride * (y + font_size + fd->iy0) + x + fd->ix0; \
-        const uint8_t *input = get_rect_pack_data(fd->rpidx, fd->rpx, fd->rpy); \
-        int iw = get_rect_pack_width() - fd->w; \
+        TYPE *outptr = static_cast<TYPE*>(surface->pixels) + stride * (y + fd->iy0) + x + fd->ix0; \
+        const uint8_t *input = &pixels[fd->rpidx][fd->rpy * rpw + fd->rpx]; \
+        int iw = rpw - fd->w; \
         int ow = stride - fd->w; \
         for (int j = fd->h; j; j--) { \
             for (int i = fd->w; i; i--) { \
@@ -98,6 +106,18 @@ void sdl1_ttf::render(SDL_Surface *surface, int x, int y, const char *text, int 
     #undef CODE_WITH_TYPE
         x += cwidth;
     }
+}
+
+uint8_t *sdl1_ttf::prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) {
+    pitch = get_rect_pack_width();
+    if (index >= pixels.size()) {
+        pixels.resize(index + 1);
+    }
+    auto *&p = pixels[index];
+    if (p == nullptr) {
+        p = new uint8_t[pitch * pitch];
+    }
+    return &p[y * pitch + x];
 }
 
 }

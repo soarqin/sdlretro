@@ -26,11 +26,13 @@ sdl1_video::sdl1_video() {
     screen = SDL_SetVideoMode(curr_width, curr_height, 16, sdl_video_flags);
     SDL_LockSurface(screen);
     screen_ptr = screen->pixels;
-    /* TODO: ttf font load
-    ttf = std::make_shared<sdl1_font>();
-    ttf->init(16, 0);
-    ttf->add("", 0);
-     */
+
+    ttf[0] = std::make_shared<sdl1_ttf>();
+    ttf[0]->init(16, 0);
+    ttf[0]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "regular.ttf", 0);
+    ttf[1] = std::make_shared<sdl1_ttf>();
+    ttf[1]->init(16, 0);
+    ttf[1]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "bold.ttf", 0);
 }
 
 sdl1_video::~sdl1_video() {
@@ -156,8 +158,8 @@ void sdl1_video::flip() {
 }
 
 int sdl1_video::get_font_size() const {
-    if (ttf) {
-        return ttf->get_font_size();
+    if (ttf[0]) {
+        return ttf[0]->get_font_size();
     } else {
 #ifdef GCW_ZERO
         return 8;
@@ -201,8 +203,8 @@ void sdl1_video::draw_rectangle(int x, int y, int w, int h) {
 }
 
 void sdl1_video::draw_text(int x, int y, const char *text, int width, bool shadow) {
-    if (ttf) {
-        ttf->render(screen, x, y, text, width, shadow);
+    if (ttf[0]) {
+        ttf[0]->render(screen, x, y, text, width, shadow);
     } else {
         draw_text_pixel(x, y, text, width, shadow);
     }
@@ -222,13 +224,13 @@ void sdl1_video::get_text_width_and_height(const char *text, uint32_t &w, int &t
     w = 0;
     t = 255;
     b = -255;
-    if (ttf) {
+    if (ttf[0]) {
         while (*text != 0) {
             uint32_t ch = util::utf8_to_ucs4(text);
             if (ch == 0 || ch > 0xFFFFu) continue;
             uint8_t width;
             int8_t tt, tb;
-            ttf->get_char_width_and_height(ch, width, tt, tb);
+            ttf[0]->get_char_width_and_height(ch, width, tt, tb);
             if (width) {
                 w += width;
                 if (tt < t) t = tt;
@@ -251,6 +253,11 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool
     bool allow_wrap = false;
     int nwidth;
     int ox = x;
+#ifdef GCW_ZERO
+    y -= 8;
+#else
+    y -= 16;
+#endif
     unsigned bpp = curr_pixel_format == 1 ? 32 : 16;
     if (width == 0) {
         nwidth = width = screen->w - x;

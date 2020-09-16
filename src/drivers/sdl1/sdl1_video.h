@@ -28,7 +28,6 @@ public:
     void clear() override;
     void flip() override;
 
-    inline sdl1_ttf *get_font() { return ttf.get(); }
     inline void set_force_scale(uint32_t s) { force_scale = s; }
 
 private:
@@ -41,7 +40,7 @@ public:
 private:
     SDL_Surface *screen = nullptr;
 	void *screen_ptr = nullptr;
-    std::shared_ptr<sdl1_ttf> ttf;
+    std::shared_ptr<sdl1_ttf> ttf[2];
     uint32_t curr_width = 0, curr_height = 0, curr_pixel_format = 0;
     /* saved previous resolution for use with menu enter/leave */
     uint32_t saved_width = 0, saved_height = 0, saved_pixel_format = 0;

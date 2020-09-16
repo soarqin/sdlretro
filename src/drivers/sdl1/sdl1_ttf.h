@@ -11,13 +11,18 @@ namespace drivers {
 
 class sdl1_ttf: public ttf_font_base {
 public:
+    ~sdl1_ttf() override;
     void calc_depth_color(SDL_Surface *surface);
 
     void render(SDL_Surface *surface, int x, int y, const char *text, int width = 0, bool shadow = false);
 
+protected:
+    uint8_t *prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) override;
+
 private:
     uint32_t depth_color[256];
     uint32_t surface_bpp = 0;
+    std::vector<uint8_t*> pixels;
 };
 
 }

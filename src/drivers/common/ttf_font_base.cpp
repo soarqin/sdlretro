@@ -20,7 +20,6 @@ enum :uint16_t {
 struct rect_pack_data {
     stbrp_context context;
     stbrp_node nodes[TTF_RECTPACK_WIDTH];
-    uint8_t pixels[TTF_RECTPACK_WIDTH * TTF_RECTPACK_WIDTH];
 };
 
 ttf_font_base::ttf_font_base() {
@@ -177,19 +176,10 @@ const ttf_font_base::font_data *ttf_font_base::make_cache(uint16_t ch) {
     return fd;
 }
 
-uint8_t *ttf_font_base::prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) {
-    pitch = TTF_RECTPACK_WIDTH;
-    return &rectpack_data[index]->pixels[y * TTF_RECTPACK_WIDTH + x];
-}
-
 void ttf_font_base::new_rect_pack() {
     auto *rpd = new rect_pack_data;
     stbrp_init_target(&rpd->context, TTF_RECTPACK_WIDTH, TTF_RECTPACK_WIDTH, rpd->nodes, TTF_RECTPACK_WIDTH);
     rectpack_data.push_back(rpd);
-}
-
-const uint8_t *ttf_font_base::get_rect_pack_data(uint8_t idx, int16_t x, int16_t y) {
-    return &rectpack_data[idx]->pixels[y * TTF_RECTPACK_WIDTH + x];
 }
 
 uint16_t ttf_font_base::get_rect_pack_width() {

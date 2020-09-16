@@ -55,9 +55,8 @@ protected:
         return make_cache(ch);
     }
     const font_data *make_cache(uint16_t);
-    virtual uint8_t *prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch);
+    virtual uint8_t *prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) = 0;
     virtual void finish_texture(uint8_t *data, size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int pitch) {}
-    const uint8_t *get_rect_pack_data(uint8_t idx, int16_t x, int16_t y);
     static uint16_t get_rect_pack_width();
 
 protected:
