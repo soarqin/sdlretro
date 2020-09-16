@@ -218,7 +218,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, nullptr);
             break;
         case 1:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
             break;
         default:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, nullptr);
@@ -233,7 +233,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, data);
         break;
     case 1:
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
         break;
     default:
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);

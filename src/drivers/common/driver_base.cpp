@@ -413,9 +413,9 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             break;
     }
     if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) {
-        spdlog::info("Unhandled env: {0:x} (EXPERIMENTAL)", (cmd & 0xFFFFU));
+        spdlog::info("Unhandled env: 0x{0:X} (EXPERIMENTAL)", (cmd & 0xFFFFU));
     } else {
-        spdlog::info("Unhandled env: {0:x}", (cmd & 0xFFFFU));
+        spdlog::info("Unhandled env: 0x{0:X}", (cmd & 0xFFFFU));
     }
     return false;
 }
