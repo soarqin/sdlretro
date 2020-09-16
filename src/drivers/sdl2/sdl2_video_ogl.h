@@ -17,6 +17,8 @@ class sdl2_video_ogl: public video_base {
 public:
     sdl2_video_ogl();
     ~sdl2_video_ogl() override;
+
+    int get_renderer_type() override;
     bool resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;

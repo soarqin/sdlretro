@@ -63,6 +63,14 @@ driver_base::~driver_base() {
         core_unload(core);
         core = nullptr;
     }
+    if (keyboard_callback) {
+        delete keyboard_callback;
+        keyboard_callback = nullptr;
+    }
+    if (disk_control_callback) {
+        delete disk_control_callback;
+        disk_control_callback = nullptr;
+    }
 
     current_driver = nullptr;
 }
@@ -157,6 +165,7 @@ bool driver_base::load_game(const std::string &path) {
         info.data = &game_data[0];
         info.size = game_data.size();
     }
+    serialization_quirks = 0;
     if (!core->retro_load_game(&info)) {
         spdlog::error("Unable to load {}", path);
         return false;
@@ -216,6 +225,8 @@ void driver_base::unload_game() {
     rtc_data.clear();
     check_save_progress = 0;
     check_rtc_progress = 0;
+
+    serialization_quirks = 0;
 }
 
 void driver_base::reset() {
@@ -265,10 +276,36 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             }
             return true;
         }
-        case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK:
-        case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
-        case RETRO_ENVIRONMENT_SET_HW_RENDER:
-            break;
+        case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK: {
+            keyboard_callback = new retro_keyboard_callback;
+            memcpy(keyboard_callback, data, sizeof(retro_keyboard_callback));
+            return true;
+        }
+        case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE: {
+            disk_control_callback = new retro_disk_control_ext_callback;
+            memset(disk_control_callback, 0, sizeof(retro_disk_control_ext_callback));
+            memcpy(disk_control_callback, data, sizeof(retro_disk_control_callback));
+            return true;
+        }
+        case RETRO_ENVIRONMENT_SET_HW_RENDER: {
+            /*
+            auto hwr = (struct retro_hw_render_callback*)data;
+            switch (hwr->context_type) {
+            case RETRO_HW_CONTEXT_OPENGL_CORE:
+                if (video->get_renderer_type() != 1) {
+                    return false;
+                }
+                return true;
+            case RETRO_HW_CONTEXT_OPENGLES3:
+                if (video->get_renderer_type() != 2) {
+                    return false;
+                }
+                return true;
+            default: break;
+            }
+             */
+            return false;
+        }
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
             variables->set_variables_updated(false);
             auto *var = (retro_variable *)data;
@@ -317,7 +354,10 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             ((retro_log_callback*)data)->log = log_printf;
             return true;
         }
-        case RETRO_ENVIRONMENT_GET_PERF_INTERFACE:
+        case RETRO_ENVIRONMENT_GET_PERF_INTERFACE: {
+            // TODO: performance interface
+            return false;
+        }
         case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE:
         case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY:
             break;
@@ -372,7 +412,10 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             support_achivements = data == nullptr || *(bool*)data;
             return true;
         case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:
-        case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
+        case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS: {
+            serialization_quirks = *(uint64_t*)data;
+            return true;
+        }
         case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
             break;
         case RETRO_ENVIRONMENT_GET_VFS_INTERFACE: {
@@ -408,7 +451,49 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             variables->set_variable_visible(opt->key, opt->visible);
             return true;
         }
-        case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
+        case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER: {
+            /*
+            switch (video->get_renderer_type()) {
+            case 1:
+                *(unsigned *)data = RETRO_HW_CONTEXT_OPENGL_CORE;
+                return true;
+            case 2:
+                *(unsigned *)data = RETRO_HW_CONTEXT_OPENGLES3;
+                return true;
+            default:
+                break;
+            }
+             */
+            return false;
+        }
+        case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION: {
+            *(unsigned*)data = 1;
+            return true;
+        }
+        case RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE: {
+            disk_control_callback = new retro_disk_control_ext_callback;
+            memcpy(disk_control_callback, data, sizeof(retro_disk_control_ext_callback));
+            return true;
+        }
+        case RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION:
+            *(unsigned*)data = 1;
+            return true;
+        case RETRO_ENVIRONMENT_SET_MESSAGE_EXT: {
+            auto *msg_ext = (const struct retro_message_ext*)data;
+            if (msg_ext->target & RETRO_MESSAGE_TARGET_OSD) {
+                // TODO: deal with msg_ext->type as well as msg_ext->progress
+                video->add_message(msg_ext->msg, msg_ext->duration * fps);
+            }
+            if (msg_ext->target & RETRO_MESSAGE_TARGET_LOG) {
+                log_printf(msg_ext->level, "%s", msg_ext->msg);
+            }
+            return true;
+        }
+        case RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS: {
+            // TODO: how many users do we support actually?
+            *(unsigned*)data = 2;
+            return true;
+        }
         default:
             break;
     }

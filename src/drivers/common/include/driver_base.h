@@ -6,7 +6,11 @@
 #include <memory>
 #include <functional>
 
-extern "C" typedef struct retro_core_t retro_core_t;
+extern "C" {
+typedef struct retro_core_t retro_core_t;
+struct retro_keyboard_callback;
+struct retro_disk_control_ext_callback;
+}
 
 namespace libretro {
 class retro_variables;
@@ -145,6 +149,10 @@ protected:
 
     /* menu button was pressed */
     bool menu_button_pressed = false;
+
+    retro_keyboard_callback *keyboard_callback = nullptr;
+    retro_disk_control_ext_callback *disk_control_callback = nullptr;
+    uint64_t serialization_quirks = 0;
 
 private:
     /* core cfg file path */

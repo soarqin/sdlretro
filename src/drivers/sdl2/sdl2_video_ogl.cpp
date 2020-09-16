@@ -133,6 +133,14 @@ sdl2_video_ogl::~sdl2_video_ogl() {
     SDL_DestroyWindow(window);
 }
 
+int sdl2_video_ogl::get_renderer_type() {
+#ifdef USE_GLES
+    return 2;
+#else
+    return 1;
+#endif
+}
+
 bool sdl2_video_ogl::resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
     game_pixel_format = pixel_format;
     return true;
