@@ -333,47 +333,14 @@ void sdl2_video_ogl::get_text_width_and_height(const char *text, uint32_t &w, in
     }
 }
 
-void sdl2_video_ogl::enter_menu() {
-    /*
-    if (support_render_to_texture) {
-        if (background) {
-            SDL_DestroyTexture(background);
-        }
-        background = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_TARGET, curr_width, curr_height);
-        SDL_SetRenderTarget(renderer, background);
-        do_render();
-
-        SDL_BlendMode saved_mode;
-        SDL_GetRenderDrawBlendMode(renderer, &saved_mode);
-        Uint8 saved_color[4];
-        SDL_GetRenderDrawColor(renderer, saved_color, saved_color + 1, saved_color + 2, saved_color + 3);
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xA0);
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_RenderFillRect(renderer, nullptr);
-
-        SDL_SetRenderDrawColor(renderer, saved_color[0], saved_color[1], saved_color[2], saved_color[3]);
-        SDL_SetRenderDrawBlendMode(renderer, saved_mode);
-
-        SDL_RenderPresent(renderer);
-        SDL_SetRenderTarget(renderer, nullptr);
-    }
-     */
-}
-
-void sdl2_video_ogl::leave_menu() {
-    /*
-    if (background) {
-        SDL_DestroyTexture(background);
-        background = nullptr;
-    }
-     */
-}
-
 void sdl2_video_ogl::predraw_menu() {
-    /*
-    SDL_RenderCopy(renderer, background, nullptr, nullptr);
-     */
+    glUseProgram(shader_texture);
+    glBindVertexArray(vao_texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_game);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    set_draw_color(0, 0, 0, 0xA0);
+    fill_rectangle(0, 0, curr_width, curr_height);
 }
 
 void sdl2_video_ogl::config_changed() {

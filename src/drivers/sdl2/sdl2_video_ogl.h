@@ -36,8 +36,6 @@ public:
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
     void get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const override;
 
-    void enter_menu() override;
-    void leave_menu() override;
     void predraw_menu() override;
     void config_changed() override;
 

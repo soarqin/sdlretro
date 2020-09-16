@@ -27,6 +27,7 @@ sdl2_video::sdl2_video() {
     support_render_to_texture = (info.flags & SDL_RENDERER_TARGETTEXTURE) != 0;
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     ttf[0] = std::make_shared<sdl2_ttf>(renderer);
     ttf[0]->init(16, 0);
@@ -180,41 +181,13 @@ void sdl2_video::get_text_width_and_height(const char *text, uint32_t &w, int &t
     }
 }
 
-void sdl2_video::enter_menu() {
-    if (support_render_to_texture) {
-        if (background) {
-            SDL_DestroyTexture(background);
-        }
-        background = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_TARGET, curr_width, curr_height);
-        SDL_SetRenderTarget(renderer, background);
-        do_render();
-
-        SDL_BlendMode saved_mode;
-        SDL_GetRenderDrawBlendMode(renderer, &saved_mode);
-        Uint8 saved_color[4];
-        SDL_GetRenderDrawColor(renderer, saved_color, saved_color + 1, saved_color + 2, saved_color + 3);
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xA0);
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_RenderFillRect(renderer, nullptr);
-
-        SDL_SetRenderDrawColor(renderer, saved_color[0], saved_color[1], saved_color[2], saved_color[3]);
-        SDL_SetRenderDrawBlendMode(renderer, saved_mode);
-
-        SDL_RenderPresent(renderer);
-        SDL_SetRenderTarget(renderer, nullptr);
-    }
-}
-
-void sdl2_video::leave_menu() {
-    if (background) {
-        SDL_DestroyTexture(background);
-        background = nullptr;
-    }
-}
-
 void sdl2_video::predraw_menu() {
-    SDL_RenderCopy(renderer, background, nullptr, nullptr);
+    SDL_Rect rc{0, 0, (int)game_width, (int)game_height};
+    SDL_Rect target_rc{display_rect[0], display_rect[1], display_rect[2], display_rect[3]};
+    SDL_RenderCopy(renderer, texture, &rc, &target_rc);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xA0);
+    SDL_RenderFillRect(renderer, nullptr);
 }
 
 void sdl2_video::config_changed() {
