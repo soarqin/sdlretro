@@ -14,31 +14,29 @@ sdl2_ttf_ogl::~sdl2_ttf_ogl() {
     textures.clear();
 }
 
-const ttf_font_base::font_data *sdl2_ttf_ogl::make_cache(uint16_t ch) {
-    const auto *fd = ttf_font_base::make_cache(ch);
-    if (fd == nullptr) return fd;
-    if (fd->rpidx >= textures.size()) {
-        textures.resize(fd->rpidx + 1, 0u);
+uint8_t *sdl2_ttf_ogl::prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) {
+    static uint8_t sdata[64 * 64];
+    pitch = w;
+    return sdata;
+}
+
+void sdl2_ttf_ogl::finish_texture(uint8_t *data, size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int pitch) {
+    if (index >= textures.size()) {
+        textures.resize(index + 1, 0u);
     }
-    uint32_t &tex = textures[fd->rpidx];
-    auto w = get_rect_pack_width();
+    uint32_t &tex = textures[index];
     if (tex == 0) {
+        auto rpw = get_rect_pack_width();
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_2D, tex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, w, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, rpw, rpw, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
-    auto *src_ptr = get_rect_pack_data(fd->rpidx, fd->rpx, fd->rpy);
     glBindTexture(GL_TEXTURE_2D, tex);
-    auto y = fd->rpy;
-    for (auto z = fd->h; z; z--) {
-        glTexSubImage2D(GL_TEXTURE_2D, 0, fd->rpx, y++, fd->w, 1, GL_RED, GL_UNSIGNED_BYTE, src_ptr);
-        src_ptr += w;
-    }
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, pitch, h, GL_RED, GL_UNSIGNED_BYTE, data);
     glBindTexture(GL_TEXTURE_2D, 0);
-    return fd;
 }
 
 void sdl2_ttf_ogl::render(int x, int y, const char *text, int width, int height, bool shadow) {

@@ -24,7 +24,6 @@ sdl2_video::sdl2_video() {
     SDL_RendererInfo info = {};
     SDL_GetRendererInfo(renderer, &info);
     spdlog::info("SDL2 Driver: {}", info.name);
-    support_render_to_texture = (info.flags & SDL_RENDERER_TARGETTEXTURE) != 0;
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, g_cfg.get_linear() ? "1" : "0");
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -38,7 +37,6 @@ sdl2_video::sdl2_video() {
 }
 
 sdl2_video::~sdl2_video() {
-    if (background) SDL_DestroyTexture(background);
     if (texture) SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

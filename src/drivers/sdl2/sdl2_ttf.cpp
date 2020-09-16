@@ -13,50 +13,50 @@ sdl2_ttf::~sdl2_ttf() {
     textures.clear();
 }
 
-const ttf_font_base::font_data *sdl2_ttf::make_cache(uint16_t ch) {
-    const auto *fd = ttf_font_base::make_cache(ch);
-    if (fd == nullptr) return fd;
-    if (fd->rpidx >= textures.size()) {
-        textures.resize(fd->rpidx + 1);
-        shadows.resize(fd->rpidx + 1);
+uint8_t *sdl2_ttf::prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) {
+    static uint8_t sdata[64 * 64];
+    pitch = w;
+    return sdata;
+}
+
+void sdl2_ttf::finish_texture(uint8_t *src_ptr, size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int src_pitch) {
+    if (index >= textures.size()) {
+        textures.resize(index + 1);
+        shadows.resize(index + 1);
     }
-    auto *&tex = textures[fd->rpidx];
-    auto *&shtex = shadows[fd->rpidx];
+    auto *&tex = textures[index];
+    auto *&shtex = shadows[index];
     if (tex == nullptr) {
-        auto w = get_rect_pack_width();
-        tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, w, w);
+        auto rpw = get_rect_pack_width();
+        tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, rpw, rpw);
         SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
     }
     if (shtex == nullptr) {
-        auto w = get_rect_pack_width();
-        shtex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, w, w);
+        auto rpw = get_rect_pack_width();
+        shtex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, rpw, rpw);
         SDL_SetTextureBlendMode(shtex, SDL_BLENDMODE_BLEND);
     }
     void *data, *shdata;
     int pitch;
     SDL_LockTexture(tex, nullptr, &data, &pitch);
     SDL_LockTexture(shtex, nullptr, &shdata, &pitch);
-    auto *src_ptr = get_rect_pack_data(fd->rpidx, fd->rpx, fd->rpy);
-    auto spacing = get_rect_pack_width() - fd->w;
-    auto pix_spacing = pitch - fd->w * 4;
-    auto *pixels = (uint8_t*)data + fd->rpx * 4 + fd->rpy * pitch;
-    auto *shpixels = (uint8_t*)shdata + fd->rpx * 4 + fd->rpy * pitch;
+    auto pix_spacing = pitch - w * 4;
+    auto *pixels = (uint8_t*)data + x * 4 + y * pitch;
+    auto *shpixels = (uint8_t*)shdata + x * 4 + y * pitch;
     auto pixel_color = color;
-    for (uint32_t j = 0; j < fd->h; ++j) {
-        for (uint32_t i = 0; i < fd->w; ++i) {
+    for (uint32_t j = 0; j < h; ++j) {
+        for (uint32_t i = 0; i < w; ++i) {
             *(uint32_t*)pixels = pixel_color | (((uint32_t)*src_ptr) << 24);
             *(uint32_t*)shpixels = ((uint32_t)*src_ptr) << 24;
             pixels += 4;
             shpixels += 4;
             ++src_ptr;
         }
-        src_ptr += spacing;
         pixels += pix_spacing;
         shpixels += pix_spacing;
     }
     SDL_UnlockTexture(tex);
     SDL_UnlockTexture(shtex);
-    return fd;
 }
 
 void sdl2_ttf::render(int x, int y, const char *text, int width, int height, bool shadow) {

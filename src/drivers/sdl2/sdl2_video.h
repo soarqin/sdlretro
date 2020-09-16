@@ -59,9 +59,6 @@ private:
 
     /* indicate wheather frame was drawn, for auto frameskip use */
     bool drawn = false;
-
-    /* check renderer with flag SDL_RENDERER_TARGETTEXTURE */
-    bool support_render_to_texture = false;
 };
 
 }

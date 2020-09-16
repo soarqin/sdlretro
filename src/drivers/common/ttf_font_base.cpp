@@ -147,7 +147,7 @@ const ttf_font_base::font_data *ttf_font_base::make_cache(uint16_t ch) {
     /* Get last rect pack bitmap */
     auto rpidx = rectpack_data.size() - 1;
     auto *rpd = rectpack_data[rpidx];
-    stbrp_rect rc = {0, fd->w, fd->h};
+    stbrp_rect rc = {0, static_cast<uint16_t>((fd->w + 3u) & ~3u), fd->h};
     if (!stbrp_pack_rects(&rpd->context, &rc, 1)) {
         /* No space to hold the bitmap,
          * create a new bitmap */
@@ -161,17 +161,25 @@ const ttf_font_base::font_data *ttf_font_base::make_cache(uint16_t ch) {
     fd->rpy = rc.y;
     fd->rpidx = rpidx;
 
+    int dst_pitch;
+    auto *dst = prepare_texture(rpidx, rc.x, rc.y, rc.w, rc.h, dst_pitch);
+    auto *dst_ptr = dst;
 #ifdef USE_STB_TRUETYPE
-    stbtt_MakeGlyphBitmapSubpixel(info, &rpd->pixels[rc.y * TTF_RECTPACK_WIDTH + rc.x], fd->w, fd->h, TTF_RECTPACK_WIDTH, fi->font_scale, fi->font_scale, 3, 3, index);
+    stbtt_MakeGlyphBitmapSubpixel(info, dst_pitch, fd->w, fd->h, dst_pitch, fi->font_scale, fi->font_scale, 3, 3, index);
 #else
-    auto *dst_ptr = &rpd->pixels[rc.y * TTF_RECTPACK_WIDTH + rc.x];
     for (int k = 0; k < fd->h; ++k) {
         memcpy(dst_ptr, src_ptr, fd->w);
         src_ptr += bitmap_pitch;
-        dst_ptr += TTF_RECTPACK_WIDTH;
+        dst_ptr += dst_pitch;
     }
 #endif
+    finish_texture(dst, rpidx, rc.x, rc.y, rc.w, rc.h, dst_pitch);
     return fd;
+}
+
+uint8_t *ttf_font_base::prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) {
+    pitch = TTF_RECTPACK_WIDTH;
+    return &rectpack_data[index]->pixels[y * TTF_RECTPACK_WIDTH + x];
 }
 
 void ttf_font_base::new_rect_pack() {

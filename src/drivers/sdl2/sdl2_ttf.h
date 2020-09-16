@@ -18,7 +18,8 @@ public:
     void set_draw_color(uint8_t r, uint8_t g, uint8_t b);
 
 protected:
-    const font_data *make_cache(uint16_t) override;
+    uint8_t *prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) override;
+    void finish_texture(uint8_t *src_ptr, size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int src_pitch) override;
 
 private:
     SDL_Renderer *renderer;
