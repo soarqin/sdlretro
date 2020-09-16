@@ -8,6 +8,7 @@
 namespace drivers {
 
 struct output_button_t {
+    uint8_t device;
     uint16_t id;
     uint8_t index;
 
@@ -20,7 +21,6 @@ struct output_port_t {
     bool available = false;
     bool enabled = false;
 
-    uint8_t device;
     std::map<uint32_t, output_button_t> buttons;
 
     int16_t states = 0;

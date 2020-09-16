@@ -43,18 +43,13 @@ int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, 
 }
 
 void input_base::add_button_desc(uint8_t port, uint8_t device, uint8_t index, uint16_t id, const std::string &desc) {
-    output_button_t bt = {id, index, port, desc };
+    output_button_t bt = {device, id, index, port, desc};
     if (port < 0xFF && port >= ports.size()) {
         ports.resize(port + 1, {});
     }
     auto &p = port == 0xFF ? port_menu : ports[port];
     if (!p.available) {
         p.available = true;
-    }
-    if (p.device != device) {
-        if (p.device != 0)
-            spdlog::log(spdlog::level::warn, "Got different device type for port {}: original is {}, new is {}", port, p.device, device);
-        p.device = device;
     }
     if (device == RETRO_DEVICE_ANALOG) {
         /* remap device index like this:
@@ -88,7 +83,7 @@ void input_base::clear_button_desc() {
 void input_base::clear_menu_button_desc() {
     menu_mapping.clear();
     port_menu.buttons.clear();
-    port_menu.device = port_menu.states = 0;
+    port_menu.states = 0;
     port_menu.available = port_menu.enabled = false;
 }
 
@@ -208,7 +203,7 @@ void input_base::on_input(uint64_t id, bool pressed) {
     auto *btn = ite->second;
     if (btn == nullptr) return;
     auto &port = btn->port == 0xFF ? port_menu : ports[btn->port];
-    switch(port.device) {
+    switch(btn->device) {
     case RETRO_DEVICE_JOYPAD:
         if (pressed)
             port.states |= 1U << btn->id;
