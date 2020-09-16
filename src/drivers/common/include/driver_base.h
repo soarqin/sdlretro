@@ -61,6 +61,8 @@ public:
     void save_variables_to_cfg();
 
     inline const std::string &get_system_dir() const { return system_dir; }
+
+    inline retro_core_t *get_core() { return core; }
     inline throttle *get_frame_throttle() { return frame_throttle.get(); }
     inline video_base *get_video() { return video.get(); }
     inline audio_base *get_audio() { return audio.get(); }

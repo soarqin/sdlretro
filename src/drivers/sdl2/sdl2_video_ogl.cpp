@@ -8,6 +8,7 @@
 
 #include "util.h"
 
+#include "core.h"
 #include "libretro.h"
 
 #include <spdlog/spdlog.h>
@@ -176,7 +177,9 @@ bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
         return false;
 #endif
 
-    uint32_t w = std::max(pullup(curr_width), pullup(curr_height));
+    retro_system_av_info info = {};
+    current_driver->get_core()->retro_get_system_av_info(&info);
+    uint32_t w = std::max(pullup(info.geometry.max_width), pullup(info.geometry.max_height));
     GLint max_fbo_size;
     GLint max_rb_size;
     GLenum status;
@@ -246,9 +249,58 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
     }
     if (hwr_cb) {
         drawn = true;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST);
+        if (width != game_width || height != game_height) {
+            game_width = width;
+            game_height = height;
+            float ratio;
+            if (aspect_ratio <= 0.f) {
+                ratio = (float)width / (float)height;
+            } else {
+                ratio = aspect_ratio;
+            }
+            float sratio = (float)curr_width / curr_height;
+            float wratio, hratio;
+            if (g_cfg.get_integer_scaling()) {
+                float int_ratio;
+                if (sratio < ratio) {
+                    int_ratio = std::floor((float)curr_width / (float)width);
+                } else {
+                    int_ratio = std::floor((float)curr_height / (float)height);
+                }
+                wratio = int_ratio * (float)width / curr_width;
+                hratio = int_ratio * (float)height / curr_height;
+            } else {
+                if (sratio < ratio) {
+                    wratio = 1.f;
+                    hratio = (float)curr_width / ratio / curr_height;
+                } else {
+                    wratio = ratio * (float)curr_height / curr_width;
+                    hratio = 1.f;
+                }
+            }
+            glBindVertexArray(vao_texture);
+            float vertices[] = {
+                // positions        // texture coords
+                -wratio,  hratio,   0.f, 0.f, // top left
+                 wratio,  hratio,   1.f, 0.f, // top right
+                 wratio, -hratio,   1.f, 1.f, // bottom right
+                -wratio, -hratio,   0.f, 1.f  // bottom left
+            };
+            glBindBuffer(GL_ARRAY_BUFFER, vbo_texture);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+            glBindVertexArray(0);
+        }
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hw_renderer.texture);
-        do_render();
+        glUseProgram(shader_texture);
+        glBindVertexArray(vao_texture);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         SDL_GL_SwapWindow(window);
         return;
     }
@@ -354,7 +406,15 @@ void *sdl2_video_ogl::get_framebuffer(unsigned int *width, unsigned int *height,
 
 void sdl2_video_ogl::clear() {
     glClearColor(0.f, 0.f, 0.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    if (hwr_cb) {
+        if (hwr_cb->depth && hwr_cb->stencil)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        else if (hwr_cb->depth)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        else
+            glClear(GL_COLOR_BUFFER_BIT);
+    } else
+        glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void sdl2_video_ogl::flip() {
@@ -439,6 +499,10 @@ void sdl2_video_ogl::get_text_width_and_height(const char *text, uint32_t &w, in
 }
 
 void sdl2_video_ogl::predraw_menu() {
+    glViewport(0, 0, curr_width, curr_height);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glUseProgram(shader_texture);
     glBindVertexArray(vao_texture);
     glActiveTexture(GL_TEXTURE0);
@@ -464,6 +528,9 @@ void sdl2_video_ogl::do_render() {
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
     if (messages.empty()) return;
+    glViewport(0, 0, curr_width, curr_height);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     uint32_t lh = ttf[0]->get_font_size() + 2;
     uint32_t y = curr_height - 5 - (messages.size() - 1) * lh;
     for (auto &m: messages) {
@@ -473,9 +540,6 @@ void sdl2_video_ogl::do_render() {
 }
 
 void sdl2_video_ogl::init_opengl() {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 #ifdef USE_GLES
 #define GLSL_VERSION_STR "300 es"
 #else
