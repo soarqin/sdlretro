@@ -2,9 +2,13 @@
 
 #include "sdl2_ttf_ogl.h"
 
+#include "driver_base.h"
+
 #include "cfg.h"
 
 #include "util.h"
+
+#include "libretro.h"
 
 #include <spdlog/spdlog.h>
 #include <glad/glad.h>
@@ -92,7 +96,7 @@ sdl2_video_ogl::sdl2_video_ogl() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 #else
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 #endif
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -128,6 +132,7 @@ sdl2_video_ogl::sdl2_video_ogl() {
 }
 
 sdl2_video_ogl::~sdl2_video_ogl() {
+    if (hwr_cb) hwr_cb->context_destroy();
     uninit_opengl();
     SDL_GL_DeleteContext(context);
     SDL_DestroyWindow(window);
@@ -141,19 +146,114 @@ int sdl2_video_ogl::get_renderer_type() {
 #endif
 }
 
+inline unsigned pullup(unsigned n) {
+    n |= n >> 1U;
+    n |= n >> 2U;
+    n |= n >> 4U;
+    n |= n >> 8U;
+    return (n | (n >> 16U)) + 1U;
+}
+
+extern driver_base *current_driver;
+
+extern "C" {
+
+uintptr_t RETRO_CALLCONV hw_get_current_framebuffer() {
+    return static_cast<sdl2_video_ogl*>(current_driver->get_video())->get_hw_fbo();
+}
+
+retro_proc_address_t RETRO_CALLCONV hw_get_proc_address(const char *sym) {
+    return (retro_proc_address_t)SDL_GL_GetProcAddress(sym);
+}
+
+}
+
+bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
+#ifdef USE_GLES
+    return false;
+#else
+    if (hwr->context_type != RETRO_HW_CONTEXT_OPENGL_CORE)
+        return false;
+#endif
+
+    uint32_t w = std::max(pullup(curr_width), pullup(curr_height));
+    GLint max_fbo_size;
+    GLint max_rb_size;
+    GLenum status;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
+    glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &max_rb_size);
+    if (w > (uint32_t)max_fbo_size)
+        w = max_fbo_size;
+    if (w > (uint32_t)max_rb_size)
+        w = max_rb_size;
+
+    glGenFramebuffers(1, &hw_renderer.fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, hw_renderer.fbo);
+    glGenTextures(1, &hw_renderer.texture);
+    glBindTexture(GL_TEXTURE_2D, hw_renderer.texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, w, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hw_renderer.texture, 0);
+
+    hw_renderer.rb_ds = 0;
+    hw_renderer.bottom_left = hwr->bottom_left_origin;
+    if (hwr->depth) {
+        glGenRenderbuffers(1, &hw_renderer.rb_ds);
+        glBindRenderbuffer(GL_RENDERBUFFER, hw_renderer.rb_ds);
+        glRenderbufferStorage(GL_RENDERBUFFER, hwr->stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT16,
+                              w, w);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+        if (hwr->stencil)
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, hw_renderer.rb_ds);
+        else
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hw_renderer.rb_ds);
+    }
+
+    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+        spdlog::error("Framebuffer is not complete.");
+        return false;
+    }
+
+    if (hwr->depth && hwr->stencil)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    else if (hwr->depth)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    else
+        glClear(GL_COLOR_BUFFER_BIT);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    hwr->get_current_framebuffer = hw_get_current_framebuffer;
+    hwr->get_proc_address = hw_get_proc_address;
+    hwr_cb = hwr;
+    hwr_cb->context_reset();
+
+    return true;
+}
+
 bool sdl2_video_ogl::resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
     game_pixel_format = pixel_format;
     return true;
 }
 
 void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, size_t pitch) {
-    if (!data) {
-        drawn = false;
-        return;
-    }
     if (skip_frame) {
         drawn = false;
         skip_frame = false;
+        return;
+    }
+    if (hwr_cb) {
+        drawn = true;
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, hw_renderer.texture);
+        do_render();
+        SDL_GL_SwapWindow(window);
+        return;
+    }
+    if (!data) {
+        drawn = false;
         return;
     }
     drawn = true;
@@ -171,9 +271,6 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
         break;
     }
     if (width != game_width || height != game_height || pitch_in_pixel != game_pitch) {
-        /*
-        if (texture) SDL_DestroyTexture(texture);
-         */
         game_width = width;
         game_height = height;
         game_pitch = pitch_in_pixel;
@@ -382,7 +479,7 @@ void sdl2_video_ogl::init_opengl() {
 #ifdef USE_GLES
 #define GLSL_VERSION_STR "300 es"
 #else
-#define GLSL_VERSION_STR "150 core"
+#define GLSL_VERSION_STR "330 core"
 #endif
     shader_direct_draw = compile_shader(
         "#version " GLSL_VERSION_STR "\n"

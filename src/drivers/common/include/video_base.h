@@ -5,6 +5,10 @@
 #include <cstdint>
 #include <cstdlib>
 
+extern "C" {
+struct retro_hw_render_callback;
+}
+
 namespace drivers {
 
 class video_base {
@@ -12,6 +16,7 @@ public:
     virtual ~video_base() = default;
 
     virtual int get_renderer_type() { return 0; }
+    virtual bool init_hw_renderer(retro_hw_render_callback*) { return false; }
 
     /* pixel_format follows libretro: RGB1555=0 XRGB8888=1 RGB565=2 */
     virtual bool resolution_changed(unsigned width, unsigned height, unsigned pixel_format) = 0;

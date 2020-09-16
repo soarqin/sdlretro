@@ -288,23 +288,8 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_SET_HW_RENDER: {
-            /*
             auto hwr = (struct retro_hw_render_callback*)data;
-            switch (hwr->context_type) {
-            case RETRO_HW_CONTEXT_OPENGL_CORE:
-                if (video->get_renderer_type() != 1) {
-                    return false;
-                }
-                return true;
-            case RETRO_HW_CONTEXT_OPENGLES3:
-                if (video->get_renderer_type() != 2) {
-                    return false;
-                }
-                return true;
-            default: break;
-            }
-             */
-            return false;
+            return video->init_hw_renderer(hwr);
         }
         case RETRO_ENVIRONMENT_GET_VARIABLE: {
             variables->set_variables_updated(false);
@@ -452,7 +437,6 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER: {
-            /*
             switch (video->get_renderer_type()) {
             case 1:
                 *(unsigned *)data = RETRO_HW_CONTEXT_OPENGL_CORE;
@@ -463,7 +447,6 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             default:
                 break;
             }
-             */
             return false;
         }
         case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION: {

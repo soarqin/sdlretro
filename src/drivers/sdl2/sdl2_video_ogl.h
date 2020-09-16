@@ -19,6 +19,7 @@ public:
     ~sdl2_video_ogl() override;
 
     int get_renderer_type() override;
+    bool init_hw_renderer(retro_hw_render_callback*) override;
     bool resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
@@ -40,6 +41,8 @@ public:
 
     void predraw_menu() override;
     void config_changed() override;
+
+    inline uintptr_t get_hw_fbo() const { return hw_renderer.fbo; }
 
 private:
     void do_render();
@@ -69,6 +72,15 @@ private:
 
     /* indicate wheather frame was drawn, for auto frameskip use */
     bool drawn = false;
+
+    retro_hw_render_callback *hwr_cb = nullptr;
+
+    struct {
+        uint32_t fbo = 0;
+        uint32_t texture = 0;
+        uint32_t rb_ds = 0;
+        bool bottom_left = true;
+    } hw_renderer;
 };
 
 }
