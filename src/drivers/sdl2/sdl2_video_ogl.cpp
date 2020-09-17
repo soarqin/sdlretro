@@ -169,6 +169,8 @@ retro_proc_address_t RETRO_CALLCONV hw_get_proc_address(const char *sym) {
 }
 
 bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
+    uninit_hw_renderer();
+
 #ifdef USE_GLES
     if (hwr->context_type != RETRO_HW_CONTEXT_OPENGLES3 && hwr->context_type != RETRO_HW_CONTEXT_OPENGLES_VERSION)
         return false;

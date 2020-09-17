@@ -12,9 +12,6 @@ namespace libretro {
 
 core_manager::core_manager() {
     g_cfg.get_core_dirs(core_dirs);
-    for (auto &d: core_dirs) {
-        d += PATH_SEPARATOR_CHAR "cores";
-    }
     for (const auto &core_dir: core_dirs) {
         auto *dir = vfs_interface.opendir(core_dir.c_str(), false);
         if (!dir) continue;
