@@ -210,6 +210,7 @@ void driver_base::unload_game() {
     check_save_ram();
     core->retro_unload_game();
     audio->stop();
+    video->uninit_hw_renderer();
     unload();
 
     if (!temp_file.empty()) {
@@ -397,6 +398,8 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             support_achivements = data == nullptr || *(bool*)data;
             return true;
         case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:
+            /* for vulkan use only currently, so ignore it */
+            return false;
         case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS: {
             serialization_quirks = *(uint64_t*)data;
             return true;

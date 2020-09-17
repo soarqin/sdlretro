@@ -42,7 +42,9 @@ template<typename T>
 inline bool write_file(const std::string &filename, T &data) {
     auto *handle = libretro::vfs_interface.open(filename.c_str(), RETRO_VFS_FILE_ACCESS_WRITE, 0);
     if (handle == nullptr) return false;
-    libretro::vfs_interface.write(handle, &data[0], data.size());
+    if (!data.empty()) {
+        libretro::vfs_interface.write(handle, &data[0], sizeof(data[0]) * data.size());
+    }
     libretro::vfs_interface.close(handle);
     return true;
 }

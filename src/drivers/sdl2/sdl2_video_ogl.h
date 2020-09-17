@@ -20,6 +20,7 @@ public:
 
     int get_renderer_type() override;
     bool init_hw_renderer(retro_hw_render_callback*) override;
+    void uninit_hw_renderer() override;
     bool resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
@@ -76,6 +77,7 @@ private:
     retro_hw_render_callback *hwr_cb = nullptr;
 
     struct {
+        uint32_t fbw = 0, fbh = 0;
         uint32_t fbo = 0;
         uint32_t texture = 0;
         uint32_t rb_ds = 0;
