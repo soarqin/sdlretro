@@ -170,7 +170,8 @@ retro_proc_address_t RETRO_CALLCONV hw_get_proc_address(const char *sym) {
 
 bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
 #ifdef USE_GLES
-    return false;
+    if (hwr->context_type != RETRO_HW_CONTEXT_OPENGLES3 && hwr->context_type != RETRO_HW_CONTEXT_OPENGLES_VERSION)
+        return false;
 #else
     if (hwr->context_type != RETRO_HW_CONTEXT_OPENGL_CORE)
         return false;
@@ -394,7 +395,14 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, nullptr);
             break;
         case 1:
+#ifdef USE_GLES
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, game_pitch, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
+#else
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+#endif
             break;
         default:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, nullptr);
@@ -409,7 +417,11 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, data);
         break;
     case 1:
+#ifdef USE_GLES
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+#else
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
+#endif
         break;
     default:
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
@@ -548,7 +560,6 @@ void sdl2_video_ogl::do_render() {
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
     if (messages.empty()) return;
-    glViewport(0, 0, curr_width, curr_height);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     uint32_t lh = ttf[0]->get_font_size() + 2;

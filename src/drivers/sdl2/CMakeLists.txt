@@ -1,6 +1,7 @@
 find_package(SDL2 REQUIRED)
 
 option(SDLRETRO_USE_OPENGL "Use OpenGL for rendering" OFF)
+option(SDLRETRO_USE_OPENGL_ES "Use OpenGL ES for rendering" OFF)
 
 if (SDLRETRO_USE_OPENGL)
     set(video_src
@@ -31,7 +32,10 @@ target_compile_definitions(driver_sdl2 PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(driver_sdl2 PUBLIC include)
 target_link_libraries(driver_sdl2 driver_common SDL2::SDL2)
 
-if(SDLRETRO_USE_OPENGL)
+if(SDLRETRO_USE_OPENGL_ES)
+    target_compile_definitions(driver_sdl2 PRIVATE USE_OPENGL USE_GLES)
+    target_link_libraries(driver_sdl2 glad)
+elseif(SDLRETRO_USE_OPENGL)
     target_compile_definitions(driver_sdl2 PRIVATE USE_OPENGL)
     target_link_libraries(driver_sdl2 glad)
 endif()
