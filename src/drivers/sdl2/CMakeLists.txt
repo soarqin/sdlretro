@@ -31,6 +31,9 @@ add_library(driver_sdl2 STATIC
 target_compile_definitions(driver_sdl2 PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(driver_sdl2 PUBLIC include)
 target_link_libraries(driver_sdl2 driver_common)
+
+# sdl2_config.cmake in old version of SDL2 does not use imported target SDL2::SDL2.
+# we just do a check here.
 if(TARGET SDL2::SDL2)
     target_link_libraries(driver_sdl2 SDL2::SDL2)
 else()

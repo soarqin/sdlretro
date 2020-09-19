@@ -4,6 +4,10 @@ else()
     set(DEFAULT_FRONTEND SDL2)
 endif()
 
+# add -Wno-psabi to strip abi warnings for gcc 6-8 in nlohmann json
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wno-psabi")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi")
+
 set(SDLRETRO_FRONTEND "${DEFAULT_FRONTEND}" CACHE STRING "Select frontend (SDL1, SDL2)")
 option(SDLRETRO_USE_STB_TRUETYPE "Use stb truetype (aka build w/o FreeType)" OFF)
 
