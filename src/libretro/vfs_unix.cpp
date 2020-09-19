@@ -12,10 +12,10 @@
 #include <dirent.h>
 
 #ifdef WIN32
+#define fsync
+#endif
 #ifndef O_BINARY
 #define O_BINARY 0
-#endif
-#define fsync
 #endif
 
 struct retro_vfs_file_handle {
@@ -134,7 +134,7 @@ int RETRO_CALLCONV unix_vfs_stat(const char *path, int32_t *size) {
 }
 
 int RETRO_CALLCONV unix_vfs_mkdir(const char *dir) {
-    return util_mkdir(dir);
+    return util::mkdir(dir);
 }
 
 struct retro_vfs_dir_handle *RETRO_CALLCONV unix_vfs_opendir(const char *dir, bool include_hidden) {

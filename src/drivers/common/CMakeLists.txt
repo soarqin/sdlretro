@@ -24,4 +24,4 @@ endif()
 
 target_include_directories(driver_common PRIVATE external)
 target_include_directories(driver_common PUBLIC include)
-target_link_libraries(driver_common libretro samplerate stb xxhash)
+target_link_libraries(driver_common libretro samplerate stb)
