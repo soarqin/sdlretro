@@ -11,8 +11,10 @@ extern struct retro_vfs_interface vfs_interface;
 
 #ifdef _WIN32
 #define PATH_SEPARATOR_CHAR "\\"
+#define DYNLIB_EXTENSION "dll"
 #else
 #define PATH_SEPARATOR_CHAR "/"
+#define DYNLIB_EXTENSION "so"
 #endif
 
 namespace util {

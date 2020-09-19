@@ -29,8 +29,14 @@ add_library(driver_sdl2 STATIC
     )
 
 target_compile_definitions(driver_sdl2 PUBLIC SDL_MAIN_HANDLED)
-target_include_directories(driver_sdl2 PUBLIC include ${SDL2_INCLUDE_DIRS})
-target_link_libraries(driver_sdl2 driver_common ${SDL2_LIBRARIES})
+target_include_directories(driver_sdl2 PUBLIC include)
+target_link_libraries(driver_sdl2 driver_common)
+if(TARGET SDL2::SDL2)
+    target_link_libraries(driver_sdl2 SDL2::SDL2)
+else()
+    target_include_directories(driver_sdl2 PUBLIC ${SDL2_INCLUDE_DIRS})
+    target_link_libraries(driver_sdl2 ${SDL2_LIBRARIES})
+endif()
 
 if(SDLRETRO_USE_OPENGL_ES)
     target_compile_definitions(driver_sdl2 PRIVATE USE_OPENGL USE_GLES)

@@ -100,20 +100,12 @@ int main(int argc, char *argv[]) {
                     found = true;
                     break;
                 }
-#ifdef _WIN32
-                core_filepath = d + PATH_SEPARATOR_CHAR + core_filename + ".dll";
-#else
-                core_filepath = d + PATH_SEPARATOR_CHAR + core_filename + ".so";
-#endif
+                core_filepath = d + PATH_SEPARATOR_CHAR + core_filename + "." DYNLIB_EXTENSION;
                 if (util::file_exists(core_filepath)) {
                     found = true;
                     break;
                 }
-#ifdef _WIN32
-                core_filepath = d + PATH_SEPARATOR_CHAR + core_filename + "_libretro.dll";
-#else
-                core_filepath = d + PATH_SEPARATOR_CHAR + core_filename + "_libretro.so";
-#endif
+                core_filepath = d + PATH_SEPARATOR_CHAR + core_filename + "_libretro." DYNLIB_EXTENSION;
                 if (util::file_exists(core_filepath)) {
                     found = true;
                     break;
