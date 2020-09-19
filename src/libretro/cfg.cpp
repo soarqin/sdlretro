@@ -16,6 +16,7 @@ using json = nlohmann::json;
 
 void cfg::set_data_dir(const std::string &dir) {
     char n[PATH_MAX];
+    data_dir_orig = dir;
     if (realpath(dir.c_str(), n) == nullptr)
         data_dir = dir;
     else
@@ -24,6 +25,7 @@ void cfg::set_data_dir(const std::string &dir) {
 
 void cfg::set_store_dir(const std::string &dir) {
     char n[PATH_MAX];
+    store_dir_orig = dir;
 #ifdef _WIN32
     if (realpath(dir.c_str(), n) == nullptr)
         store_dir = dir;
@@ -62,31 +64,52 @@ void cfg::get_core_dirs(std::vector<std::string> &dirs) const {
 }
 
 template<typename T>
-inline T get_value(json &j, const std::string &key, T defval) {
+inline bool get_value(json &j, const std::string &key, T &val, const T &defval) {
     auto jsub = j[key];
     if (jsub.is_string() || jsub.is_boolean() || jsub.is_number()) {
-        return jsub.get<T>();
+        val = jsub.get<T>();
+        return true;
     }
-    return defval;
+    val = defval;
+    return false;
 }
 
-void cfg::load() {
+template<typename T>
+inline bool get_value(json &j, const std::string &key, T &val) {
+    auto jsub = j[key];
+    if (jsub.is_string() || jsub.is_boolean() || jsub.is_number()) {
+        val = jsub.get<T>();
+        return true;
+    }
+    return false;
+}
+
+void cfg::load(const std::string &cfgfile) {
     json j;
-    auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
-    if (!util::file_exists(filename)) return;
+    config_filename = cfgfile.empty() ? g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json" : cfgfile;
+    if (!util::file_exists(config_filename)) return;
     try {
         std::string content;
-        if (!util::read_file(filename, content)) {
+        if (!util::read_file(config_filename, content)) {
             throw std::bad_exception();
         }
         j = json::parse(content);
     } catch(...) {
-        spdlog::error("failed to read config from {}", filename);
+        spdlog::error("failed to read config from {}", config_filename);
         return;
     }
 
     if (j.is_object()) {
-#define JREAD(name, def) name = get_value<decltype(name)>(j, #name, (def))
+#define JREAD(name, def) get_value<decltype(name)>(j, #name, name, (def))
+#define JREAD2(name) get_value<decltype(name)>(j, #name, name)
+        std::string datadir;
+        std::string storedir;
+        if (JREAD2(datadir)) {
+            set_data_dir(datadir);
+        }
+        if (JREAD2(storedir)) {
+            set_store_dir(storedir);
+        }
         JREAD(res_w, DEFAULT_WIDTH);
         JREAD(res_h, DEFAULT_HEIGHT);
         JREAD(mono_audio, false);
@@ -105,6 +128,8 @@ void cfg::load() {
 void cfg::save() {
     json j;
 #define JWRITE(name) j[#name] = name
+    j["datadir"] = data_dir_orig;
+    j["storedir"] = store_dir_orig;
     JWRITE(res_w);
     JWRITE(res_h);
     JWRITE(mono_audio);
@@ -117,12 +142,11 @@ void cfg::save() {
     JWRITE(save_check);
     JWRITE(language);
 #undef JWRITE
-    auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json";
     try {
         auto content = j.dump(4);
-        if (!util::write_file(filename, content))
+        if (!util::write_file(config_filename, content))
             throw std::bad_exception();
     } catch(...) {
-        spdlog::error("failed to write config to {}", filename);
+        spdlog::error("failed to write config to {}", config_filename);
     }
 }

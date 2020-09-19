@@ -21,7 +21,7 @@ enum :uint32_t {
 class cfg {
 public:
     virtual ~cfg() = default;
-    void load();
+    void load(const std::string &cfgfile);
     void save();
 
     inline const std::string &get_data_dir() const { return data_dir; }
@@ -56,10 +56,12 @@ public:
     inline void set_language(int lang) { language = lang; }
 
 protected:
+    /* config filename */
+    std::string config_filename;
     /* dir of static data */
-    std::string data_dir;
+    std::string data_dir, data_dir_orig;
     /* dir of dynamic data */
-    std::string store_dir;
+    std::string store_dir, store_dir_orig;
     /* dir of config files */
     std::string config_dir;
     /* extra dirs of libretro cores

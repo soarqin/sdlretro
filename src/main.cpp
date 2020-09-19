@@ -19,6 +19,13 @@
 
 #include <getopt.h>
 
+#define DEFAULT_DATA_DIR "."
+#ifdef GCW_ZERO
+#define DEFAULT_STORE_DIR "/usr/local/home/.sdlretro"
+#else
+#define DEFAULT_STORE_DIR "."
+#endif
+
 int main(int argc, char *argv[]) {
     setvbuf(stdout, nullptr, _IONBF, 0);
     setvbuf(stderr, nullptr, _IONBF, 0);
@@ -29,8 +36,10 @@ int main(int argc, char *argv[]) {
 
     const char *rom_filename = nullptr;
     const char *core_filename = nullptr;
+    const char *config_filename = nullptr;
     static struct option long_options[] = {
         {"libretro",     required_argument, 0,  'L' },
+        {"config",     required_argument, 0,  'c' },
         {nullptr }
     };
     opterr = 0;
@@ -41,6 +50,9 @@ int main(int argc, char *argv[]) {
         switch (c) {
         case 'L':
             core_filename = optarg;
+            break;
+        case 'c':
+            config_filename = optarg;
             break;
         case '?':
             if (optopt)
@@ -58,15 +70,18 @@ int main(int argc, char *argv[]) {
     }
     rom_filename = argv[optind];
 
-#ifdef GCW_ZERO
-    g_cfg.set_data_dir(".");
-    g_cfg.set_config_dir("/usr/local/home/.sdlretro/cfg");
-#else
-    g_cfg.set_data_dir(".");
-    g_cfg.set_store_dir(".");
-#endif
+    if (config_filename) {
+        g_cfg.load(config_filename);
+        if (g_cfg.get_data_dir().empty())
+            g_cfg.set_data_dir(DEFAULT_DATA_DIR);
+        if (g_cfg.get_store_dir().empty())
+            g_cfg.set_store_dir(DEFAULT_STORE_DIR);
+    } else {
+        g_cfg.set_data_dir(DEFAULT_DATA_DIR);
+        g_cfg.set_store_dir(DEFAULT_STORE_DIR);
+        g_cfg.load("");
+    }
 
-    g_cfg.load();
     libretro::i18n_obj.set_language(g_cfg.get_language());
 
     libretro::core_manager coreman;
