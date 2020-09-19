@@ -31,7 +31,7 @@ void sdl2_ttf_ogl::finish_texture(uint8_t *data, size_t index, uint16_t x, uint1
         glBindTexture(GL_TEXTURE_2D, tex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, rpw, rpw, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, rpw, rpw, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     glBindTexture(GL_TEXTURE_2D, tex);

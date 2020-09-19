@@ -65,7 +65,7 @@ int mkdir(const std::string &path, bool recursive) {
             }
         }
     }
-    if (mkdir(path.c_str(), 0755) == 0) return 0;
+    if (::mkdir(path.c_str(), 0755) == 0) return 0;
     if (errno == EEXIST) return -2;
     return -1;
 #endif

@@ -164,7 +164,7 @@ const ttf_font_base::font_data *ttf_font_base::make_cache(uint16_t ch) {
     auto *dst = prepare_texture(rpidx, rc.x, rc.y, rc.w, rc.h, dst_pitch);
     auto *dst_ptr = dst;
 #ifdef USE_STB_TRUETYPE
-    stbtt_MakeGlyphBitmapSubpixel(info, dst_pitch, fd->w, fd->h, dst_pitch, fi->font_scale, fi->font_scale, 3, 3, index);
+    stbtt_MakeGlyphBitmapSubpixel(info, dst, fd->w, fd->h, dst_pitch, fi->font_scale, fi->font_scale, 3, 3, index);
 #else
     for (int k = 0; k < fd->h; ++k) {
         memcpy(dst_ptr, src_ptr, fd->w);

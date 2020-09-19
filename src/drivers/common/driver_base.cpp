@@ -159,7 +159,7 @@ bool driver_base::load_game(const std::string &path) {
     info.path = path.c_str();
     if (!need_fullpath) {
         if (!util::read_file(path, game_data)) {
-            spdlog::error("Unable to load {}", path);
+            spdlog::error("Unable to load file {}", path);
             return false;
         }
         info.data = &game_data[0];
@@ -167,7 +167,7 @@ bool driver_base::load_game(const std::string &path) {
     }
     serialization_quirks = 0;
     if (!core->retro_load_game(&info)) {
-        spdlog::error("Unable to load {}", path);
+        spdlog::error("The core was unable to load {}", path);
         return false;
     }
 
@@ -196,7 +196,7 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
         info.path = temp_file.c_str();
     }
     if (!core->retro_load_game(&info)) {
-        spdlog::error("Unable to load {}", path);
+        spdlog::error("The core was unable to load {}", path);
         return false;
     }
 

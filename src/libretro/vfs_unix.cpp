@@ -39,7 +39,7 @@ const char *RETRO_CALLCONV unix_vfs_get_path(struct retro_vfs_file_handle *strea
 struct retro_vfs_file_handle *RETRO_CALLCONV unix_vfs_open(const char *path, unsigned mode, unsigned hints) {
     auto *ret = new retro_vfs_file_handle;
     int flag = O_BINARY;
-    if (mode & (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE)) {
+    if ((mode & (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE)) == (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE)) {
         flag |= O_RDWR;
         if (!(mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING)) {
             flag |= O_CREAT | O_TRUNC;
