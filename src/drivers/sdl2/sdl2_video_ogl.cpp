@@ -124,10 +124,10 @@ sdl2_video_ogl::sdl2_video_ogl() {
 
     init_opengl();
 
-    ttf[0] = std::make_shared<sdl2_ttf_ogl>(shader_font, vao_font, vbo_font, uniform_font_color);
+    ttf[0] = std::make_shared<sdl2_ttf_ogl>(gl_renderer.shader_font, gl_renderer.vao_font, gl_renderer.vbo_font, gl_renderer.uniform_font_color);
     ttf[0]->init(16, 0);
     ttf[0]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "regular.ttf", 0);
-    ttf[1] = std::make_shared<sdl2_ttf_ogl>(shader_font, vao_font, vbo_font, uniform_font_color);
+    ttf[1] = std::make_shared<sdl2_ttf_ogl>(gl_renderer.shader_font, gl_renderer.vao_font, gl_renderer.vbo_font, gl_renderer.uniform_font_color);
     ttf[1]->init(16, 0);
     ttf[1]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "bold.ttf", 0);
 }
@@ -291,7 +291,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
             float o_r, o_b;
             o_r = (float)width / hw_renderer.fbw;
             o_b = (float)height / hw_renderer.fbh;
-            glBindVertexArray(vao_texture);
+            glBindVertexArray(gl_renderer.vao_texture);
             if (hw_renderer.bottom_left) {
                 float vertices[] = {
                     // positions      // texture coords
@@ -300,7 +300,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
                      wratio, -hratio, o_r, 0.f, // bottom right
                     -wratio, -hratio, 0.f, 0.f  // bottom left
                 };
-                glBindBuffer(GL_ARRAY_BUFFER, vbo_texture);
+                glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
                 glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
             } else {
                 float vertices[] = {
@@ -310,7 +310,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
                      wratio, -hratio, o_r, o_b, // bottom right
                     -wratio, -hratio, 0.f, o_b  // bottom left
                 };
-                glBindBuffer(GL_ARRAY_BUFFER, vbo_texture);
+                glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
                 glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
             }
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
@@ -375,7 +375,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
             }
         }
         float tratio = (float)width / game_pitch;
-        glBindVertexArray(vao_texture);
+        glBindVertexArray(gl_renderer.vao_texture);
         float vertices[] = {
             // positions        // texture coords
             -wratio,  hratio,   0.0f,   0.0f, // top left
@@ -383,7 +383,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
              wratio, -hratio,   tratio, 1.0f, // bottom right
             -wratio, -hratio,   0.0f,   1.0f  // bottom left
         };
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_texture);
+        glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
         glEnableVertexAttribArray(0);
@@ -391,7 +391,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
         glEnableVertexAttribArray(1);
         glBindVertexArray(0);
 
-        glBindTexture(GL_TEXTURE_2D, texture_game);
+        glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
         switch (game_pixel_format) {
         case 0:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, nullptr);
@@ -413,7 +413,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_game);
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
     switch (game_pixel_format) {
     case 0:
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, data);
@@ -459,23 +459,23 @@ int sdl2_video_ogl::get_font_size() const {
 }
 
 void sdl2_video_ogl::set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    draw_color[0] = (float)r / 255.f;
-    draw_color[1] = (float)g / 255.f;
-    draw_color[2] = (float)b / 255.f;
-    draw_color[3] = (float)a / 255.f;
+    gl_renderer.draw_color[0] = (float)r / 255.f;
+    gl_renderer.draw_color[1] = (float)g / 255.f;
+    gl_renderer.draw_color[2] = (float)b / 255.f;
+    gl_renderer.draw_color[3] = (float)a / 255.f;
 }
 
 void sdl2_video_ogl::draw_rectangle(int x, int y, int w, int h) {
     auto x1 = (float)x - 0.5f, y1 = (float)y - 0.5f, x2 = (float)(x + w) + 0.5f, y2 = (float)(y + h) + 0.5f;
     float vertices[] = {
-        x1, y1, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
-        x2, y1, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
-        x2, y2, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
-        x1, y2, draw_color[0], draw_color[1], draw_color[2], draw_color[3]
+        x1, y1, gl_renderer.draw_color[0], gl_renderer.draw_color[1], gl_renderer.draw_color[2], gl_renderer.draw_color[3],
+        x2, y1, gl_renderer.draw_color[0], gl_renderer.draw_color[1], gl_renderer.draw_color[2], gl_renderer.draw_color[3],
+        x2, y2, gl_renderer.draw_color[0], gl_renderer.draw_color[1], gl_renderer.draw_color[2], gl_renderer.draw_color[3],
+        x1, y2, gl_renderer.draw_color[0], gl_renderer.draw_color[1], gl_renderer.draw_color[2], gl_renderer.draw_color[3]
     };
-    glUseProgram(shader_direct_draw);
-    glBindVertexArray(vao_draw);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_draw);
+    glUseProgram(gl_renderer.shader_direct_draw);
+    glBindVertexArray(gl_renderer.vao_draw);
+    glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_draw);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
@@ -489,14 +489,14 @@ void sdl2_video_ogl::draw_rectangle(int x, int y, int w, int h) {
 void sdl2_video_ogl::fill_rectangle(int x, int y, int w, int h) {
     auto x1 = (float)x, y1 = (float)y, x2 = (float)(x + w), y2 = (float)(y + h);
     float vertices[] = {
-        x1, y1, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
-        x2, y1, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
-        x1, y2, draw_color[0], draw_color[1], draw_color[2], draw_color[3],
-        x2, y2, draw_color[0], draw_color[1], draw_color[2], draw_color[3]
+        x1, y1, gl_renderer.draw_color[0], gl_renderer.draw_color[1], gl_renderer.draw_color[2], gl_renderer.draw_color[3],
+        x2, y1, gl_renderer.draw_color[0], gl_renderer.draw_color[1], gl_renderer.draw_color[2], gl_renderer.draw_color[3],
+        x1, y2, gl_renderer.draw_color[0], gl_renderer.draw_color[1], gl_renderer.draw_color[2], gl_renderer.draw_color[3],
+        x2, y2, gl_renderer.draw_color[0], gl_renderer.draw_color[1], gl_renderer.draw_color[2], gl_renderer.draw_color[3]
     };
-    glUseProgram(shader_direct_draw);
-    glBindVertexArray(vao_draw);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_draw);
+    glUseProgram(gl_renderer.shader_direct_draw);
+    glBindVertexArray(gl_renderer.vao_draw);
+    glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_draw);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
@@ -535,10 +535,10 @@ void sdl2_video_ogl::predraw_menu() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glUseProgram(shader_texture);
-    glBindVertexArray(vao_texture);
+    glUseProgram(gl_renderer.shader_texture);
+    glBindVertexArray(gl_renderer.vao_texture);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : texture_game);
+    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);
     glViewport(0, 0, curr_width, curr_height);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     set_draw_color(0, 0, 0, 0xA0);
@@ -546,7 +546,7 @@ void sdl2_video_ogl::predraw_menu() {
 }
 
 void sdl2_video_ogl::config_changed() {
-    glBindTexture(GL_TEXTURE_2D, texture_game);
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -557,8 +557,8 @@ void sdl2_video_ogl::do_render() {
     clear();
 
     glViewport(0, 0, curr_width, curr_height);
-    glUseProgram(shader_texture);
-    glBindVertexArray(vao_texture);
+    glUseProgram(gl_renderer.shader_texture);
+    glBindVertexArray(gl_renderer.vao_texture);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
     if (messages.empty()) return;
@@ -578,7 +578,7 @@ void sdl2_video_ogl::init_opengl() {
 #else
 #define GLSL_VERSION_STR "330 core"
 #endif
-    shader_direct_draw = compile_shader(
+    gl_renderer.shader_direct_draw = compile_shader(
         "#version " GLSL_VERSION_STR "\n"
         "in vec2 aPos;\n"
         "in vec4 aColor;\n"
@@ -599,7 +599,7 @@ void sdl2_video_ogl::init_opengl() {
         "{\n"
         "  fragColor = outColor;\n"
         "}");
-    shader_texture = compile_shader(
+    gl_renderer.shader_texture = compile_shader(
         "#version " GLSL_VERSION_STR "\n"
         "in vec2 aPos;\n"
         "in vec2 aTexCoord;\n"
@@ -620,7 +620,7 @@ void sdl2_video_ogl::init_opengl() {
         "{\n"
         "  fragColor = texture(texture0, texCoord);\n"
         "}");
-    shader_font = compile_shader(
+    gl_renderer.shader_font = compile_shader(
         "#version " GLSL_VERSION_STR "\n"
         "in vec2 aPos;\n"
         "in vec2 aTexCoord;\n"
@@ -644,83 +644,83 @@ void sdl2_video_ogl::init_opengl() {
         "  fragColor = vec4(outColor, texture(texture0, texCoord).r);\n"
         "}");
 
-    glGenVertexArrays(1, &vao_draw);
-    glGenBuffers(1, &vbo_draw);
+    glGenVertexArrays(1, &gl_renderer.vao_draw);
+    glGenBuffers(1, &gl_renderer.vbo_draw);
 
     const unsigned int indices[] = {
         0, 1, 2, // first triangle
         0, 2, 3  // second triangle
     };
-    glGenVertexArrays(1, &vao_texture);
-    glGenBuffers(1, &vbo_texture);
-    glGenBuffers(1, &ebo_texture);
-    glBindVertexArray(vao_texture);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_texture);
+    glGenVertexArrays(1, &gl_renderer.vao_texture);
+    glGenBuffers(1, &gl_renderer.vbo_texture);
+    glGenBuffers(1, &gl_renderer.ebo_texture);
+    glBindVertexArray(gl_renderer.vao_texture);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_renderer.ebo_texture);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     glBindVertexArray(0);
 
-    glGenVertexArrays(1, &vao_font);
-    glGenBuffers(1, &vbo_font);
-    glGenBuffers(1, &ebo_font);
-    glBindVertexArray(vao_font);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_font);
+    glGenVertexArrays(1, &gl_renderer.vao_font);
+    glGenBuffers(1, &gl_renderer.vbo_font);
+    glGenBuffers(1, &gl_renderer.ebo_font);
+    glBindVertexArray(gl_renderer.vao_font);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_renderer.ebo_font);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     glBindVertexArray(0);
 
-    glGenTextures(1, &texture_game);
-    glBindTexture(GL_TEXTURE_2D, texture_game);
+    glGenTextures(1, &gl_renderer.texture_game);
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    glUseProgram(shader_texture);
-    glUniform1i(glGetUniformLocation(shader_texture, "texture0"), 0);
+    glUseProgram(gl_renderer.shader_texture);
+    glUniform1i(glGetUniformLocation(gl_renderer.shader_texture, "texture0"), 0);
     glUseProgram(0);
 
-    glUseProgram(shader_font);
-    glUniform1i(glGetUniformLocation(shader_font, "texture0"), 0);
+    glUseProgram(gl_renderer.shader_font);
+    glUniform1i(glGetUniformLocation(gl_renderer.shader_font, "texture0"), 0);
     glUseProgram(0);
 
     mat4f proj_mat;
     gl_ortho_mat(proj_mat, 0.0f, (float)curr_width, (float)curr_height, 0.0f, 0.0f, 1.0f);
-    glUseProgram(shader_direct_draw);
-    glUniformMatrix4fv(glGetUniformLocation(shader_direct_draw, "projMat"), 1, GL_FALSE, proj_mat);
+    glUseProgram(gl_renderer.shader_direct_draw);
+    glUniformMatrix4fv(glGetUniformLocation(gl_renderer.shader_direct_draw, "projMat"), 1, GL_FALSE, proj_mat);
     glUseProgram(0);
-    glUseProgram(shader_font);
-    glUniformMatrix4fv(glGetUniformLocation(shader_font, "projMat"), 1, GL_FALSE, proj_mat);
-    uniform_font_color = glGetUniformLocation(shader_font, "outColor");
+    glUseProgram(gl_renderer.shader_font);
+    glUniformMatrix4fv(glGetUniformLocation(gl_renderer.shader_font, "projMat"), 1, GL_FALSE, proj_mat);
+    gl_renderer.uniform_font_color = glGetUniformLocation(gl_renderer.shader_font, "outColor");
     glUseProgram(0);
 }
 
 void sdl2_video_ogl::uninit_opengl() {
-    glDeleteTextures(1, &texture_game);
-    texture_game = 0;
+    glDeleteTextures(1, &gl_renderer.texture_game);
+    gl_renderer.texture_game = 0;
 
-    glDeleteBuffers(1, &ebo_font);
-    ebo_font = 0;
-    glDeleteBuffers(1, &vbo_font);
-    vbo_font = 0;
-    glDeleteVertexArrays(1, &vao_font);
-    vao_font = 0;
+    glDeleteBuffers(1, &gl_renderer.ebo_font);
+    gl_renderer.ebo_font = 0;
+    glDeleteBuffers(1, &gl_renderer.vbo_font);
+    gl_renderer.vbo_font = 0;
+    glDeleteVertexArrays(1, &gl_renderer.vao_font);
+    gl_renderer.vao_font = 0;
 
-    glDeleteBuffers(1, &ebo_texture);
-    ebo_texture = 0;
-    glDeleteBuffers(1, &vbo_texture);
-    vbo_texture = 0;
-    glDeleteVertexArrays(1, &vao_texture);
-    vao_texture = 0;
+    glDeleteBuffers(1, &gl_renderer.ebo_texture);
+    gl_renderer.ebo_texture = 0;
+    glDeleteBuffers(1, &gl_renderer.vbo_texture);
+    gl_renderer.vbo_texture = 0;
+    glDeleteVertexArrays(1, &gl_renderer.vao_texture);
+    gl_renderer.vao_texture = 0;
 
-    glDeleteBuffers(1, &vbo_draw);
-    vbo_draw = 0;
-    glDeleteVertexArrays(1, &vao_draw);
-    vao_draw = 0;
+    glDeleteBuffers(1, &gl_renderer.vbo_draw);
+    gl_renderer.vbo_draw = 0;
+    glDeleteVertexArrays(1, &gl_renderer.vao_draw);
+    gl_renderer.vao_draw = 0;
 
-    glDeleteProgram(shader_font);
-    shader_font = 0;
-    glDeleteProgram(shader_texture);
-    shader_texture = 0;
-    glDeleteProgram(shader_direct_draw);
-    shader_direct_draw = 0;
+    glDeleteProgram(gl_renderer.shader_font);
+    gl_renderer.shader_font = 0;
+    glDeleteProgram(gl_renderer.shader_texture);
+    gl_renderer.shader_texture = 0;
+    glDeleteProgram(gl_renderer.shader_direct_draw);
+    gl_renderer.shader_direct_draw = 0;
 }
 
 }
