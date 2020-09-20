@@ -160,8 +160,6 @@ retro_proc_address_t RETRO_CALLCONV hw_get_proc_address(const char *sym) {
 }
 
 bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
-    uninit_hw_renderer();
-
 #ifdef USE_GLES
     if (hwr->context_type != RETRO_HW_CONTEXT_OPENGLES3 && hwr->context_type != RETRO_HW_CONTEXT_OPENGLES_VERSION)
         return false;
@@ -169,6 +167,8 @@ bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
     if (hwr->context_type != RETRO_HW_CONTEXT_OPENGL && hwr->context_type != RETRO_HW_CONTEXT_OPENGL_CORE)
         return false;
 #endif
+
+    uninit_hw_renderer();
 
     GLenum status;
     retro_system_av_info info = {};
