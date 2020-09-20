@@ -18,7 +18,8 @@ class sdl2_video: public video_base {
 public:
     sdl2_video();
     ~sdl2_video() override;
-    bool resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
+    void window_resized(unsigned width, unsigned height, bool fullscreen) override;
+    bool game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
@@ -42,13 +43,14 @@ public:
 
 private:
     void do_render();
+    void recalc_draw_rect();
 
 private:
     SDL_Window *window = nullptr;
     SDL_Renderer *renderer = nullptr;
     SDL_Texture *texture = nullptr;
 
-    uint32_t curr_width = 0, curr_height = 0;
+    int curr_width = 0, curr_height = 0;
     uint32_t game_pitch = 0, game_width = 0, game_height = 0, game_pixel_format = 0;
     std::array<int, 4> display_rect = {};
 

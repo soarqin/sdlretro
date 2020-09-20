@@ -16,6 +16,7 @@ class driver_base;
 namespace gui {
 
 struct menu_item;
+class menu_base;
 
 class ui_menu {
 public:
@@ -29,10 +30,10 @@ public:
     void in_game_menu();
 
 protected:
-    bool global_settings_menu();
-    bool core_settings_menu();
-    bool input_settings_menu();
-    bool language_settings_menu();
+    bool global_settings_menu(menu_base *parent);
+    bool core_settings_menu(menu_base *parent);
+    bool input_settings_menu(menu_base *parent);
+    bool language_settings_menu(menu_base *parent);
 
 private:
     std::shared_ptr<drivers::driver_base> driver;

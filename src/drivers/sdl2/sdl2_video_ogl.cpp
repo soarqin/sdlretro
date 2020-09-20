@@ -17,31 +17,6 @@
 
 namespace drivers {
 
-using mat4f = float[16];
-
-inline void gl_ortho_mat(mat4f &out, float left, float right, float bottom, float top, float znear, float zfar)
-{
-    out[0] = 2.0f / (right - left);
-    out[1] = 0.0f;
-    out[2] = 0.0f;
-    out[3] = 0.0f;
-
-    out[4] = 0.0f;
-    out[5] = 2.0f / (top - bottom);
-    out[6] = 0.0f;
-    out[7] = 0.0f;
-
-    out[8] = 0.0f;
-    out[9] = 0.0f;
-    out[10] = -2.0f / (zfar - znear);
-    out[11] = 0.0f;
-
-    out[12] = -(right + left) / (right - left);
-    out[13] = -(top + bottom) / (top - bottom);
-    out[14] = -(zfar + znear) / (zfar - znear);
-    out[15] = 1.0f;
-}
-
 inline uint32_t compile_shader(const char *vertex_shader_source,
                    const char *fragment_shader_source) {
     uint32_t vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -109,13 +84,18 @@ sdl2_video_ogl::sdl2_video_ogl() {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-    window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, 0,
-                              SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL);
-
-    SDL_DisplayMode mode = {};
-    SDL_GetWindowDisplayMode(window, &mode);
-    curr_width = mode.w;
-    curr_height = mode.h;
+    if (g_cfg.get_fullscreen()) {
+        window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, 0,
+                                  SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
+        SDL_DisplayMode mode = {};
+        SDL_GetWindowDisplayMode(window, &mode);
+        curr_width = mode.w;
+        curr_height = mode.h;
+    } else {
+        g_cfg.get_resolution(curr_width, curr_height);
+        window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, curr_width, curr_height,
+                                  SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
+    }
 
     context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, context);
@@ -186,7 +166,7 @@ bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
     if (hwr->context_type != RETRO_HW_CONTEXT_OPENGLES3 && hwr->context_type != RETRO_HW_CONTEXT_OPENGLES_VERSION)
         return false;
 #else
-    if (hwr->context_type != RETRO_HW_CONTEXT_OPENGL_CORE)
+    if (hwr->context_type != RETRO_HW_CONTEXT_OPENGL && hwr->context_type != RETRO_HW_CONTEXT_OPENGL_CORE)
         return false;
 #endif
 
@@ -236,9 +216,13 @@ bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
     hwr->get_current_framebuffer = hw_get_current_framebuffer;
     hwr->get_proc_address = hw_get_proc_address;
     hwr_cb = hwr;
-    hwr_cb->context_reset();
-
     return true;
+}
+
+void sdl2_video_ogl::inited_hw_renderer() {
+    if (hwr_cb) {
+        hwr_cb->context_reset();
+    }
 }
 
 void sdl2_video_ogl::uninit_hw_renderer() {
@@ -260,7 +244,24 @@ void sdl2_video_ogl::uninit_hw_renderer() {
     }
 }
 
-bool sdl2_video_ogl::resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+void sdl2_video_ogl::window_resized(unsigned width, unsigned height, bool fullscreen) {
+    if (fullscreen) {
+        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        SDL_DisplayMode mode = {};
+        SDL_GetWindowDisplayMode(window, &mode);
+        curr_width = mode.w;
+        curr_height = mode.h;
+    } else {
+        SDL_SetWindowFullscreen(window, 0);
+        SDL_SetWindowSize(window, (int)width, (int)height);
+        curr_width = (int)width;
+        curr_height = (int)height;
+    }
+    gl_set_ortho();
+    recalc_draw_rect();
+}
+
+bool sdl2_video_ogl::game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
     game_pixel_format = pixel_format;
     return true;
 }
@@ -271,175 +272,40 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
         skip_frame = false;
         return;
     }
-    if (hwr_cb) {
-        drawn = true;
-        if (width != game_width || height != game_height) {
-            game_width = width;
-            game_height = height;
-            float ratio = (float)width / (float)height;
-            /* TODO: aspect_ratio from geometry is bad sometimes,
-             *       so we just use w/h here */
-            float sratio = (float)curr_width / curr_height;
-            float wratio, hratio;
-            if (g_cfg.get_integer_scaling()) {
-                float int_ratio;
-                if (sratio < ratio) {
-                    int_ratio = std::floor((float)curr_width / (float)width);
-                } else {
-                    int_ratio = std::floor((float)curr_height / (float)height);
-                }
-                wratio = int_ratio * (float)width / curr_width;
-                hratio = int_ratio * (float)height / curr_height;
-            } else {
-                if (sratio < ratio) {
-                    wratio = 1.f;
-                    hratio = (float)curr_width / ratio / curr_height;
-                } else {
-                    wratio = ratio * (float)curr_height / curr_width;
-                    hratio = 1.f;
-                }
-            }
-            float o_r, o_b;
-            o_r = (float)width / hw_renderer.fbw;
-            o_b = (float)height / hw_renderer.fbh;
-            glBindVertexArray(gl_renderer.vao_texture);
-            if (hw_renderer.bottom_left) {
-                float vertices[] = {
-                    // positions      // texture coords
-                    -wratio, hratio,  0.f, o_b, // top left
-                     wratio, hratio,  o_r, o_b, // top right
-                     wratio, -hratio, o_r, 0.f, // bottom right
-                    -wratio, -hratio, 0.f, 0.f  // bottom left
-                };
-                glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-            } else {
-                float vertices[] = {
-                    // positions      // texture coords
-                    -wratio, hratio,  0.f, 0.f, // top left
-                     wratio, hratio,  o_r, 0.f, // top right
-                     wratio, -hratio, o_r, o_b, // bottom right
-                    -wratio, -hratio, 0.f, o_b  // bottom left
-                };
-                glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-            }
-            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-            glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-            glEnableVertexAttribArray(1);
-            glBindVertexArray(0);
-        }
-        glDisable(GL_DEPTH_TEST);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, hw_renderer.texture);
-        do_render();
-        SDL_GL_SwapWindow(window);
-        return;
-    }
-    if (!data) {
-        drawn = false;
-        return;
-    }
-    drawn = true;
-
-    uint32_t pitch_in_pixel;
-    switch(game_pixel_format) {
-    case 0:
-        pitch_in_pixel = pitch >> 1;
-        break;
-    case 1:
-        pitch_in_pixel = pitch >> 2;
-        break;
-    default:
-        pitch_in_pixel = pitch >> 1;
-        break;
-    }
-    if (width != game_width || height != game_height || pitch_in_pixel != game_pitch) {
-        game_width = width;
-        game_height = height;
-        game_pitch = pitch_in_pixel;
-        float ratio;
-        if (aspect_ratio <= 0.f) {
-            ratio = (float)width / (float)height;
-        } else {
-            ratio = aspect_ratio;
-        }
-        float sratio = (float)curr_width / curr_height;
-        float wratio, hratio;
-        if (g_cfg.get_integer_scaling()) {
-            float int_ratio;
-            if (sratio < ratio) {
-                int_ratio = std::floor((float)curr_width / (float)width);
-            } else {
-                int_ratio = std::floor((float)curr_height / (float)height);
-            }
-            wratio = int_ratio * (float)width / curr_width;
-            hratio = int_ratio * (float)height / curr_height;
-        } else {
-            if (sratio < ratio) {
-                wratio = 1.f;
-                hratio = (float)curr_width / ratio / curr_height;
-            } else {
-                wratio = ratio * (float)curr_height / curr_width;
-                hratio = 1.f;
-            }
-        }
-        float tratio = (float)width / game_pitch;
-        glBindVertexArray(gl_renderer.vao_texture);
-        float vertices[] = {
-            // positions        // texture coords
-            -wratio,  hratio,   0.0f,   0.0f, // top left
-             wratio,  hratio,   tratio, 0.0f, // top right
-             wratio, -hratio,   tratio, 1.0f, // bottom right
-            -wratio, -hratio,   0.0f,   1.0f  // bottom left
-        };
-        glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-        glBindVertexArray(0);
-
-        glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
-        switch (game_pixel_format) {
+    bool pitch_changed = false;
+    if (!hwr_cb) {
+        uint32_t pitch_in_pixel;
+        switch(game_pixel_format) {
         case 0:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, nullptr);
+            pitch_in_pixel = pitch >> 1;
             break;
         case 1:
-#ifdef USE_GLES
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, game_pitch, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
-#else
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
-#endif
+            pitch_in_pixel = pitch >> 2;
             break;
         default:
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, nullptr);
+            pitch_in_pixel = pitch >> 1;
             break;
         }
-        glBindTexture(GL_TEXTURE_2D, 0);
+        pitch_changed = pitch_in_pixel != game_pitch;
+        if (pitch_changed) {
+            game_pitch = pitch_in_pixel;
+        }
     }
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
-    switch (game_pixel_format) {
-    case 0:
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, data);
-        break;
-    case 1:
-#ifdef USE_GLES
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-#else
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
-#endif
-        break;
-    default:
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
-        break;
+    if (width != game_width || height != game_height || pitch_changed) {
+        game_width = width;
+        game_height = height;
+        if (!recalc_draw_rect()) {
+            drawn = false;
+            return;
+        }
     }
+    if (!hwr_cb) {
+        if (!gl_renderer_gen_texture(data)) {
+            drawn = false;
+            return;
+        }
+    }
+    drawn = true;
     do_render();
     SDL_GL_SwapWindow(window);
 }
@@ -519,9 +385,9 @@ void sdl2_video_ogl::fill_rectangle(int x, int y, int w, int h) {
 }
 
 void sdl2_video_ogl::draw_text(int x, int y, const char *text, int width, bool shadow) {
-    if (width == 0) width = (int)curr_width - x;
-    else if (width < 0) width = x - (int)curr_width;
-    ttf[0]->render(x, y, text, width, (int)curr_height + ttf[0]->get_font_size() - y, shadow);
+    if (width == 0) width = curr_width - x;
+    else if (width < 0) width = x - curr_width;
+    ttf[0]->render(x, y, text, width, curr_height + ttf[0]->get_font_size() - y, shadow);
 }
 
 void sdl2_video_ogl::get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const {
@@ -552,13 +418,16 @@ void sdl2_video_ogl::predraw_menu() {
     glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);
     glViewport(0, 0, curr_width, curr_height);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+
     set_draw_color(0, 0, 0, 0xA0);
     fill_rectangle(0, 0, curr_width, curr_height);
 }
 
 void sdl2_video_ogl::config_changed() {
-    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
     game_width = game_height = game_pitch = 0;
@@ -570,6 +439,9 @@ void sdl2_video_ogl::do_render() {
     glViewport(0, 0, curr_width, curr_height);
     glUseProgram(gl_renderer.shader_texture);
     glBindVertexArray(gl_renderer.vao_texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);
+
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
     if (messages.empty()) return;
@@ -692,15 +564,7 @@ void sdl2_video_ogl::init_opengl() {
     glUniform1i(glGetUniformLocation(gl_renderer.shader_font, "texture0"), 0);
     glUseProgram(0);
 
-    mat4f proj_mat;
-    gl_ortho_mat(proj_mat, 0.0f, (float)curr_width, (float)curr_height, 0.0f, 0.0f, 1.0f);
-    glUseProgram(gl_renderer.shader_direct_draw);
-    glUniformMatrix4fv(glGetUniformLocation(gl_renderer.shader_direct_draw, "projMat"), 1, GL_FALSE, proj_mat);
-    glUseProgram(0);
-    glUseProgram(gl_renderer.shader_font);
-    glUniformMatrix4fv(glGetUniformLocation(gl_renderer.shader_font, "projMat"), 1, GL_FALSE, proj_mat);
-    gl_renderer.uniform_font_color = glGetUniformLocation(gl_renderer.shader_font, "outColor");
-    glUseProgram(0);
+    gl_set_ortho();
 }
 
 void sdl2_video_ogl::uninit_opengl() {
@@ -732,6 +596,173 @@ void sdl2_video_ogl::uninit_opengl() {
     gl_renderer.shader_texture = 0;
     glDeleteProgram(gl_renderer.shader_direct_draw);
     gl_renderer.shader_direct_draw = 0;
+}
+
+using mat4f = float[16];
+
+inline void gl_ortho_mat(mat4f &out, float left, float right, float bottom, float top, float znear, float zfar)
+{
+    out[0] = 2.0f / (right - left);
+    out[1] = 0.0f;
+    out[2] = 0.0f;
+    out[3] = 0.0f;
+
+    out[4] = 0.0f;
+    out[5] = 2.0f / (top - bottom);
+    out[6] = 0.0f;
+    out[7] = 0.0f;
+
+    out[8] = 0.0f;
+    out[9] = 0.0f;
+    out[10] = -2.0f / (zfar - znear);
+    out[11] = 0.0f;
+
+    out[12] = -(right + left) / (right - left);
+    out[13] = -(top + bottom) / (top - bottom);
+    out[14] = -(zfar + znear) / (zfar - znear);
+    out[15] = 1.0f;
+}
+
+void sdl2_video_ogl::gl_set_ortho() {
+    mat4f proj_mat;
+    gl_ortho_mat(proj_mat, 0.0f, (float)curr_width, (float)curr_height, 0.0f, 0.0f, 1.0f);
+    glUseProgram(gl_renderer.shader_direct_draw);
+    glUniformMatrix4fv(glGetUniformLocation(gl_renderer.shader_direct_draw, "projMat"), 1, GL_FALSE, proj_mat);
+    glUseProgram(0);
+    glUseProgram(gl_renderer.shader_font);
+    glUniformMatrix4fv(glGetUniformLocation(gl_renderer.shader_font, "projMat"), 1, GL_FALSE, proj_mat);
+    gl_renderer.uniform_font_color = glGetUniformLocation(gl_renderer.shader_font, "outColor");
+    glUseProgram(0);
+}
+
+bool sdl2_video_ogl::recalc_draw_rect() {
+    float ratio = (float)game_width / (float)game_height;
+    /* TODO: aspect_ratio from geometry is bad sometimes,
+     *       so we just use w/h here */
+    float sratio = (float)curr_width / curr_height;
+    float wratio, hratio;
+    if (g_cfg.get_integer_scaling()) {
+        float int_ratio;
+        if (sratio < ratio) {
+            int_ratio = std::floor((float)curr_width / (float)game_width);
+        } else {
+            int_ratio = std::floor((float)curr_height / (float)game_height);
+        }
+        wratio = int_ratio * (float)game_width / curr_width;
+        hratio = int_ratio * (float)game_height / curr_height;
+    } else {
+        if (sratio < ratio) {
+            wratio = 1.f;
+            hratio = (float)curr_width / ratio / curr_height;
+        } else {
+            wratio = ratio * (float)curr_height / curr_width;
+            hratio = 1.f;
+        }
+    }
+    if (hwr_cb) {
+        return hw_renderer_resized(wratio, hratio);
+    } else {
+        return gl_renderer_resized(wratio, hratio);
+    }
+}
+
+bool sdl2_video_ogl::hw_renderer_resized(float wratio, float hratio) const {
+    float o_r, o_b;
+    o_r = (float)game_width / hw_renderer.fbw;
+    o_b = (float)game_height / hw_renderer.fbh;
+    glBindVertexArray(gl_renderer.vao_texture);
+    if (hw_renderer.bottom_left) {
+        float vertices[] = {
+            // positions      // texture coords
+            -wratio, hratio,  0.f, o_b, // top left
+             wratio, hratio,  o_r, o_b, // top right
+             wratio, -hratio, o_r, 0.f, // bottom right
+            -wratio, -hratio, 0.f, 0.f  // bottom left
+        };
+        glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    } else {
+        float vertices[] = {
+            // positions      // texture coords
+            -wratio, hratio,  0.f, 0.f, // top left
+             wratio, hratio,  o_r, 0.f, // top right
+             wratio, -hratio, o_r, o_b, // bottom right
+            -wratio, -hratio, 0.f, o_b  // bottom left
+        };
+        glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    }
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+    return true;
+}
+
+bool sdl2_video_ogl::gl_renderer_resized(float wratio, float hratio) const {
+    float tratio = (float)game_width / game_pitch;
+    glBindVertexArray(gl_renderer.vao_texture);
+    float vertices[] = {
+        // positions        // texture coords
+        -wratio,  hratio,   0.0f,   0.0f, // top left
+         wratio,  hratio,   tratio, 0.0f, // top right
+         wratio, -hratio,   tratio, 1.0f, // bottom right
+        -wratio, -hratio,   0.0f,   1.0f  // bottom left
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
+    switch (game_pixel_format) {
+    case 0:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, game_height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, nullptr);
+        break;
+    case 1:
+#ifdef USE_GLES
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, game_pitch, game_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
+#else
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, game_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+#endif
+        break;
+    default:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, game_height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, nullptr);
+        break;
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return true;
+}
+
+bool sdl2_video_ogl::gl_renderer_gen_texture(const void *data) const {
+    if (!data) {
+        return false;
+    }
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
+    switch (game_pixel_format) {
+    case 0:
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, game_height, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, data);
+        break;
+    case 1:
+#ifdef USE_GLES
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, game_height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+#else
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, game_height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
+#endif
+        break;
+    default:
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, game_height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
+        break;
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return true;
 }
 
 }

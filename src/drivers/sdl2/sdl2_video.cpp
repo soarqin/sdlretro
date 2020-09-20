@@ -13,9 +13,18 @@
 namespace drivers {
 
 sdl2_video::sdl2_video() {
-    std::tie(curr_width, curr_height) = g_cfg.get_resolution();
-    window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              curr_width, curr_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
+    if (g_cfg.get_fullscreen()) {
+        window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, 0,
+                                  SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
+        SDL_DisplayMode mode = {};
+        SDL_GetWindowDisplayMode(window, &mode);
+        curr_width = mode.w;
+        curr_height = mode.h;
+    } else {
+        g_cfg.get_resolution(curr_width, curr_height);
+        window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, curr_width, curr_height,
+                                  SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
+    }
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (renderer == nullptr) {
         /* fallback to software renderer */
@@ -42,7 +51,23 @@ sdl2_video::~sdl2_video() {
     SDL_DestroyWindow(window);
 }
 
-bool sdl2_video::resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+void sdl2_video::window_resized(unsigned width, unsigned height, bool fullscreen) {
+    if (fullscreen) {
+        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        SDL_DisplayMode mode = {};
+        SDL_GetWindowDisplayMode(window, &mode);
+        curr_width = mode.w;
+        curr_height = mode.h;
+    } else {
+        SDL_SetWindowFullscreen(window, 0);
+        SDL_SetWindowSize(window, (int)width, (int)height);
+        curr_width = (int)width;
+        curr_height = (int)height;
+    }
+    recalc_draw_rect();
+}
+
+bool sdl2_video::game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
     game_pixel_format = pixel_format;
     return true;
 }
@@ -72,47 +97,10 @@ void sdl2_video::render(const void *data, unsigned width, unsigned height, size_
         break;
     }
     if (width != game_width || height != game_height || pitch_in_pixel != game_pitch) {
-        if (texture) SDL_DestroyTexture(texture);
         game_width = width;
         game_height = height;
         game_pitch = pitch_in_pixel;
-        float ratio;
-        if (aspect_ratio <= 0.f) {
-            ratio = (float)width / (float)height;
-        } else {
-            ratio = aspect_ratio;
-        }
-        float sratio = (float)curr_width / (float)curr_height;
-        if (g_cfg.get_integer_scaling()) {
-            int int_ratio;
-            if (sratio < ratio) {
-                int_ratio = (int)std::floor((double)curr_width / width);
-            } else {
-                int_ratio = (int)std::floor((double)curr_height / height);
-            }
-            int expected_width = int_ratio * (int)width;
-            int expected_height = int_ratio * (int)height;
-            display_rect = {((int)curr_width - expected_width) / 2, ((int)curr_height - expected_height) / 2, expected_width, expected_height};
-        } else {
-            if (sratio < ratio) {
-                auto expected_height = (int)std::lround((float)curr_width / ratio);
-                display_rect = {0, ((int)curr_height - expected_height) / 2, (int)curr_width, expected_height};
-            } else {
-                auto expected_width = (int)std::lround(ratio * (float)curr_height);
-                display_rect = {((int)curr_width - expected_width) / 2, 0, expected_width, (int)curr_height};
-            }
-        }
-        switch (game_pixel_format) {
-        case 0:
-            texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
-            break;
-        case 1:
-            texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
-            break;
-        default:
-            texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
-            break;
-        }
+        recalc_draw_rect();
     }
     void *pixels;
     int lock_pitch;
@@ -156,9 +144,9 @@ void sdl2_video::fill_rectangle(int x, int y, int w, int h) {
 }
 
 void sdl2_video::draw_text(int x, int y, const char *text, int width, bool shadow) {
-    if (width == 0) width = (int)curr_width - x;
-    else if (width < 0) width = x - (int)curr_width;
-    ttf[0]->render(x, y, text, width, (int)curr_height + ttf[0]->get_font_size() - y, shadow);
+    if (width == 0) width = curr_width - x;
+    else if (width < 0) width = x - curr_width;
+    ttf[0]->render(x, y, text, width, curr_height + ttf[0]->get_font_size() - y, shadow);
 }
 
 void sdl2_video::get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const {
@@ -206,6 +194,47 @@ void sdl2_video::do_render() {
     for (auto &m: messages) {
         draw_text(5, y, m.first.c_str(), 0, true);
         y += lh;
+    }
+}
+
+void sdl2_video::recalc_draw_rect() {
+    float ratio;
+    if (aspect_ratio <= 0.f) {
+        ratio = (float)game_width / (float)game_height;
+    } else {
+        ratio = aspect_ratio;
+    }
+    float sratio = (float)curr_width / (float)curr_height;
+    if (g_cfg.get_integer_scaling()) {
+        int int_ratio;
+        if (sratio < ratio) {
+            int_ratio = (int)std::floor((double)curr_width / game_width);
+        } else {
+            int_ratio = (int)std::floor((double)curr_height / game_height);
+        }
+        int expected_width = int_ratio * (int)game_width;
+        int expected_height = int_ratio * (int)game_height;
+        display_rect = {((int)curr_width - expected_width) / 2, ((int)curr_height - expected_height) / 2, expected_width, expected_height};
+    } else {
+        if (sratio < ratio) {
+            auto expected_height = (int)std::lround((float)curr_width / ratio);
+            display_rect = {0, (curr_height - expected_height) / 2, curr_width, expected_height};
+        } else {
+            auto expected_width = (int)std::lround(ratio * (float)curr_height);
+            display_rect = {(curr_width - expected_width) / 2, 0, expected_width, curr_height};
+        }
+    }
+    if (texture) SDL_DestroyTexture(texture);
+    switch (game_pixel_format) {
+    case 0:
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
+        break;
+    case 1:
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
+        break;
+    default:
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, game_pitch, game_height);
+        break;
     }
 }
 

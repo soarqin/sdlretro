@@ -265,7 +265,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             auto new_format = (unsigned)*(const enum retro_pixel_format *)data;
             if (new_format != pixel_format) {
                 pixel_format = new_format;
-                video->resolution_changed(base_width, base_height, pixel_format);
+                video->game_resolution_changed(base_width, base_height, pixel_format);
             }
             return true;
         }
@@ -373,7 +373,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             max_height = geometry->max_height;
             aspect_ratio = geometry->aspect_ratio;
             video->set_aspect_ratio(aspect_ratio);
-            video->resolution_changed(base_width, base_height, pixel_format);
+            video->game_resolution_changed(base_width, base_height, pixel_format);
             return true;
         }
         case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -595,6 +595,8 @@ void driver_base::check_single_ram(unsigned int id, std::vector<uint8_t> &data, 
 }
 
 void driver_base::post_load() {
+    video->inited_hw_renderer();
+
     game_base_name = get_base_name(game_path);
     game_save_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".sav";
     game_rtc_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".rtc";
@@ -625,7 +627,7 @@ void driver_base::post_load() {
     audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, g_cfg.get_sample_rate(), av_info.timing.fps);
     frame_throttle->reset(fps);
     core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
-    video->resolution_changed(base_width, base_height, pixel_format);
+    video->game_resolution_changed(base_width, base_height, pixel_format);
 
     char library_message[256];
     snprintf(library_message, 256, "Loaded core: %s"_i18n, library_name.c_str());

@@ -112,6 +112,7 @@ void cfg::load(const std::string &cfgfile) {
         }
         JREAD(res_w, DEFAULT_WIDTH);
         JREAD(res_h, DEFAULT_HEIGHT);
+        JREAD(fullscreen, false);
         JREAD(mono_audio, false);
         JREAD(sample_rate, DEFAULT_SAMPLE_RATE);
         JREAD(resampler_quality, DEFAULT_RESAMPLER_QUALITY);
@@ -132,6 +133,7 @@ void cfg::save() {
     j["storedir"] = store_dir_orig;
     JWRITE(res_w);
     JWRITE(res_h);
+    JWRITE(fullscreen);
     JWRITE(mono_audio);
     JWRITE(sample_rate);
     JWRITE(resampler_quality);

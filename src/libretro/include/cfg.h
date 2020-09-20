@@ -31,7 +31,10 @@ public:
     inline const std::string &get_config_dir() const { return config_dir; }
     void get_core_dirs(std::vector<std::string> &dirs) const;
     void set_extra_core_dirs(const std::vector<std::string> &dirs);
-    inline std::pair<uint32_t, uint32_t> get_resolution() { return std::make_pair(res_w, res_h); }
+    inline void get_resolution(int &w, int &h) { w = res_w; h = res_h; }
+
+    inline bool get_fullscreen() const { return fullscreen; }
+    inline void set_fullscreen(bool b) { fullscreen = b; }
     inline bool get_mono_audio() const { return mono_audio; }
     inline void set_mono_audio(bool b) { mono_audio = b; }
     inline uint32_t get_sample_rate() const { return sample_rate; }
@@ -70,6 +73,8 @@ protected:
     std::vector<std::string> core_dirs;
 
     uint32_t res_w = DEFAULT_WIDTH, res_h = DEFAULT_HEIGHT;
+    /* fullscreen mode */
+    bool fullscreen = false;
     /* set to true if use mono audio */
     bool mono_audio = false;
     /* set to 0 to use source sample rate with integer multiplier

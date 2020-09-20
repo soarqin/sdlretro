@@ -21,7 +21,7 @@ const int sdl_video_flags = SDL_SWSURFACE |
 
 sdl1_video::sdl1_video() {
     SDL_ShowCursor(SDL_DISABLE);
-    std::tie(curr_width, curr_height) = g_cfg.get_resolution();
+    g_cfg.get_resolution(curr_width, curr_height);
     curr_pixel_format = 2;
     screen = SDL_SetVideoMode(curr_width, curr_height, 16, sdl_video_flags);
     SDL_LockSurface(screen);
@@ -39,26 +39,26 @@ sdl1_video::~sdl1_video() {
     SDL_UnlockSurface(screen);
 }
 
-bool sdl1_video::resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+bool sdl1_video::game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
     if (g_cfg.get_scaling_mode() == 0) {
         SDL_UnlockSurface(screen);
         usleep(10000);
         curr_pixel_format = pixel_format;
         unsigned bpp = pixel_format == 1 ? 32 : 16;
         if (width != 0 && height != 0) {
-            curr_width = width;
-            curr_height = height;
+            curr_width = (int)width;
+            curr_height = (int)height;
             auto scale = force_scale == 0 ? g_cfg.get_scale() : force_scale;
             screen = SDL_SetVideoMode(width * scale, height * scale, bpp, sdl_video_flags);
         } else {
-            std::tie(curr_width, curr_height) = g_cfg.get_resolution();
+            g_cfg.get_resolution(curr_width, curr_height);
             screen = SDL_SetVideoMode(curr_width, curr_height, bpp, sdl_video_flags);
         }
         SDL_LockSurface(screen);
         screen_ptr = screen->pixels;
     } else {
-        curr_width = width;
-        curr_height = height;
+        curr_width = (int)width;
+        curr_height = (int)height;
     }
     return true;
 }
@@ -76,7 +76,7 @@ void sdl1_video::render(const void *data, unsigned width, unsigned height, size_
     drawn = true;
 
     if (curr_width != width || curr_height != height) {
-        resolution_changed(width, height, curr_pixel_format);
+        game_resolution_changed(width, height, curr_pixel_format);
     }
     int h = static_cast<int>(height);
     auto scale = g_cfg.get_scale();
@@ -348,7 +348,7 @@ void sdl1_video::enter_menu() {
     saved_width = curr_width;
     saved_height = curr_height;
     saved_pixel_format = curr_pixel_format;
-    std::tie(curr_width, curr_height) = g_cfg.get_resolution();
+    g_cfg.get_resolution(curr_width, curr_height);
     curr_pixel_format = 2;
     screen = SDL_SetVideoMode(curr_width, curr_height, curr_pixel_format == 1 ? 32 : 16, sdl_video_flags);
     SDL_LockSurface(screen);
@@ -356,7 +356,7 @@ void sdl1_video::enter_menu() {
 }
 
 void sdl1_video::leave_menu() {
-    resolution_changed(saved_width, saved_height, saved_pixel_format);
+    game_resolution_changed(saved_width, saved_height, saved_pixel_format);
 }
 
 }

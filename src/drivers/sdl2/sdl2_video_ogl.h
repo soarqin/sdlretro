@@ -20,8 +20,10 @@ public:
 
     int get_renderer_type() override;
     bool init_hw_renderer(retro_hw_render_callback*) override;
+    void inited_hw_renderer() override;
     void uninit_hw_renderer() override;
-    bool resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
+    void window_resized(unsigned width, unsigned height, bool fullscreen);
+    bool game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
@@ -49,6 +51,12 @@ private:
     void do_render();
     void init_opengl();
     void uninit_opengl();
+    void gl_set_ortho();
+    bool recalc_draw_rect();
+
+    bool hw_renderer_resized(float wratio, float hratio) const;
+    bool gl_renderer_resized(float wratio, float hratio) const;
+    bool gl_renderer_gen_texture(const void *data) const;
 
 private:
     SDL_Window *window = nullptr;
@@ -64,7 +72,7 @@ private:
         float draw_color[4] = {1.f, 1.f, 1.f, 1.f};
     } gl_renderer;
 
-    uint32_t curr_width = 0, curr_height = 0;
+    int curr_width = 0, curr_height = 0;
     uint32_t game_pitch = 0, game_width = 0, game_height = 0, game_pixel_format = 0;
     std::array<int, 4> display_rect = {};
 

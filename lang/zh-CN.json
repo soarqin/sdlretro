@@ -11,6 +11,7 @@
     "Language": "语言",
     "Reset Game": "重置游戏",
     "Exit": "退出",
+    "Fullscreen": "全屏",
     "SRAM/RTC Save Interval": "SRAM/RTC保存间隔",
     "Integer Scaling": "整数倍缩放",
     "Linear Rendering": "线性抗锯齿渲染"

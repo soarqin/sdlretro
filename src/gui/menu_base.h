@@ -60,7 +60,7 @@ struct menu_item {
 
 class menu_base {
 public:
-    menu_base(std::shared_ptr<drivers::driver_base> d, bool t, std::function<void(menu_base&)> init_func);
+    menu_base(std::shared_ptr<drivers::driver_base> d, menu_base *p, std::function<void(menu_base&)> init_func);
     virtual ~menu_base() = default;
 
     inline void set_title(const std::string &text) { title = text; }
@@ -86,7 +86,10 @@ public:
     void value_inc();
 
     /* force refresh all items of menu */
-    inline void force_refresh() { force_refreshing = true; }
+    inline void force_refresh() {
+        force_refreshing = true;
+        if (parent) parent->force_refresh();
+    }
 
     inline size_t get_selected() const { return selected; }
     inline std::vector<menu_item> &get_items() { return items; }
@@ -109,7 +112,7 @@ protected:
 
 protected:
     std::shared_ptr<drivers::driver_base> driver;
-    bool topmenu = false;
+    menu_base *parent = nullptr;
     size_t top_index = 0;
     size_t selected = 0;
     std::string title;

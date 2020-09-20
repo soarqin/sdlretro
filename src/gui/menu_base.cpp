@@ -10,12 +10,12 @@
 
 namespace gui {
 
-menu_base::menu_base(std::shared_ptr<drivers::driver_base> d, bool t, std::function<void(menu_base&)> init_func) : driver(std::move(d)), topmenu(t), init_fn(init_func) {
+menu_base::menu_base(std::shared_ptr<drivers::driver_base> d, menu_base *p, std::function<void(menu_base&)> init_func) : driver(std::move(d)), parent(p), init_fn(std::move(init_func)) {
 }
 
 bool menu_base::enter_menu_loop(size_t sel) {
     auto *input = driver->get_input();
-    if (topmenu) {
+    if (!parent) {
         input->clear_menu_button_desc();
 
         input->set_input_mode(drivers::input_base::mode_menu);
@@ -62,7 +62,7 @@ bool menu_base::enter_menu_loop(size_t sel) {
         leave();
     } while (force_refreshing);
 
-    if (topmenu) {
+    if (!parent) {
         driver->get_video()->leave_menu();
         driver->get_input()->set_input_mode(drivers::input_base::mode_game);
     }

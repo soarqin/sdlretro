@@ -21,7 +21,7 @@ ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(dr
 }
 
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
-    sdl_menu menu(driver, true, [&core_list, this](menu_base &menu) {
+    sdl_menu menu(driver, nullptr, [&core_list, this](menu_base &menu) {
         menu.set_title(std::string("[") + "Select Core to Use"_i18n + "]");
 
         std::vector<menu_item> items;
@@ -40,24 +40,20 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
 }
 
 void ui_menu::in_game_menu() {
-    sdl_menu menu(driver, true, [this](menu_base &menu) {
+    sdl_menu topmenu(driver, nullptr, [this, &topmenu](menu_base &menu) {
         menu.set_title(std::string("[") + "In-Game Menu"_i18n + "]");
 
         std::vector<menu_item> items = {
             {menu_static, "Global Settings"_i18n, "", 0, {},
-                [this](const menu_item &item) { return global_settings_menu(); }},
+                [this, &topmenu](const menu_item &item) { return global_settings_menu(&topmenu); }},
             {menu_static, "Core Settings"_i18n, "", 0, {},
-                [this](const menu_item &item) { return core_settings_menu(); }},
+                [this, &topmenu](const menu_item &item) { return core_settings_menu(&topmenu); }},
 #if SDLRETRO_FRONTEND > 1
             {menu_static, "Input Settings"_i18n, "", 0, {},
-                [this](const menu_item &item) { return input_settings_menu(); }},
+                [this, &topmenu](const menu_item &item) { return input_settings_menu(&topmenu); }},
 #endif
             {menu_static, "Language"_i18n, "", 0, {},
-                [this, &menu](const menu_item &item) {
-                    auto r = language_settings_menu();
-                    menu.force_refresh();
-                    return r;
-            }},
+                [this, &menu, &topmenu](const menu_item &item) { return language_settings_menu(&topmenu); }},
             {menu_static, "Reset Game"_i18n, "", 0, {}, [this](const menu_item &) {
                 driver->reset();
                 return true;
@@ -83,16 +79,16 @@ void ui_menu::in_game_menu() {
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
     });
-    menu.enter_menu_loop();
+    topmenu.enter_menu_loop();
 }
 
-bool ui_menu::global_settings_menu() {
+bool ui_menu::global_settings_menu(menu_base *parent) {
     enum :size_t {
         check_secs_count = 4
     };
     static const uint32_t check_secs[check_secs_count] = {0, 5, 15, 30};
 
-    sdl_menu menu(driver, false, [this](menu_base &menu) {
+    sdl_menu menu(driver, parent, [this](menu_base &menu) {
         menu.set_title(std::string("[") + "Global Settings"_i18n + "]");
 
         size_t check_sec_idx;
@@ -102,6 +98,19 @@ bool ui_menu::global_settings_menu() {
             check_sec_idx = 0;
         }
         std::vector<menu_item> items = {
+#if SDLRETRO_FRONTEND == 2
+            {menu_boolean, "Fullscreen"_i18n, "", static_cast<size_t>(g_cfg.get_fullscreen() ? 1 : 0),
+                {},
+                [&](const menu_item &item) -> bool {
+                    g_cfg.set_fullscreen(item.selected != 0);
+                    int w, h;
+                    g_cfg.get_resolution(w, h);
+                    driver->get_video()->window_resized(w, h, g_cfg.get_fullscreen());
+                    menu.force_refresh();
+                    return false;
+                }
+            },
+#endif
             {menu_values, "SRAM/RTC Save Interval"_i18n, "", check_sec_idx,
                 {"off"_i18n, "5", "15", "30"},
                 [](const menu_item &item) -> bool {
@@ -142,11 +151,11 @@ bool ui_menu::global_settings_menu() {
     return false;
 }
 
-bool ui_menu::core_settings_menu() {
+bool ui_menu::core_settings_menu(menu_base *parent) {
     auto *vari = driver->get_variables();
     const auto &vars = vari->get_variables();
     if (vars.empty()) return false;
-    sdl_menu menu(driver, false, [this, &vari, &vars](menu_base &menu) {
+    sdl_menu menu(driver, parent, [this, &vari, &vars](menu_base &menu) {
         menu.set_title(std::string("[") + "Core Settings"_i18n + "]");
 
         std::vector<menu_item> items;
@@ -172,9 +181,9 @@ bool ui_menu::core_settings_menu() {
     return false;
 }
 
-bool ui_menu::input_settings_menu() {
+bool ui_menu::input_settings_menu(menu_base *parent) {
     auto *input = driver->get_input();
-    sdl_menu menu(driver, false, [this, input](menu_base &menu) {
+    sdl_menu menu(driver, parent, [this, input](menu_base &menu) {
         menu.set_title(std::string("[") + "Input Settings"_i18n + "]");
 
         std::vector<menu_item> items;
@@ -216,8 +225,8 @@ bool ui_menu::input_settings_menu() {
     return false;
 }
 
-bool ui_menu::language_settings_menu() {
-    sdl_menu menu(driver, false, [this](menu_base &menu) {
+bool ui_menu::language_settings_menu(menu_base *parent) {
+    sdl_menu menu(driver, parent, [this](menu_base &menu) {
         menu.set_title(std::string("[") + "Language"_i18n + "]");
 
         std::vector<std::string> lvalues;
@@ -248,6 +257,7 @@ bool ui_menu::language_settings_menu() {
         ++idx;
     }
     menu.enter_menu_loop(lindex);
+    menu.force_refresh();
     return false;
 }
 
