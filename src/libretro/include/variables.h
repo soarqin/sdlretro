@@ -60,8 +60,10 @@ public:
     void load_variables(const retro_core_option_definition *def);
     void load_variables(const retro_variable *vars);
 
+    void reset_variables();
+
     inline const std::vector<retro_variable_t> &get_variables() { return variables; }
-    inline bool get_variables_updated() { return variables_updated; }
+    inline bool get_variables_updated() const { return variables_updated; }
     inline void set_variables_updated(bool u) { variables_updated = u; }
 
 private:

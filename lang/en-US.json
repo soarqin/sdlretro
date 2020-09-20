@@ -14,5 +14,6 @@
     "Fullscreen": "Fullscreen",
     "SRAM/RTC Save Interval": "SRAM/RTC Save Interval",
     "Integer Scaling": "Integer Scaling",
-    "Linear Rendering": "Linear Rendering"
+    "Linear Rendering": "Linear Rendering",
+    "Reset Core Settings": "Reset Core Settings"
 }

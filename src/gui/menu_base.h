@@ -86,17 +86,17 @@ public:
     void value_inc();
 
     /* force refresh all items of menu */
-    inline void force_refresh() {
+    inline void force_refresh(bool recursive = true) {
         force_refreshing = true;
-        if (parent) parent->force_refresh();
+        if (recursive && parent != nullptr) parent->force_refresh();
     }
 
     inline size_t get_selected() const { return selected; }
+    void set_selected(size_t sel);
     inline std::vector<menu_item> &get_items() { return items; }
 
 protected:
     inline void set_ok_pressed(bool b) { ok_pressed = b; }
-    void set_selected(size_t sel);
 
 protected:
     /* called when entering menu, doing initialization here */

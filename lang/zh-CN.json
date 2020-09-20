@@ -14,5 +14,6 @@
     "Fullscreen": "全屏",
     "SRAM/RTC Save Interval": "SRAM/RTC保存间隔",
     "Integer Scaling": "整数倍缩放",
-    "Linear Rendering": "线性抗锯齿渲染"
+    "Linear Rendering": "线性抗锯齿渲染",
+    "Reset Core Settings": "重置默认内核设置"
 }

@@ -124,4 +124,10 @@ void retro_variables::save_variables_to_cfg(const std::string &filename) {
     }
 }
 
+void retro_variables::reset_variables() {
+    for (auto &var: variables) {
+        var.curr_index = var.default_index;
+    }
+}
+
 }

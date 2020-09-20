@@ -40,20 +40,20 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
 }
 
 void ui_menu::in_game_menu() {
-    sdl_menu topmenu(driver, nullptr, [this, &topmenu](menu_base &menu) {
+    sdl_menu topmenu(driver, nullptr, [this](menu_base &menu) {
         menu.set_title(std::string("[") + "In-Game Menu"_i18n + "]");
 
         std::vector<menu_item> items = {
             {menu_static, "Global Settings"_i18n, "", 0, {},
-                [this, &topmenu](const menu_item &item) { return global_settings_menu(&topmenu); }},
+                [this, &menu](const menu_item &item) { return global_settings_menu(&menu); }},
             {menu_static, "Core Settings"_i18n, "", 0, {},
-                [this, &topmenu](const menu_item &item) { return core_settings_menu(&topmenu); }},
+                [this, &menu](const menu_item &item) { return core_settings_menu(&menu); }},
 #if SDLRETRO_FRONTEND > 1
             {menu_static, "Input Settings"_i18n, "", 0, {},
-                [this, &topmenu](const menu_item &item) { return input_settings_menu(&topmenu); }},
+                [this, &menu](const menu_item &item) { return input_settings_menu(&menu); }},
 #endif
             {menu_static, "Language"_i18n, "", 0, {},
-                [this, &menu, &topmenu](const menu_item &item) { return language_settings_menu(&topmenu); }},
+                [this, &menu](const menu_item &item) { return language_settings_menu(&menu); }},
             {menu_static, "Reset Game"_i18n, "", 0, {}, [this](const menu_item &) {
                 driver->reset();
                 return true;
@@ -165,6 +165,16 @@ bool ui_menu::core_settings_menu(menu_base *parent) {
                 item.values.push_back(opt.first);
             item.callback = [&vari, &var](const menu_item &item) -> bool {
                 vari->set_variable(var.name, item.selected);
+                return false;
+            };
+            items.emplace_back(item);
+        }
+        {
+            menu_item item = {menu_static, "Reset Core Settings"_i18n};
+            item.callback = [&menu, &vari](const menu_item &) -> bool {
+                vari->reset_variables();
+                menu.set_selected(0);
+                menu.force_refresh(false);
                 return false;
             };
             items.emplace_back(item);
