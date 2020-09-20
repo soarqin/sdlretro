@@ -109,9 +109,13 @@ sdl2_video_ogl::sdl2_video_ogl() {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-    std::tie(curr_width, curr_height) = g_cfg.get_resolution();
-    window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              curr_width, curr_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("SDLRetro", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0, 0,
+                              SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL);
+
+    SDL_DisplayMode mode = {};
+    SDL_GetWindowDisplayMode(window, &mode);
+    curr_width = mode.w;
+    curr_height = mode.h;
 
     context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, context);

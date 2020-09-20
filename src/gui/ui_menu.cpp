@@ -21,7 +21,7 @@ ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(dr
 }
 
 int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
-    sdl_menu menu(driver, true, [&core_list](menu_base &menu) {
+    sdl_menu menu(driver, true, [&core_list, this](menu_base &menu) {
         menu.set_title(std::string("[") + "Select Core to Use"_i18n + "]");
 
         std::vector<menu_item> items;
@@ -31,7 +31,7 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
         }
         menu.set_items(items);
         int w, h;
-        std::tie(w, h) = g_cfg.get_resolution();
+        driver->get_video()->get_resolution(w, h);
         auto border = w / 16;
         menu.set_rect(border, border, w - border * 2, h - border * 2);
     });
@@ -78,7 +78,7 @@ void ui_menu::in_game_menu() {
         }
         menu.set_items(items);
         int w, h;
-        std::tie(w, h) = g_cfg.get_resolution();
+        driver->get_video()->get_resolution(w, h);
         auto border = w / 16;
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
@@ -132,7 +132,7 @@ bool ui_menu::global_settings_menu() {
         };
         menu.set_items(items);
         int w, h;
-        std::tie(w, h) = g_cfg.get_resolution();
+        driver->get_video()->get_resolution(w, h);
         auto border = w / 16;
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
@@ -146,7 +146,7 @@ bool ui_menu::core_settings_menu() {
     auto *vari = driver->get_variables();
     const auto &vars = vari->get_variables();
     if (vars.empty()) return false;
-    sdl_menu menu(driver, false, [&vari, &vars](menu_base &menu) {
+    sdl_menu menu(driver, false, [this, &vari, &vars](menu_base &menu) {
         menu.set_title(std::string("[") + "Core Settings"_i18n + "]");
 
         std::vector<menu_item> items;
@@ -162,7 +162,7 @@ bool ui_menu::core_settings_menu() {
         }
         menu.set_items(items);
         int w, h;
-        std::tie(w, h) = g_cfg.get_resolution();
+        driver->get_video()->get_resolution(w, h);
         auto border = w / 16;
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
@@ -174,7 +174,7 @@ bool ui_menu::core_settings_menu() {
 
 bool ui_menu::input_settings_menu() {
     auto *input = driver->get_input();
-    sdl_menu menu(driver, false, [input](menu_base &menu) {
+    sdl_menu menu(driver, false, [this, input](menu_base &menu) {
         menu.set_title(std::string("[") + "Input Settings"_i18n + "]");
 
         std::vector<menu_item> items;
@@ -205,7 +205,7 @@ bool ui_menu::input_settings_menu() {
 
         menu.set_items(items);
         int w, h;
-        std::tie(w, h) = g_cfg.get_resolution();
+        driver->get_video()->get_resolution(w, h);
         auto border = w / 16;
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
@@ -217,7 +217,7 @@ bool ui_menu::input_settings_menu() {
 }
 
 bool ui_menu::language_settings_menu() {
-    sdl_menu menu(driver, false, [](menu_base &menu) {
+    sdl_menu menu(driver, false, [this](menu_base &menu) {
         menu.set_title(std::string("[") + "Language"_i18n + "]");
 
         std::vector<std::string> lvalues;
@@ -234,7 +234,7 @@ bool ui_menu::language_settings_menu() {
         }
         menu.set_items(items);
         int w, h;
-        std::tie(w, h) = g_cfg.get_resolution();
+        driver->get_video()->get_resolution(w, h);
         auto border = w / 16;
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
