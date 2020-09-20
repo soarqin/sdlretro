@@ -31,7 +31,7 @@ elseif(UNIX)
 endif()
 
 target_include_directories(libretro PUBLIC include)
-target_link_libraries(libretro spdlog::spdlog nlohmann::json xxhash)
+target_link_libraries(libretro spdlog::spdlog nlohmann::json xxhash::xxhash)
 if(WIN32)
     target_link_libraries(libretro shlwapi)
 else()
