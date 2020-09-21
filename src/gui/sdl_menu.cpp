@@ -94,12 +94,11 @@ void sdl_menu::draw() {
     if (end_index > items.size()) end_index = items.size();
     for (size_t i = top_index; i < end_index; ++i) {
         auto &item = items[i];
-        video->draw_text(x, y, item.text.c_str(), item_width, true);
         if (i == selected) {
-            video->set_draw_color(0xB4, 0xB4, 0xB4, 0xFF);
-            video->draw_rectangle(x - 3, y + top_most - 3, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 6, bot_most - top_most + 6);
-            video->draw_rectangle(x - 4, y + top_most - 4, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 8, bot_most - top_most + 8);
+            video->set_draw_color(0x60, 0x60, 0x60, 0xFF);
+            video->fill_rectangle(x - 4, y + top_most - 4, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 8, bot_most - top_most + 8);
         }
+        video->draw_text(x, y, item.text.c_str(), item_width, true);
         switch (item.type) {
         case menu_boolean:
             video->draw_text(value_x, y, item.selected ? "on"_i18n : "off"_i18n, value_width, true);

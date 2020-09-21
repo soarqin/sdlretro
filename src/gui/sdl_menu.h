@@ -17,11 +17,11 @@ protected:
 private:
     size_t page_size = 0;
     int line_height = 0;
-    uint32_t title_x = 0;
-    int32_t top_most = 0, bot_most = 0;
-    uint32_t key_x = 0;
-    uint32_t value_x = 0;
-    uint32_t value_width = 0;
+    int title_x = 0;
+    int top_most = 0, bot_most = 0;
+    int key_x = 0;
+    int value_x = 0;
+    int value_width = 0;
 };
 
 }
