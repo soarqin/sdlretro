@@ -74,8 +74,8 @@ sdl2_video_ogl::sdl2_video_ogl() {
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 #else
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -176,11 +176,15 @@ bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
     hw_renderer.fbw = pullup(info.geometry.max_width);
     hw_renderer.fbh = pullup(info.geometry.max_height);
 
-    glGenFramebuffers(1, &hw_renderer.fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, hw_renderer.fbo);
     glGenTextures(1, &hw_renderer.texture);
     glBindTexture(GL_TEXTURE_2D, hw_renderer.texture);
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, hw_renderer.fbw, hw_renderer.fbh);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, hw_renderer.fbw, hw_renderer.fbh, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenFramebuffers(1, &hw_renderer.fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, hw_renderer.fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hw_renderer.texture, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
     hw_renderer.rb_ds = 0;
@@ -430,7 +434,8 @@ void sdl2_video_ogl::predraw_menu() {
 }
 
 void sdl2_video_ogl::config_changed() {
-    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
     game_width = game_height = game_pitch = 0;
