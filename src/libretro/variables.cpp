@@ -2,6 +2,7 @@
 
 #include "libretro.h"
 #include "util.h"
+#include "cfg.h"
 
 #include <json.hpp>
 #include <spdlog/spdlog.h>
@@ -39,6 +40,14 @@ void retro_variables::load_variables(const retro_core_option_definition *def) {
     }
     for (auto &var: variables)
         variables_map[var.name] = &var;
+}
+
+void retro_variables::load_variables(const retro_core_options_intl *def) {
+    if (g_cfg.get_language() == 0 || !def->local) {
+        load_variables(def->us);
+        return;
+    }
+    load_variables(def->local);
 }
 
 void retro_variables::load_variables(const retro_variable *vars) {

@@ -450,7 +450,10 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
+            break;
         case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
+            *(int*)data = 3;
+            return true;
         case RETRO_ENVIRONMENT_GET_MIDI_INTERFACE:
         case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
         case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
@@ -467,7 +470,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL: {
-            variables->load_variables(((const retro_core_options_intl*)data)->us);
+            variables->load_variables((const retro_core_options_intl*)data);
             variables->load_variables_from_cfg(core_cfg_path);
             return true;
         }

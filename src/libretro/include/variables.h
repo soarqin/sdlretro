@@ -6,6 +6,7 @@
 
 extern "C" {
 struct retro_core_option_definition;
+struct retro_core_options_intl;
 struct retro_variable;
 }
 
@@ -58,6 +59,7 @@ public:
     void save_variables_to_cfg(const std::string &filename);
 
     void load_variables(const retro_core_option_definition *def);
+    void load_variables(const retro_core_options_intl *def);
     void load_variables(const retro_variable *vars);
 
     void reset_variables();
