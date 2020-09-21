@@ -350,7 +350,44 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
             *(const char**)data = core_save_dir.empty() ? nullptr : core_save_dir.c_str();
             return true;
-        case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
+        case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO: {
+            const auto *info = (const struct retro_system_av_info *)data;
+            bool restart_audio = false;
+            if (fps != info->timing.fps) {
+                fps = info->timing.fps;
+                restart_audio = true;
+            }
+            if (restart_audio || audio->get_sample_rate_input() != info->timing.sample_rate) {
+                audio->stop();
+                audio->start(g_cfg.get_mono_audio(), info->timing.sample_rate, g_cfg.get_sample_rate(), info->timing.fps);
+            }
+            bool resolution_changed = false;
+            if (base_width != info->geometry.base_width) {
+                base_width = info->geometry.base_width;
+                resolution_changed = true;
+            }
+            if (base_height != info->geometry.base_height) {
+                base_height = info->geometry.base_height;
+                resolution_changed = true;
+            }
+            if (max_width != info->geometry.max_width) {
+                max_width = info->geometry.max_width;
+                resolution_changed = true;
+            }
+            if (max_height != info->geometry.max_height) {
+                max_height = info->geometry.max_height;
+                resolution_changed = true;
+            }
+            if (aspect_ratio != info->geometry.aspect_ratio) {
+                aspect_ratio = info->geometry.aspect_ratio;
+                video->set_aspect_ratio(aspect_ratio);
+                resolution_changed = true;
+            }
+            if (resolution_changed) {
+                video->game_resolution_changed(base_width, base_height, pixel_format);
+            }
+            return true;
+        }
         case RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK:
         case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
             break;

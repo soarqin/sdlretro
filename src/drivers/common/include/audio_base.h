@@ -15,6 +15,8 @@ public:
     void stop();
     virtual void reset();
 
+    double get_sample_rate_input() const { return sample_rate_input; }
+
     void write_samples(const int16_t *data, size_t count);
 
 protected:
@@ -31,6 +33,7 @@ protected:
 
 private:
     std::vector<float> resampler_cache;
+    double sample_rate_input = 0.;
 
     /* for single divider */
     unsigned sample_multiplier = 1;

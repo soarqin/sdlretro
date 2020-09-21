@@ -22,7 +22,7 @@ public:
     bool init_hw_renderer(retro_hw_render_callback*) override;
     void inited_hw_renderer() override;
     void uninit_hw_renderer() override;
-    void window_resized(unsigned width, unsigned height, bool fullscreen);
+    void window_resized(unsigned width, unsigned height, bool fullscreen) override;
     bool game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
     void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;

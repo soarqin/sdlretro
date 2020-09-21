@@ -68,7 +68,10 @@ void sdl2_video::window_resized(unsigned width, unsigned height, bool fullscreen
 }
 
 bool sdl2_video::game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+    game_width = width;
+    game_height = height;
     game_pixel_format = pixel_format;
+    recalc_draw_rect();
     return true;
 }
 

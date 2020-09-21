@@ -23,6 +23,7 @@ inline unsigned pullup(unsigned rate) {
 
 bool audio_base::start(bool mono, double sample_rate_in, unsigned sample_rate_out, double fps) {
     mono_audio = mono;
+    sample_rate_input = sample_rate_in;
     if (sample_rate_out == 0) {
         output_sample_rate = lround(sample_rate_in);
         unsigned n = 1;

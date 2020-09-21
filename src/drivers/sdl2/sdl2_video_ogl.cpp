@@ -262,7 +262,10 @@ void sdl2_video_ogl::window_resized(unsigned width, unsigned height, bool fullsc
 }
 
 bool sdl2_video_ogl::game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+    game_width = width;
+    game_height = height;
     game_pixel_format = pixel_format;
+    recalc_draw_rect();
     return true;
 }
 
