@@ -22,6 +22,7 @@ private:
     int key_x = 0;
     int value_x = 0;
     int value_width = 0;
+    bool need_slider = false;
 };
 
 }

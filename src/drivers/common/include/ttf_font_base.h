@@ -40,6 +40,7 @@ public:
     ttf_font_base();
     virtual ~ttf_font_base();
     void init(int size, uint8_t width = 0);
+    void deinit();
     bool add(const std::string& filename, int index = 0);
     void get_char_width_and_height(uint16_t ch, uint8_t &width, int8_t &t, int8_t &b);
 

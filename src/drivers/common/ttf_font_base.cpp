@@ -29,7 +29,22 @@ ttf_font_base::ttf_font_base() {
 }
 
 ttf_font_base::~ttf_font_base() {
-    for (auto *&p: rectpack_data) delete p;
+    deinit();
+#ifndef USE_STB_TRUETYPE
+    FT_Done_FreeType(ft_lib);
+#endif
+}
+
+void ttf_font_base::init(int size, uint8_t width) {
+    font_size = size;
+    mono_width = width;
+}
+
+void ttf_font_base::deinit() {
+    font_cache.clear();
+    for (auto *&p: rectpack_data) {
+        delete p;
+    }
     rectpack_data.clear();
     for (auto &p: fonts) {
 #ifdef USE_STB_TRUETYPE
@@ -39,14 +54,7 @@ ttf_font_base::~ttf_font_base() {
         FT_Done_Face(p.face);
 #endif
     }
-#ifndef USE_STB_TRUETYPE
-    FT_Done_FreeType(ft_lib);
-#endif
-}
-
-void ttf_font_base::init(int size, uint8_t width) {
-    font_size = size;
-    mono_width = width;
+    fonts.clear();
 }
 
 bool ttf_font_base::add(const std::string &filename, int index) {

@@ -152,7 +152,7 @@ void sdl2_video::draw_text(int x, int y, const char *text, int width, bool shado
     ttf[0]->render(x, y, text, width, curr_height + ttf[0]->get_font_size() - y, shadow);
 }
 
-void sdl2_video::get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const {
+void sdl2_video::get_text_width_and_height(const char *text, int &w, int &t, int &b) const {
     w = 0;
     t = 255;
     b = -255;

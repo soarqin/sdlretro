@@ -220,7 +220,7 @@ inline const font_data_t &get_pixel_font_data(uint8_t c) {
 #endif
 }
 
-void sdl1_video::get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const {
+void sdl1_video::get_text_width_and_height(const char *text, int &w, int &t, int &b) const {
     w = 0;
     t = 255;
     b = -255;

@@ -115,12 +115,7 @@ sdl2_video_ogl::sdl2_video_ogl() {
 
     init_opengl();
 
-    ttf[0] = std::make_shared<sdl2_ttf_ogl>(gl_renderer.shader_font, gl_renderer.vao_font, gl_renderer.vbo_font, gl_renderer.uniform_font_color);
-    ttf[0]->init(16, 0);
-    ttf[0]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "regular.ttf", 0);
-    ttf[1] = std::make_shared<sdl2_ttf_ogl>(gl_renderer.shader_font, gl_renderer.vao_font, gl_renderer.vbo_font, gl_renderer.uniform_font_color);
-    ttf[1]->init(16, 0);
-    ttf[1]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "bold.ttf", 0);
+    init_fonts();
 }
 
 sdl2_video_ogl::~sdl2_video_ogl() {
@@ -247,6 +242,7 @@ void sdl2_video_ogl::window_resized(int width, int height, bool fullscreen) {
         curr_height = height;
     }
     gl_set_ortho();
+    init_fonts();
     recalc_draw_rect();
 }
 
@@ -367,7 +363,7 @@ void sdl2_video_ogl::draw_text(int x, int y, const char *text, int width, bool s
     ttf[0]->render(x, y, text, width, curr_height + ttf[0]->get_font_size() - y, shadow);
 }
 
-void sdl2_video_ogl::get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const {
+void sdl2_video_ogl::get_text_width_and_height(const char *text, int &w, int &t, int &b) const {
     w = 0;
     t = 255;
     b = -255;
@@ -409,6 +405,24 @@ void sdl2_video_ogl::config_changed() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
     game_width = game_height = 0;
+}
+
+void sdl2_video_ogl::init_fonts() {
+    if (ttf[0]) {
+        ttf[0]->deinit();
+    } else {
+        ttf[0] = std::make_shared<sdl2_ttf_ogl>(gl_renderer.shader_font, gl_renderer.vao_font, gl_renderer.vbo_font, gl_renderer.uniform_font_color);
+    }
+    if (ttf[1]) {
+        ttf[1]->deinit();
+    } else {
+        ttf[1] = std::make_shared<sdl2_ttf_ogl>(gl_renderer.shader_font, gl_renderer.vao_font, gl_renderer.vbo_font, gl_renderer.uniform_font_color);
+    }
+    auto size = std::min(16 * curr_width / 640, 16 * curr_height / 480) & ~1u;
+    ttf[0]->init(size, 0);
+    ttf[0]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "regular.ttf", 0);
+    ttf[1]->init(size, 0);
+    ttf[1]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "bold.ttf", 0);
 }
 
 void sdl2_video_ogl::do_render() {

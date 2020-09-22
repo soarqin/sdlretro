@@ -40,7 +40,7 @@ public:
     /* width: 0=fullscreen -1=fullscreen allow wrap
      *        others: negative = allow wrap */
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
-    void get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const override;
+    void get_text_width_and_height(const char *text, int &w, int &t, int &b) const override;
 
     void predraw_menu() override;
     void config_changed() override;
@@ -48,6 +48,7 @@ public:
     inline uintptr_t get_hw_fbo() const { return hw_renderer.fbo; }
 
 private:
+    void init_fonts();
     void do_render();
     void init_opengl();
     void uninit_opengl();

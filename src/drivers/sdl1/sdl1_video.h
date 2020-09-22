@@ -24,7 +24,7 @@ public:
     int get_font_size() const override;
     void draw_rectangle(int x, int y, int w, int h) override;
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
-    void get_text_width_and_height(const char *text, uint32_t &w, int &t, int &b) const override;
+    void get_text_width_and_height(const char *text, int &w, int &t, int &b) const override;
     void clear() override;
     void flip() override;
 

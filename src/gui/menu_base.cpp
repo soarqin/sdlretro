@@ -110,7 +110,7 @@ void menu_base::page_down() {
     size_t sz = items.size();
     if (selected + 1 >= sz) return;
     auto page_size = page_count();
-    if (selected + page_size >= sz) selected = sz - 1;
+    selected = selected + page_size >= sz ? (sz - 1) : (selected + page_size);
     if (top_index + page_size <= selected + 1) {
         top_index = selected + 1 >= page_size ? (selected + 1 == sz ? selected + 1 - page_size : selected + 2 - page_size) : 0;
     }
