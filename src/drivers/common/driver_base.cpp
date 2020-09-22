@@ -18,7 +18,12 @@
 #include <cstring>
 #include <cstdarg>
 #include <cmath>
+#ifdef _MSC_VER
+#include <windows.h>
+#define usleep(n) Sleep((n) / 1000)
+#else
 #include <unistd.h>
+#endif
 
 namespace drivers {
 

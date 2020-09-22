@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <array>
 #include <functional>
 
 namespace drivers {
@@ -117,7 +118,7 @@ protected:
     std::map<uint64_t, output_button_t*> game_mapping, menu_mapping;
     std::map<uint64_t, uint64_t> rev_game_mapping, rev_menu_mapping;
 
-    std::vector<output_port_t> ports;
+    std::array<output_port_t, 8> ports {};
     output_port_t port_menu {};
 
     input_mode mode = mode_game;

@@ -11,6 +11,10 @@ cfg g_cfg;
 
 using json = nlohmann::json;
 #ifdef _WIN32
+#include <windows.h>
+#ifndef PATH_MAX
+#define PATH_MAX MAX_PATH
+#endif
 #define realpath(r, f) _fullpath(f, r, PATH_MAX)
 #endif
 
@@ -55,9 +59,9 @@ void cfg::set_extra_core_dirs(const std::vector<std::string> &dirs) {
 void cfg::get_core_dirs(std::vector<std::string> &dirs) const {
     dirs = core_dirs;
     auto ite = std::find(dirs.begin(), dirs.end(), data_dir);
-    if (ite == core_dirs.end()) dirs.push_back(data_dir);
+    if (ite == dirs.end()) dirs.push_back(data_dir);
     ite = std::find(dirs.begin(), dirs.end(), config_dir);
-    if (ite == core_dirs.end()) dirs.push_back(config_dir);
+    if (ite == dirs.end()) dirs.push_back(config_dir);
     for (auto &d: dirs) {
         d += PATH_SEPARATOR_CHAR "cores";
     }

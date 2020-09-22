@@ -5,6 +5,10 @@
 #include <string>
 #include <cstdint>
 
+#ifdef _MSC_VER
+#define strcasecmp _stricmp
+#endif
+
 namespace libretro {
 extern struct retro_vfs_interface vfs_interface;
 }

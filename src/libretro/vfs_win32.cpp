@@ -156,13 +156,20 @@ int RETRO_CALLCONV win32_vfs_rename(const char *old_path, const char *new_path) 
     return MoveFileW(old_filenamew, new_filenamew) ? 0 : -1;
 }
 
+#ifndef S_ISCHR
+#define S_ISCHR(m) (((m) & S_IFMT) == S_IFCHR)
+#endif
+#ifndef S_ISDIR
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
+
 int RETRO_CALLCONV win32_vfs_stat(const char *path, int32_t *size) {
     wchar_t filenamew[MAX_PATH + 1];
     if (!FileNameUTF8ToUCS(path, filenamew)) return 0;
     struct _stat s;
     _wstat(filenamew, &s);
     if (size) *size = s.st_size;
-    return RETRO_VFS_STAT_IS_VALID | (S_ISCHR(s.st_mode) ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (S_ISDIR(s.st_mode) ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
+    return RETRO_VFS_STAT_IS_VALID | (S_ISDIR(s.st_mode) ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (S_ISCHR(s.st_mode) ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
 }
 
 int RETRO_CALLCONV win32_vfs_mkdir(const char *dir) {

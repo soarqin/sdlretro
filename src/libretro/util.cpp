@@ -16,12 +16,19 @@ namespace util {
 static uint64_t ticks_usec_cache = 0ULL;
 
 uint64_t get_ticks_usec() {
+#ifdef _MSC_VER
+    LARGE_INTEGER counter, freq;
+    QueryPerformanceCounter(&counter);
+    QueryPerformanceFrequency(&freq);
+    ticks_usec_cache = counter.QuadPart / (freq.QuadPart / 1000000ULL);
+#else
 #ifndef CLOCK_MONOTONIC_COARSE
 #define CLOCK_MONOTONIC_COARSE CLOCK_MONOTONIC
 #endif
     timespec ts = {};
     clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
     ticks_usec_cache = ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL;
+#endif
     return ticks_usec_cache;
 }
 

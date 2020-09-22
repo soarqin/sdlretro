@@ -45,7 +45,7 @@ int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, 
 void input_base::add_button_desc(uint8_t port, uint8_t device, uint8_t index, uint16_t id, const std::string &desc) {
     output_button_t bt = {device, id, index, port, desc};
     if (port < 0xFF && port >= ports.size()) {
-        ports.resize(port + 1, {});
+        return;
     }
     auto &p = port == 0xFF ? port_menu : ports[port];
     if (!p.available) {
@@ -77,7 +77,9 @@ void input_base::add_button_desc(uint8_t port, uint8_t device, uint8_t index, ui
 
 void input_base::clear_button_desc() {
     game_mapping.clear();
-    ports.clear();
+    for (auto &p: ports) {
+        p = output_port_t{};
+    }
 }
 
 void input_base::clear_menu_button_desc() {

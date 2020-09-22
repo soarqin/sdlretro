@@ -111,7 +111,9 @@ sdl2_video_ogl::sdl2_video_ogl() {
     spdlog::trace("Shading Language version: {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     glViewport(0, 0, curr_width, curr_height);
-    SDL_GL_SetSwapInterval(1);
+    if (SDL_GL_SetSwapInterval(-1) < 0) {
+        SDL_GL_SetSwapInterval(1);
+    }
 
     init_opengl();
 

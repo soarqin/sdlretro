@@ -3,6 +3,7 @@
 #include "video_base.h"
 
 #include <memory>
+#include <array>
 
 extern "C" {
 typedef struct SDL_Window SDL_Window;
