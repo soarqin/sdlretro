@@ -51,7 +51,7 @@ sdl2_video::~sdl2_video() {
     SDL_DestroyWindow(window);
 }
 
-void sdl2_video::window_resized(unsigned width, unsigned height, bool fullscreen) {
+void sdl2_video::window_resized(int width, int height, bool fullscreen) {
     if (fullscreen) {
         SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
         SDL_DisplayMode mode = {};
@@ -67,7 +67,7 @@ void sdl2_video::window_resized(unsigned width, unsigned height, bool fullscreen
     recalc_draw_rect();
 }
 
-bool sdl2_video::game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+bool sdl2_video::game_resolution_changed(int width, int height, uint32_t pixel_format) {
     game_width = width;
     game_height = height;
     game_pixel_format = pixel_format;
@@ -75,7 +75,7 @@ bool sdl2_video::game_resolution_changed(unsigned width, unsigned height, unsign
     return true;
 }
 
-void sdl2_video::render(const void *data, unsigned width, unsigned height, size_t pitch) {
+void sdl2_video::render(const void *data, int width, int height, size_t pitch) {
     if (!data) {
         drawn = false;
         return;
@@ -115,7 +115,7 @@ void sdl2_video::render(const void *data, unsigned width, unsigned height, size_
     SDL_RenderPresent(renderer);
 }
 
-void *sdl2_video::get_framebuffer(unsigned int *width, unsigned int *height, size_t *pitch, int *format) {
+void *sdl2_video::get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format) {
     return video_base::get_framebuffer(width, height, pitch, format);
 }
 

@@ -87,7 +87,7 @@ void input_base::clear_menu_button_desc() {
     port_menu.available = port_menu.enabled = false;
 }
 
-void input_base::foreach_mapping(std::function<void(const output_button_t &output, const input_button_t &input)> cb) const {
+void input_base::foreach_mapping(const std::function<void(const output_button_t &output, const input_button_t &input)> &cb) const {
     for (auto &p: ports) {
         for (auto &pp: p.buttons) {
             auto value = (static_cast<uint64_t>(pp.second.port) << 32) | static_cast<uint64_t>(button_packed_value(pp.second.index, pp.second.id));

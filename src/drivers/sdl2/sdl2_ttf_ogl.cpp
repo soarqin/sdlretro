@@ -99,8 +99,8 @@ void sdl2_ttf_ogl::render(int x, int y, const char *text, int width, int height,
             float vertices[] = {
                 shx0, shy0, sx0, sy0, // top left
                 shx1, shy0, sx1, sy0, // top right
-                shx1, shy1, sx1, sy1, // bottom right
-                shx0, shy1, sx0, sy1 // bottom left
+                shx0, shy1, sx0, sy1, // bottom left
+                shx1, shy1, sx1, sy1  // bottom right
             };
             glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
@@ -108,13 +108,13 @@ void sdl2_ttf_ogl::render(int x, int y, const char *text, int width, int height,
             glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
             glEnableVertexAttribArray(1);
             glUniform3f(uniform_font_color, 0.f, 0.f, 0.f);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
         float vertices[] = {
             x0, y0, sx0, sy0, // top left
             x1, y0, sx1, sy0, // top right
-            x1, y1, sx1, sy1, // bottom right
-            x0, y1, sx0, sy1  // bottom left
+            x0, y1, sx0, sy1, // bottom left
+            x1, y1, sx1, sy1  // bottom right
         };
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
@@ -122,7 +122,7 @@ void sdl2_ttf_ogl::render(int x, int y, const char *text, int width, int height,
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
         glEnableVertexAttribArray(1);
         glUniform3fv(uniform_font_color, 1, color);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         x += fd->advW;
         nwidth -= fd->advW;
     }

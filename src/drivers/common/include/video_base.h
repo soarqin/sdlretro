@@ -20,18 +20,18 @@ public:
     virtual void inited_hw_renderer() {}
     virtual void uninit_hw_renderer() {}
 
-    virtual void window_resized(unsigned width, unsigned height, bool fullscreen) = 0;
+    virtual void window_resized(int width, int height, bool fullscreen) = 0;
 
     /* pixel_format follows libretro: RGB1555=0 XRGB8888=1 RGB565=2 */
-    virtual bool game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) = 0;
-    virtual void render(const void *data, unsigned width, unsigned height, size_t pitch) = 0;
+    virtual bool game_resolution_changed(int width, int height, uint32_t pixel_format) = 0;
+    virtual void render(const void *data, int width, int height, size_t pitch) = 0;
 
     virtual void enter_menu() {}
     virtual void leave_menu() {}
     virtual void predraw_menu() {}
     virtual void config_changed() {}
 
-    virtual void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format)
+    virtual void *get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format)
     { return nullptr; }
     virtual bool frame_drawn() = 0;
     virtual void get_resolution(int &width, int &height) {}

@@ -18,10 +18,10 @@ class sdl2_video: public video_base {
 public:
     sdl2_video();
     ~sdl2_video() override;
-    void window_resized(unsigned width, unsigned height, bool fullscreen) override;
-    bool game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
-    void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
-    void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
+    void window_resized(int width, int height, bool fullscreen) override;
+    bool game_resolution_changed(int width, int height, uint32_t pixel_format) override;
+    void render(const void *data, int width, int height, size_t pitch) override;
+    void *get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
     void get_resolution(int &width, int &height) override {
         width = curr_width; height = curr_height;
@@ -51,7 +51,8 @@ private:
     SDL_Texture *texture = nullptr;
 
     int curr_width = 0, curr_height = 0;
-    uint32_t game_pitch = 0, game_width = 0, game_height = 0, game_pixel_format = 0;
+    int game_pitch = 0, game_width = 0, game_height = 0;
+    uint32_t game_pixel_format = 0;
     std::array<int, 4> display_rect = {};
 
     /* ttf[0] is regular font

@@ -97,7 +97,7 @@ public:
     inline int16_t get_menu_pad_states() const { return port_menu.states; }
     inline void set_input_mode(input_mode m) { mode = m; }
 
-    void foreach_mapping(std::function<void(const output_button_t &output, const input_button_t &input)> cb) const;
+    void foreach_mapping(const std::function<void(const output_button_t &output, const input_button_t &input)> &cb) const;
 
     void add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id);
     void remove_mapping(uint8_t to_port, uint16_t to_id);

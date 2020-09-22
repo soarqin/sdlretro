@@ -170,30 +170,19 @@ bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
 
     uninit_hw_renderer();
 
-    GLenum status;
-    retro_system_av_info info = {};
-    current_driver->get_core()->retro_get_system_av_info(&info);
-    hw_renderer.fbw = pullup(info.geometry.max_width);
-    hw_renderer.fbh = pullup(info.geometry.max_height);
-
-    glGenTextures(1, &hw_renderer.texture);
-    glBindTexture(GL_TEXTURE_2D, hw_renderer.texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, hw_renderer.fbw, hw_renderer.fbh, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    gl_renderer_update_texture_rect(true);
 
     glGenFramebuffers(1, &hw_renderer.fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, hw_renderer.fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hw_renderer.texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_renderer.texture_game, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
     hw_renderer.rb_ds = 0;
-    hw_renderer.bottom_left = hwr->bottom_left_origin;
+    gl_renderer.bottom_left = hwr->bottom_left_origin;
     if (hwr->depth) {
         glGenRenderbuffers(1, &hw_renderer.rb_ds);
         glBindRenderbuffer(GL_RENDERBUFFER, hw_renderer.rb_ds);
         glRenderbufferStorage(GL_RENDERBUFFER, hwr->stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT16,
-                              hw_renderer.fbw, hw_renderer.fbh);
+                              gl_renderer.texture_w, gl_renderer.texture_h);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
         if (hwr->stencil)
@@ -201,9 +190,9 @@ bool sdl2_video_ogl::init_hw_renderer(retro_hw_render_callback *hwr) {
         else
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, hw_renderer.rb_ds);
     }
-
-    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         spdlog::error("Framebuffer is not complete.");
         return false;
     }
@@ -238,17 +227,13 @@ void sdl2_video_ogl::uninit_hw_renderer() {
         glDeleteFramebuffers(1, &hw_renderer.fbo);
         hw_renderer.fbo = 0;
     }
-    if (hw_renderer.texture) {
-        glDeleteTextures(1, &hw_renderer.texture);
-        hw_renderer.texture = 0;
-    }
     if (hwr_cb) {
         hwr_cb->context_destroy();
         hwr_cb = nullptr;
     }
 }
 
-void sdl2_video_ogl::window_resized(unsigned width, unsigned height, bool fullscreen) {
+void sdl2_video_ogl::window_resized(int width, int height, bool fullscreen) {
     if (fullscreen) {
         SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
         SDL_DisplayMode mode = {};
@@ -257,48 +242,33 @@ void sdl2_video_ogl::window_resized(unsigned width, unsigned height, bool fullsc
         curr_height = mode.h;
     } else {
         SDL_SetWindowFullscreen(window, 0);
-        SDL_SetWindowSize(window, (int)width, (int)height);
-        curr_width = (int)width;
-        curr_height = (int)height;
+        SDL_SetWindowSize(window, width, height);
+        curr_width = width;
+        curr_height = height;
     }
     gl_set_ortho();
     recalc_draw_rect();
 }
 
-bool sdl2_video_ogl::game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+bool sdl2_video_ogl::game_resolution_changed(int width, int height, uint32_t pixel_format) {
     game_width = width;
     game_height = height;
-    game_pixel_format = pixel_format;
-    recalc_draw_rect();
+    bool pixel_format_changed = pixel_format != game_pixel_format;
+    if (pixel_format_changed) {
+        game_pixel_format = pixel_format;
+        bpp = pixel_format == 1 ? 4 : 2;
+    }
+    recalc_draw_rect(pixel_format_changed);
     return true;
 }
 
-void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, size_t pitch) {
+void sdl2_video_ogl::render(const void *data, int width, int height, size_t pitch) {
     if (skip_frame) {
         drawn = false;
         skip_frame = false;
         return;
     }
-    bool pitch_changed = false;
-    if (!hwr_cb) {
-        uint32_t pitch_in_pixel;
-        switch(game_pixel_format) {
-        case 0:
-            pitch_in_pixel = pitch >> 1;
-            break;
-        case 1:
-            pitch_in_pixel = pitch >> 2;
-            break;
-        default:
-            pitch_in_pixel = pitch >> 1;
-            break;
-        }
-        pitch_changed = pitch_in_pixel != game_pitch;
-        if (pitch_changed) {
-            game_pitch = pitch_in_pixel;
-        }
-    }
-    if (width != game_width || height != game_height || pitch_changed) {
+    if (width != game_width || height != game_height) {
         game_width = width;
         game_height = height;
         if (!recalc_draw_rect()) {
@@ -306,8 +276,8 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
             return;
         }
     }
-    if (!hwr_cb) {
-        if (!gl_renderer_gen_texture(data)) {
+    if (data != nullptr && data != RETRO_HW_FRAME_BUFFER_VALID) {
+        if (!gl_renderer_gen_texture(data, pitch / bpp)) {
             drawn = false;
             return;
         }
@@ -317,7 +287,7 @@ void sdl2_video_ogl::render(const void *data, unsigned width, unsigned height, s
     SDL_GL_SwapWindow(window);
 }
 
-void *sdl2_video_ogl::get_framebuffer(unsigned int *width, unsigned int *height, size_t *pitch, int *format) {
+void *sdl2_video_ogl::get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format) {
     return video_base::get_framebuffer(width, height, pitch, format);
 }
 
@@ -422,9 +392,9 @@ void sdl2_video_ogl::predraw_menu() {
     glUseProgram(gl_renderer.shader_texture);
     glBindVertexArray(gl_renderer.vao_texture);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
     glViewport(0, 0, curr_width, curr_height);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindVertexArray(0);
     glUseProgram(0);
@@ -434,23 +404,24 @@ void sdl2_video_ogl::predraw_menu() {
 }
 
 void sdl2_video_ogl::config_changed() {
-    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, g_cfg.get_linear() ? GL_LINEAR : GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
-    game_width = game_height = game_pitch = 0;
+    game_width = game_height = 0;
 }
 
 void sdl2_video_ogl::do_render() {
     clear();
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     glViewport(0, 0, curr_width, curr_height);
     glUseProgram(gl_renderer.shader_texture);
     glBindVertexArray(gl_renderer.vao_texture);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, hwr_cb ? hw_renderer.texture : gl_renderer.texture_game);
-
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     if (messages.empty()) return;
     glEnable(GL_BLEND);
@@ -535,28 +506,15 @@ void sdl2_video_ogl::init_opengl() {
         "  fragColor = vec4(outColor, texture(texture0, texCoord).r);\n"
         "}");
 
+    gl_renderer.bottom_left = false;
     glGenVertexArrays(1, &gl_renderer.vao_draw);
     glGenBuffers(1, &gl_renderer.vbo_draw);
 
-    const unsigned int indices[] = {
-        0, 1, 2, // first triangle
-        0, 2, 3  // second triangle
-    };
     glGenVertexArrays(1, &gl_renderer.vao_texture);
     glGenBuffers(1, &gl_renderer.vbo_texture);
-    glGenBuffers(1, &gl_renderer.ebo_texture);
-    glBindVertexArray(gl_renderer.vao_texture);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_renderer.ebo_texture);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    glBindVertexArray(0);
 
     glGenVertexArrays(1, &gl_renderer.vao_font);
     glGenBuffers(1, &gl_renderer.vbo_font);
-    glGenBuffers(1, &gl_renderer.ebo_font);
-    glBindVertexArray(gl_renderer.vao_font);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_renderer.ebo_font);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    glBindVertexArray(0);
 
     glGenTextures(1, &gl_renderer.texture_game);
     glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
@@ -579,15 +537,11 @@ void sdl2_video_ogl::uninit_opengl() {
     glDeleteTextures(1, &gl_renderer.texture_game);
     gl_renderer.texture_game = 0;
 
-    glDeleteBuffers(1, &gl_renderer.ebo_font);
-    gl_renderer.ebo_font = 0;
     glDeleteBuffers(1, &gl_renderer.vbo_font);
     gl_renderer.vbo_font = 0;
     glDeleteVertexArrays(1, &gl_renderer.vao_font);
     gl_renderer.vao_font = 0;
 
-    glDeleteBuffers(1, &gl_renderer.ebo_texture);
-    gl_renderer.ebo_texture = 0;
     glDeleteBuffers(1, &gl_renderer.vbo_texture);
     gl_renderer.vbo_texture = 0;
     glDeleteVertexArrays(1, &gl_renderer.vao_texture);
@@ -643,11 +597,13 @@ void sdl2_video_ogl::gl_set_ortho() {
     glUseProgram(0);
 }
 
-bool sdl2_video_ogl::recalc_draw_rect() {
+bool sdl2_video_ogl::recalc_draw_rect(bool force_create_empty_texture) {
+    gl_renderer_update_texture_rect(force_create_empty_texture);
+
     float ratio = (float)game_width / (float)game_height;
     /* TODO: aspect_ratio from geometry is bad sometimes,
      *       so we just use w/h here */
-    float sratio = (float)curr_width / curr_height;
+    float sratio = (float)curr_width / (float)curr_height;
     float wratio, hratio;
     if (g_cfg.get_integer_scaling()) {
         float int_ratio;
@@ -656,36 +612,67 @@ bool sdl2_video_ogl::recalc_draw_rect() {
         } else {
             int_ratio = std::floor((float)curr_height / (float)game_height);
         }
-        wratio = int_ratio * (float)game_width / curr_width;
-        hratio = int_ratio * (float)game_height / curr_height;
+        wratio = int_ratio * (float)game_width / (float)curr_width;
+        hratio = int_ratio * (float)game_height / (float)curr_height;
     } else {
         if (sratio < ratio) {
             wratio = 1.f;
-            hratio = (float)curr_width / ratio / curr_height;
+            hratio = (float)curr_width / ratio / (float)curr_height;
         } else {
-            wratio = ratio * (float)curr_height / curr_width;
+            wratio = ratio * (float)curr_height / (float)curr_width;
             hratio = 1.f;
         }
     }
-    if (hwr_cb) {
-        return hw_renderer_resized(wratio, hratio);
-    } else {
-        return gl_renderer_resized(wratio, hratio);
+    return gl_renderer_resized(wratio, hratio);
+}
+
+void sdl2_video_ogl::gl_renderer_update_texture_rect(bool force_create_empty_texture) {
+    retro_system_av_info info = {};
+    current_driver->get_core()->retro_get_system_av_info(&info);
+    auto new_w = pullup(info.geometry.max_width);
+    auto new_h = pullup(info.geometry.max_height);
+    if (force_create_empty_texture || new_w != gl_renderer.texture_w || new_h != gl_renderer.texture_h) {
+        gl_renderer.texture_w = new_w;
+        gl_renderer.texture_h = new_h;
+        gl_renderer_create_empty_texture();
     }
 }
 
-bool sdl2_video_ogl::hw_renderer_resized(float wratio, float hratio) const {
+void sdl2_video_ogl::gl_renderer_create_empty_texture() const {
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
+    switch (game_pixel_format) {
+    case 0:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gl_renderer.texture_w, gl_renderer.texture_h, 0, GL_BGRA, GL_UNSIGNED_SHORT_5_5_5_1, nullptr);
+        break;
+    case 1:
+#ifdef USE_GLES
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gl_renderer.texture_w, gl_renderer.texture_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
+#else
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gl_renderer.texture_w, gl_renderer.texture_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+#endif
+        break;
+    default:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gl_renderer.texture_w, gl_renderer.texture_h, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, nullptr);
+        break;
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+bool sdl2_video_ogl::gl_renderer_resized(float wratio, float hratio) const {
     float o_r, o_b;
-    o_r = (float)game_width / hw_renderer.fbw;
-    o_b = (float)game_height / hw_renderer.fbh;
+    o_r = (float)game_width / gl_renderer.texture_w;
+    o_b = (float)game_height / gl_renderer.texture_h;
     glBindVertexArray(gl_renderer.vao_texture);
-    if (hw_renderer.bottom_left) {
+    if (gl_renderer.bottom_left) {
         float vertices[] = {
             // positions      // texture coords
             -wratio, hratio,  0.f, o_b, // top left
              wratio, hratio,  o_r, o_b, // top right
-             wratio, -hratio, o_r, 0.f, // bottom right
-            -wratio, -hratio, 0.f, 0.f  // bottom left
+            -wratio, -hratio, 0.f, 0.f, // bottom left
+             wratio, -hratio, o_r, 0.f  // bottom right
         };
         glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -694,8 +681,8 @@ bool sdl2_video_ogl::hw_renderer_resized(float wratio, float hratio) const {
             // positions      // texture coords
             -wratio, hratio,  0.f, 0.f, // top left
              wratio, hratio,  o_r, 0.f, // top right
-             wratio, -hratio, o_r, o_b, // bottom right
-            -wratio, -hratio, 0.f, o_b  // bottom left
+            -wratio, -hratio, 0.f, o_b, // bottom left
+             wratio, -hratio, o_r, o_b // bottom right
         };
         glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -708,67 +695,28 @@ bool sdl2_video_ogl::hw_renderer_resized(float wratio, float hratio) const {
     return true;
 }
 
-bool sdl2_video_ogl::gl_renderer_resized(float wratio, float hratio) const {
-    float tratio = (float)game_width / game_pitch;
-    glBindVertexArray(gl_renderer.vao_texture);
-    float vertices[] = {
-        // positions        // texture coords
-        -wratio,  hratio,   0.0f,   0.0f, // top left
-         wratio,  hratio,   tratio, 0.0f, // top right
-         wratio, -hratio,   tratio, 1.0f, // bottom right
-        -wratio, -hratio,   0.0f,   1.0f  // bottom left
-    };
-    glBindBuffer(GL_ARRAY_BUFFER, gl_renderer.vbo_texture);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
-
-    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
-    switch (game_pixel_format) {
-    case 0:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, game_height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, nullptr);
-        break;
-    case 1:
-#ifdef USE_GLES
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, game_pitch, game_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ONE);
-#else
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, game_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
-#endif
-        break;
-    default:
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, game_pitch, game_height, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, nullptr);
-        break;
-    }
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return true;
-}
-
-bool sdl2_video_ogl::gl_renderer_gen_texture(const void *data) const {
+bool sdl2_video_ogl::gl_renderer_gen_texture(const void *data, size_t pitch) const {
     if (!data) {
         return false;
     }
     glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch);
     switch (game_pixel_format) {
     case 0:
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, game_height, GL_RGB, GL_UNSIGNED_SHORT_5_5_5_1, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_width, game_height, GL_BGRA, GL_UNSIGNED_SHORT_5_5_5_1, data);
         break;
     case 1:
 #ifdef USE_GLES
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, game_height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_width, game_height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 #else
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, game_height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_width, game_height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, data);
 #endif
         break;
     default:
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_pitch, game_height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_width, game_height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
         break;
     }
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
     return true;
 }
