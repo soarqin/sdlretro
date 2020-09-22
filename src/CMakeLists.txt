@@ -45,7 +45,11 @@ add_subdirectory(drivers)
 add_subdirectory(gui)
 add_subdirectory(external)
 
-add_executable(sdlretro main.cpp)
+if((NOT WIN32) OR CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_executable(sdlretro main.cpp)
+else()
+    add_executable(sdlretro WIN32 main.cpp)
+endif()
 target_link_libraries(sdlretro gui miniz)
 
 if(SDLRETRO_FRONTEND STREQUAL "SDL1")

@@ -198,3 +198,13 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+#ifdef _MSC_VER
+
+#include <windows.h>
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow) {
+    return main(__argc, __argv);
+}
+
+#endif

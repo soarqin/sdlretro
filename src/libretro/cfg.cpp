@@ -60,8 +60,8 @@ void cfg::get_core_dirs(std::vector<std::string> &dirs) const {
     dirs = core_dirs;
     auto ite = std::find(dirs.begin(), dirs.end(), data_dir);
     if (ite == dirs.end()) dirs.push_back(data_dir);
-    ite = std::find(dirs.begin(), dirs.end(), config_dir);
-    if (ite == dirs.end()) dirs.push_back(config_dir);
+    ite = std::find(dirs.begin(), dirs.end(), store_dir);
+    if (ite == dirs.end()) dirs.push_back(store_dir);
     for (auto &d: dirs) {
         d += PATH_SEPARATOR_CHAR "cores";
     }
@@ -90,7 +90,7 @@ inline bool get_value(json &j, const std::string &key, T &val) {
 
 void cfg::load(const std::string &cfgfile) {
     json j;
-    config_filename = cfgfile.empty() ? g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "sdlretro.json" : cfgfile;
+    config_filename = cfgfile.empty() ? config_dir + PATH_SEPARATOR_CHAR + "sdlretro.json" : cfgfile;
     if (!util::file_exists(config_filename)) return;
     try {
         std::string content;
