@@ -37,20 +37,29 @@ bool menu_base::enter_menu_loop(size_t sel) {
         force_refreshing = false;
         if (init_fn)
             init_fn(*this);
+        running = true;
         do {
-            driver->process_events();
+            if (driver->process_events()) {
+                ok_pressed = false;
+                leave_menu_loop();
+                driver->shutdown();
+                break;
+            }
             input->input_poll();
             usleep(50000);
         } while (input->get_menu_pad_states() != 0);
+        if (!running) {
+            break;
+        }
         enter();
         set_selected(sel);
-        running = true;
         draw();
         while (running && !force_refreshing) {
             usleep(50000);
             if (driver->process_events()) {
-                running = false;
                 ok_pressed = false;
+                leave_menu_loop();
+                driver->shutdown();
                 break;
             }
             if (poll_input() && running && !force_refreshing) {
@@ -66,12 +75,15 @@ bool menu_base::enter_menu_loop(size_t sel) {
         driver->get_video()->leave_menu();
         driver->get_input()->set_input_mode(drivers::input_base::mode_game);
     }
-    leave_menu_loop();
+    running = false;
     return ok_pressed;
 }
 
 void menu_base::leave_menu_loop() {
     running = false;
+    if (parent) {
+        parent->leave_menu_loop();
+    }
 }
 
 void menu_base::move_up() {
