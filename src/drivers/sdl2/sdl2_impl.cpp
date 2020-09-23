@@ -1,10 +1,6 @@
 #include "sdl2_impl.h"
 
-#ifdef USE_OPENGL
-#include "sdl2_video_ogl.h"
-#else
 #include "sdl2_video.h"
-#endif
 #include "sdl2_audio.h"
 #include "sdl2_input.h"
 #include "throttle.h"
@@ -17,11 +13,7 @@ sdl2_impl::sdl2_impl() {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         return;
     }
-#ifdef USE_OPENGL
-    video = std::make_shared<sdl2_video_ogl>();
-#else
     video = std::make_shared<sdl2_video>();
-#endif
     input = std::make_shared<sdl2_input>();
     input->post_init();
 }

@@ -2,16 +2,11 @@
 
 #include "ttf_font_base.h"
 
-extern "C" {
-typedef struct SDL_Renderer SDL_Renderer;
-typedef struct SDL_Texture SDL_Texture;
-}
-
 namespace drivers {
 
 class sdl2_ttf: public ttf_font_base {
 public:
-    inline explicit sdl2_ttf(SDL_Renderer *r): renderer(r) {}
+    inline sdl2_ttf(uint32_t shader, uint32_t vao, uint32_t vbo, uint32_t uniform): program_font(shader), vao_font(vao), vbo_font(vbo), uniform_font_color(uniform) {}
     ~sdl2_ttf() override;
 
     void render(int x, int y, const char *text, int width, int height, bool shadow = false);
@@ -19,12 +14,12 @@ public:
 
 protected:
     uint8_t *prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int &pitch) override;
-    void finish_texture(uint8_t *src_ptr, size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int src_pitch) override;
+    void finish_texture(uint8_t *data, size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int pitch) override;
 
 private:
-    SDL_Renderer *renderer;
-    std::vector<SDL_Texture*> textures, shadows;
-    uint32_t color = 0xFFFFFFu;
+    std::vector<uint32_t> textures;
+    uint32_t program_font, vao_font, vbo_font, uniform_font_color;
+    float color[3] = {1.f, 1.f, 1.f};
 };
 
 }

@@ -3,12 +3,10 @@
 #include "video_base.h"
 
 #include <memory>
-#include <array>
 
 extern "C" {
 typedef struct SDL_Window SDL_Window;
-typedef struct SDL_Renderer SDL_Renderer;
-typedef struct SDL_Texture SDL_Texture;
+typedef void *SDL_GLContext;
 }
 
 namespace drivers {
@@ -19,6 +17,11 @@ class sdl2_video: public video_base {
 public:
     sdl2_video();
     ~sdl2_video() override;
+
+    int get_renderer_type() override;
+    bool init_hw_renderer(retro_hw_render_callback*) override;
+    void inited_hw_renderer() override;
+    void uninit_hw_renderer() override;
     void window_resized(int width, int height, bool fullscreen) override;
     bool game_resolution_changed(int width, int height, uint32_t pixel_format) override;
     void render(const void *data, int width, int height, size_t pitch) override;
@@ -42,19 +45,45 @@ public:
     void predraw_menu() override;
     void config_changed() override;
 
+    inline uintptr_t get_hw_fbo() const { return hw_renderer.fbo; }
+
 private:
+    bool init_video(bool use_gles);
+    void uninit_video();
+    void init_fonts();
     void do_render();
-    void recalc_draw_rect();
+    void init_opengl();
+    void uninit_opengl();
+    void gl_set_ortho();
+    bool recalc_draw_rect(bool force_create_empty_texture = false);
+
+    void gl_renderer_update_texture_rect(bool force_create_empty_texture = false);
+    void gl_renderer_create_empty_texture() const;
+    bool gl_renderer_resized(float wratio, float hratio) const;
+    bool gl_renderer_gen_texture(const void *data, size_t pitch) const;
 
 private:
     SDL_Window *window = nullptr;
-    SDL_Renderer *renderer = nullptr;
-    SDL_Texture *texture = nullptr;
+    SDL_GLContext context = nullptr;
+
+    struct {
+        uint32_t program_direct_draw = 0, program_texture = 0, program_font = 0;
+        uint32_t vao_draw = 0, vbo_draw = 0;
+        uint32_t vao_texture = 0, vbo_texture = 0;
+        uint32_t vao_font = 0, vbo_font = 0;
+        uint32_t texture_game = 0;
+        uint32_t texture_w = 0, texture_h = 0;
+        uint32_t uniform_font_color = 0;
+        float draw_color[4] = {1.f, 1.f, 1.f, 1.f};
+        bool bottom_left = false;
+        bool use_gles = false;
+    } gl_renderer;
 
     int curr_width = 0, curr_height = 0;
-    int game_pitch = 0, game_width = 0, game_height = 0;
+    size_t bpp = 2;
+    int game_width = 0, game_height = 0;
     uint32_t game_pixel_format = 0;
-    std::array<int, 4> display_rect = {};
+    int saved_x, saved_y;
 
     /* ttf[0] is regular font
      * fft[1] is bold font
@@ -63,6 +92,13 @@ private:
 
     /* indicate wheather frame was drawn, for auto frameskip use */
     bool drawn = false;
+
+    retro_hw_render_callback *hwr_cb = nullptr;
+
+    struct {
+        uint32_t fbo = 0;
+        uint32_t rb_ds = 0;
+    } hw_renderer;
 };
 
 }

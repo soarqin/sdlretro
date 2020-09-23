@@ -2,13 +2,14 @@
 
 #include "util.h"
 
+#include <glad/glad.h>
 #include <SDL.h>
 
 namespace drivers {
 
 sdl2_ttf::~sdl2_ttf() {
-    for (auto *t: textures) {
-        SDL_DestroyTexture(t);
+    for (auto t: textures) {
+        glDeleteTextures(1, &t);
     }
     textures.clear();
 }
@@ -19,44 +20,23 @@ uint8_t *sdl2_ttf::prepare_texture(size_t index, uint16_t x, uint16_t y, uint16_
     return sdata;
 }
 
-void sdl2_ttf::finish_texture(uint8_t *src_ptr, size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int src_pitch) {
+void sdl2_ttf::finish_texture(uint8_t *data, size_t index, uint16_t x, uint16_t y, uint16_t w, uint16_t h, int pitch) {
     if (index >= textures.size()) {
-        textures.resize(index + 1);
-        shadows.resize(index + 1);
+        textures.resize(index + 1, 0u);
     }
-    auto *&tex = textures[index];
-    auto *&shtex = shadows[index];
-    if (tex == nullptr) {
+    uint32_t &tex = textures[index];
+    if (tex == 0) {
         auto rpw = get_rect_pack_width();
-        tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, rpw, rpw);
-        SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, rpw, rpw, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
-    if (shtex == nullptr) {
-        auto rpw = get_rect_pack_width();
-        shtex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, rpw, rpw);
-        SDL_SetTextureBlendMode(shtex, SDL_BLENDMODE_BLEND);
-    }
-    void *data, *shdata;
-    int pitch;
-    SDL_LockTexture(tex, nullptr, &data, &pitch);
-    SDL_LockTexture(shtex, nullptr, &shdata, &pitch);
-    auto pix_spacing = pitch - w * 4;
-    auto *pixels = (uint8_t*)data + x * 4 + y * pitch;
-    auto *shpixels = (uint8_t*)shdata + x * 4 + y * pitch;
-    auto pixel_color = color;
-    for (uint32_t j = 0; j < h; ++j) {
-        for (uint32_t i = 0; i < w; ++i) {
-            *(uint32_t*)pixels = pixel_color | (((uint32_t)*src_ptr) << 24);
-            *(uint32_t*)shpixels = ((uint32_t)*src_ptr) << 24;
-            pixels += 4;
-            shpixels += 4;
-            ++src_ptr;
-        }
-        pixels += pix_spacing;
-        shpixels += pix_spacing;
-    }
-    SDL_UnlockTexture(tex);
-    SDL_UnlockTexture(shtex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, pitch, h, GL_RED, GL_UNSIGNED_BYTE, data);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void sdl2_ttf::render(int x, int y, const char *text, int width, int height, bool shadow) {
@@ -69,6 +49,9 @@ void sdl2_ttf::render(int x, int y, const char *text, int width, int height, boo
         allow_wrap = true;
         width = -width;
     }
+    auto w = (float)get_rect_pack_width();
+    glUseProgram(program_font);
+    glBindVertexArray(vao_font);
     while (*text != 0) {
         uint32_t ch = util::utf8_to_ucs4(text);
         if (ch == 0 || ch > 0xFFFFu) continue;
@@ -96,20 +79,59 @@ void sdl2_ttf::render(int x, int y, const char *text, int width, int height, boo
                 break;
         }
 
-        SDL_Rect src_rc = {fd->rpx, fd->rpy, fd->w, fd->h};
-        SDL_Rect dst_rc = {x + fd->ix0, y + fd->iy0, fd->w, fd->h};
+        auto sx0 = (float)fd->rpx / w;
+        auto sy0 = (float)fd->rpy / w;
+        auto sx1 = (float)(fd->rpx + fd->w) / w;
+        auto sy1 = (float)(fd->rpy + fd->h) / w;
+        auto x0 = (float)(x + fd->ix0);
+        auto y0 = (float)(y + fd->iy0);
+        auto x1 = x0 + (float)fd->w;
+        auto y1 = y0 + (float)fd->h;
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textures[fd->rpidx]);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_font);
         if (shadow) {
-            SDL_Rect shadow_rc = {x + fd->ix0 + 2, y + fd->iy0 + 2, fd->w, fd->h};
-            SDL_RenderCopy(renderer, shadows[fd->rpidx], &src_rc, &shadow_rc);
+            auto shx0 = x0 + 2.f;
+            auto shx1 = x1 + 2.f;
+            auto shy0 = y0 + 2.f;
+            auto shy1 = y1 + 2.f;
+            float vertices[] = {
+                shx0, shy0, sx0, sy0, // top left
+                shx1, shy0, sx1, sy0, // top right
+                shx0, shy1, sx0, sy1, // bottom left
+                shx1, shy1, sx1, sy1  // bottom right
+            };
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+            glUniform3f(uniform_font_color, 0.f, 0.f, 0.f);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
-        SDL_RenderCopy(renderer, textures[fd->rpidx], &src_rc, &dst_rc);
+        float vertices[] = {
+            x0, y0, sx0, sy0, // top left
+            x1, y0, sx1, sy0, // top right
+            x0, y1, sx0, sy1, // bottom left
+            x1, y1, sx1, sy1  // bottom right
+        };
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glUniform3fv(uniform_font_color, 1, color);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         x += fd->advW;
         nwidth -= fd->advW;
     }
 }
 
 void sdl2_ttf::set_draw_color(uint8_t r, uint8_t g, uint8_t b) {
-    color = (static_cast<uint32_t>(r) << 16) | (static_cast<uint32_t>(g) << 16) | static_cast<uint32_t>(b);
+    color[0] = (float)r / 255.f;
+    color[1] = (float)g / 255.f;
+    color[2] = (float)b / 255.f;
 }
 
 }
