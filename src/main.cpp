@@ -34,7 +34,6 @@ int main(int argc, char *argv[]) {
     spdlog::set_level(spdlog::level::trace);
 #endif
 
-    const char *rom_filename = nullptr;
     const char *core_filename = nullptr;
     const char *config_filename = nullptr;
     static struct option long_options[] = {
@@ -68,7 +67,7 @@ int main(int argc, char *argv[]) {
         spdlog::error("ROM filename missing.");
         return 1;
     }
-    rom_filename = argv[optind];
+    const char *rom_filename = argv[optind];
 
     if (config_filename) {
         g_cfg.load(config_filename);
