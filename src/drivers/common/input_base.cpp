@@ -118,7 +118,9 @@ void input_base::add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id) {
             auto &mapping = to_port == 0xFFu ? menu_mapping : game_mapping;
             auto *& to_b = mapping[from];
             if (to_b) {
-
+                auto to_value = (static_cast<uint64_t>(to_b->port) << 32) | static_cast<uint64_t>(to_b->id);
+                auto &rev_mapping = to_b->port == 0xFFu ? rev_menu_mapping : rev_game_mapping;
+                rev_mapping.erase(to_value);
             }
             to_b = &ite->second;
             if (!port.enabled) port.enabled = true;
