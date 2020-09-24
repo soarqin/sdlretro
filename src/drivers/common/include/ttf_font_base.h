@@ -39,6 +39,9 @@ protected:
 public:
     ttf_font_base();
     virtual ~ttf_font_base();
+
+    virtual void set_draw_color(uint8_t r, uint8_t g, uint8_t b) {}
+
     void init(int size, uint8_t width = 0);
     void deinit();
     bool add(const std::string& filename, int index = 0);

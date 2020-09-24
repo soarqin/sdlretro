@@ -16,13 +16,16 @@ class sdl1_video: public video_base {
 public:
     sdl1_video();
     ~sdl1_video() override;
-    bool game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) override;
-    void render(const void *data, unsigned width, unsigned height, size_t pitch) override;
+    void window_resized(int width, int height, bool fullscreen) {}
+    bool game_resolution_changed(int width, int height, unsigned pixel_format) override;
+    void render(const void *data, int width, int height, size_t pitch) override;
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
     void get_resolution(int &width, int &height) override { width = curr_width; height = curr_height; }
     int get_font_size() const override;
+    void set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) override;
     void draw_rectangle(int x, int y, int w, int h) override;
+    void fill_rectangle(int x, int y, int w, int h) override;
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
     void get_text_width_and_height(const char *text, int &w, int &t, int &b) const override;
     void clear() override;
@@ -48,7 +51,9 @@ private:
     uint32_t saved_pixel_format = 0;
 
     /* override global scale cfg */
-    uint32_t force_scale = 1;
+    int force_scale = 1;
+
+    uint8_t draw_color[4] = {};
 
     /* indicate wheather frame was drawn, for auto frameskip use */
     bool drawn = false;

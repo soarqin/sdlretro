@@ -39,7 +39,7 @@ sdl1_video::~sdl1_video() {
     SDL_UnlockSurface(screen);
 }
 
-bool sdl1_video::game_resolution_changed(unsigned width, unsigned height, unsigned pixel_format) {
+bool sdl1_video::game_resolution_changed(int width, int height, unsigned pixel_format) {
     if (g_cfg.get_scaling_mode() == 0) {
         SDL_UnlockSurface(screen);
         usleep(10000);
@@ -63,7 +63,7 @@ bool sdl1_video::game_resolution_changed(unsigned width, unsigned height, unsign
     return true;
 }
 
-void sdl1_video::render(const void *data, unsigned width, unsigned height, size_t pitch) {
+void sdl1_video::render(const void *data, int width, int height, size_t pitch) {
     if (!data) {
         drawn = false;
         return;
@@ -169,15 +169,16 @@ int sdl1_video::get_font_size() const {
     }
 }
 
+void sdl1_video::set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    draw_color[0] = r;
+    draw_color[1] = g;
+    draw_color[2] = b;
+    draw_color[3] = a;
+}
+
 void sdl1_video::draw_rectangle(int x, int y, int w, int h) {
-    unsigned bpp = curr_pixel_format == 1 ? 32 : 16;
     auto bytespp = screen->format->BytesPerPixel;
-    uint32_t pixel_color;
-    switch(curr_pixel_format) {
-    case 0: pixel_color = 0xDAD6; break;
-    case 1: pixel_color = 0xFFB4B4B4; break;
-    case 2: pixel_color = 0xB5B6; break;
-    }
+    uint32_t pixel_color = SDL_MapRGB(screen->format, draw_color[0], draw_color[1], draw_color[2]);
     uint8_t *ptr = (uint8_t*)screen_ptr + screen->pitch * y + x * bytespp;
     int rx = x + w;
     int by = y + h;
@@ -199,6 +200,22 @@ void sdl1_video::draw_rectangle(int x, int y, int w, int h) {
     for (int cy = y; cy <= by; ++cy) {
         memcpy(ptr, &pixel_color, bytespp);
         ptr += screen->pitch;
+    }
+}
+
+void sdl1_video::fill_rectangle(int x, int y, int w, int h) {
+    auto bytespp = screen->format->BytesPerPixel;
+    uint32_t pixel_color = SDL_MapRGB(screen->format, draw_color[0], draw_color[1], draw_color[2]);
+    uint8_t *ptr = (uint8_t*)screen_ptr + screen->pitch * y + x * bytespp;
+    int rx = x + w;
+    int by = y + h;
+    size_t lp = screen->pitch - bytespp * w;
+    for (int cy = y; cy < by; ++cy) {
+        for (int cx = x; cx < rx; ++cx) {
+            memcpy(ptr, &pixel_color, bytespp);
+            ptr += bytespp;
+        }
+        ptr += lp;
     }
 }
 

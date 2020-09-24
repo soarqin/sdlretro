@@ -13,23 +13,32 @@ sdl1_ttf::~sdl1_ttf() {
     pixels.clear();
 }
 
-void sdl1_ttf::calc_depth_color(SDL_Surface *surface) {
-    surface_bpp = surface->format->BitsPerPixel;
-    for (uint16_t i = 0; i < 256; ++i) {
-        uint8_t c;
+void sdl1_ttf::set_draw_color(uint8_t r, uint8_t g, uint8_t b) {
+    color[0] = r;
+    color[1] = g;
+    color[2] = b;
+    depth_color_gen.reset();
+}
+
+uint32_t sdl1_ttf::calc_depth_color(SDL_Surface *surface, uint8_t depth) {
+    if (depth_color_gen[depth])
+        return depth_color[depth];
+    uint8_t c;
 #ifndef TTF_SMOOTH
-        if (i < 128) c = i * 3 / 2;
-        else c = i / 2 + 128;
+    if (depth < 128) c = depth * 3 / 2;
+    else c = depth / 2 + 128;
 #else
-        c = i;
+    c = depth;
 #endif
-        depth_color[i] = SDL_MapRGB(surface->format, c, c, c);
-    }
+    auto res = SDL_MapRGB(surface->format, color[0] * c / 256, color[1] * c / 256, color[2] * c / 256);
+    depth_color[depth] = res;
+    depth_color_gen.set(depth);
+    return res;
 }
 
 void sdl1_ttf::render(SDL_Surface *surface, int x, int y, const char *text, int width, bool shadow) {
     if (surface->format->BitsPerPixel != surface_bpp) {
-        calc_depth_color(surface);
+        depth_color_gen.reset();
     }
     auto rpw = get_rect_pack_width();
 
@@ -88,7 +97,7 @@ void sdl1_ttf::render(SDL_Surface *surface, int x, int y, const char *text, int 
             for (int i = fd->w; i; i--) { \
                 uint8_t c; \
                 if ((c = *input++) >= 32) { \
-                    *outptr++ = depth_color[c]; \
+                    *outptr++ = calc_depth_color(surface, c); \
                     if (shadow) \
                         *(outptr + stride) = 0; \
                 } else \

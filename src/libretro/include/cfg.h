@@ -44,8 +44,8 @@ public:
 
     inline uint32_t get_scaling_mode() const { return scaling_mode; }
     inline void set_scaling_mode(uint32_t s) { scaling_mode = s; }
-    inline uint32_t get_scale() const { return scale; }
-    inline void set_scale(uint32_t s) { scale = s; }
+    inline int get_scale() const { return scale; }
+    inline void set_scale(int s) { scale = s; }
 
     inline bool get_integer_scaling() const { return integer_scaling; }
     inline void set_integer_scaling(bool s) { integer_scaling = s; }
@@ -95,7 +95,7 @@ protected:
      * 1  Screen center */
     uint32_t scaling_mode = 0;
     /* basic integer scaler */
-    uint32_t scale = DEFAULT_SCALE;
+    int scale = DEFAULT_SCALE;
 
     /* === SDL2-only options === */
     /* allow only integer scaling (will trim down to nearest integer scaling ratio),

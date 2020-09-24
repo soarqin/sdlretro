@@ -111,7 +111,7 @@ void sdl_menu::draw() {
     for (size_t i = top_index; i < end_index; ++i) {
         auto &item = items[i];
         if (i == selected) {
-            video->set_draw_color(0x60, 0x60, 0x60, 0xFF);
+            video->set_draw_color(0x60, 0x80, 0xA0, 0xFF);
             video->fill_rectangle(x - 3, y + top_most - 3, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 6, bot_most - top_most + 6);
         }
         video->draw_text(x, y, item.text.c_str(), item_width, true);

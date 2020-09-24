@@ -39,6 +39,12 @@ void sdl2_ttf::finish_texture(uint8_t *data, size_t index, uint16_t x, uint16_t 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void sdl2_ttf::set_draw_color(uint8_t r, uint8_t g, uint8_t b) {
+    color[0] = (float)r / 255.f;
+    color[1] = (float)g / 255.f;
+    color[2] = (float)b / 255.f;
+}
+
 void sdl2_ttf::render(int x, int y, const char *text, int width, int height, bool shadow) {
     if (font_size > height)
         return;
@@ -126,12 +132,6 @@ void sdl2_ttf::render(int x, int y, const char *text, int width, int height, boo
         x += fd->advW;
         nwidth -= fd->advW;
     }
-}
-
-void sdl2_ttf::set_draw_color(uint8_t r, uint8_t g, uint8_t b) {
-    color[0] = (float)r / 255.f;
-    color[1] = (float)g / 255.f;
-    color[2] = (float)b / 255.f;
 }
 
 }
