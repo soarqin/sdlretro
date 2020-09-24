@@ -118,10 +118,10 @@ protected:
     }
 
 protected:
-    std::map<uint64_t, output_button_t*> game_mapping, menu_mapping;
-    std::map<uint64_t, uint64_t> rev_game_mapping, rev_menu_mapping;
-    std::vector<std::map<uint64_t, output_button_t*>> game_mapping_saved;
-    std::vector<std::map<uint64_t, uint64_t>> rev_game_mapping_saved;
+    std::map<uint64_t, output_button_t*> user_to_game_mapping, user_to_menu_mapping;
+    std::map<uint64_t, uint64_t> game_to_user_mapping, menu_to_user_mapping;
+    std::vector<std::map<uint64_t, output_button_t*>> user_to_game_mapping_saved;
+    std::vector<std::map<uint64_t, uint64_t>> game_to_user_mapping_saved;
 
     std::array<output_port_t, 8> ports {};
     output_port_t port_menu {};

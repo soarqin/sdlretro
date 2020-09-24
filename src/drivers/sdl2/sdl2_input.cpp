@@ -65,7 +65,7 @@ void sdl2_input::post_init() {
     };
 #endif
 
-    bool do_default_mapping = rev_game_mapping.empty();
+    bool do_default_mapping = game_to_user_mapping.empty();
     for (size_t i = 0; i < keymap.size(); ++i) {
         if (do_default_mapping) {
             map_key(keymap[i], 0, i);
@@ -151,9 +151,9 @@ void sdl2_input::port_disconnected(int device_id) {
         }
     }
     if (found_port < 0) return;
-    for (auto ite = game_mapping.begin(); ite != game_mapping.end();) {
+    for (auto ite = user_to_game_mapping.begin(); ite != user_to_game_mapping.end();) {
         if ((ite->first >> 16) == device_id) {
-            ite = game_mapping.erase(ite);
+            ite = user_to_game_mapping.erase(ite);
         } else {
             ++ite;
         }

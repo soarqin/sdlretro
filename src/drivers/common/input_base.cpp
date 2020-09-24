@@ -66,24 +66,24 @@ void input_base::add_button_desc(uint8_t port, uint8_t device, uint8_t index, ui
     auto value = button_packed_value(index, id);
     p.available = true;
     p.buttons[value] = std::move(bt);
-    auto &rev_mapping = port == 0xFFu ? rev_menu_mapping : rev_game_mapping;
+    auto &rev_mapping = port == 0xFFu ? menu_to_user_mapping : game_to_user_mapping;
     auto ite = rev_mapping.find((static_cast<uint64_t>(port) << 32) | static_cast<uint64_t>(value));
     if (ite != rev_mapping.end()) {
-        auto &mapping = port == 0xFFu ? menu_mapping : game_mapping;
+        auto &mapping = port == 0xFFu ? user_to_menu_mapping : user_to_game_mapping;
         mapping[ite->second] = &p.buttons[value];
         if (!p.enabled) p.enabled = true;
     }
 }
 
 void input_base::clear_button_desc() {
-    game_mapping.clear();
+    user_to_game_mapping.clear();
     for (auto &p: ports) {
         p = output_port_t{};
     }
 }
 
 void input_base::clear_menu_button_desc() {
-    menu_mapping.clear();
+    user_to_menu_mapping.clear();
     port_menu.buttons.clear();
     port_menu.states = 0;
     port_menu.available = port_menu.enabled = false;
@@ -93,9 +93,9 @@ void input_base::foreach_mapping(const std::function<void(const output_button_t 
     for (auto &p: ports) {
         for (auto &pp: p.buttons) {
             auto value = (static_cast<uint64_t>(pp.second.port) << 32) | static_cast<uint64_t>(button_packed_value(pp.second.index, pp.second.id));
-            auto ite = rev_game_mapping.find(value);
+            auto ite = game_to_user_mapping.find(value);
             input_button_t ib = {};
-            if (ite != rev_game_mapping.end()) {
+            if (ite != game_to_user_mapping.end()) {
                 ib.value = ite->second;
                 std::string device_name;
                 get_input_name(ib.value, device_name, ib.name);
@@ -115,11 +115,11 @@ void input_base::add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id) {
         auto &port = to_port == 0xFF ? port_menu : ports[to_port];
         auto ite = port.buttons.find(to_id);
         if (ite != port.buttons.end()) {
-            auto &mapping = to_port == 0xFFu ? menu_mapping : game_mapping;
+            auto &mapping = to_port == 0xFFu ? user_to_menu_mapping : user_to_game_mapping;
             auto *& to_b = mapping[from];
             if (to_b) {
                 auto to_value = (static_cast<uint64_t>(to_b->port) << 32) | static_cast<uint64_t>(to_b->id);
-                auto &rev_mapping = to_b->port == 0xFFu ? rev_menu_mapping : rev_game_mapping;
+                auto &rev_mapping = to_b->port == 0xFFu ? menu_to_user_mapping : game_to_user_mapping;
                 rev_mapping.erase(to_value);
             }
             to_b = &ite->second;
@@ -127,20 +127,20 @@ void input_base::add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id) {
         }
     }
     auto to_value = (static_cast<uint64_t>(to_port) << 32) | static_cast<uint64_t>(to_id);
-    auto &rev_mapping = to_port == 0xFFu ? rev_menu_mapping : rev_game_mapping;
+    auto &rev_mapping = to_port == 0xFFu ? menu_to_user_mapping : game_to_user_mapping;
     rev_mapping[to_value] = from;
 }
 
 void input_base::remove_mapping(uint8_t to_port, uint16_t to_id) {
     auto to_value = (static_cast<uint64_t>(to_port) << 32) | static_cast<uint64_t>(to_id);
-    auto &rev_mapping = to_port == 0xFFu ? rev_menu_mapping : rev_game_mapping;
+    auto &rev_mapping = to_port == 0xFFu ? menu_to_user_mapping : game_to_user_mapping;
     auto rite = rev_mapping.find(to_value);
     if (rite == rev_mapping.end()) return;
     if (to_port == 0xFF || to_port < ports.size()) {
         auto &port = to_port == 0xFF ? port_menu : ports[to_port];
         auto ite = port.buttons.find(to_id);
         if (ite != port.buttons.end()) {
-            auto &mapping = to_port == 0xFFu ? menu_mapping : game_mapping;
+            auto &mapping = to_port == 0xFFu ? user_to_menu_mapping : user_to_game_mapping;
             mapping.erase(rite->second);
         }
     }
@@ -149,7 +149,7 @@ void input_base::remove_mapping(uint8_t to_port, uint16_t to_id) {
 
 void input_base::save_to_cfg() {
     json j;
-    for (auto &p: rev_game_mapping) {
+    for (auto &p: game_to_user_mapping) {
         auto port = p.first >> 32;
         auto id = p.first & 0xFFFF;
 
@@ -197,38 +197,38 @@ void input_base::load_from_cfg() {
 }
 
 void input_base::save_mapping(uint8_t port) {
-    if (port >= game_mapping_saved.size()) {
-        game_mapping_saved.resize(port + 1);
+    if (port >= user_to_game_mapping_saved.size()) {
+        user_to_game_mapping_saved.resize(port + 1);
     }
-    if (port >= rev_game_mapping_saved.size()) {
-        rev_game_mapping_saved.resize(port + 1);
+    if (port >= game_to_user_mapping_saved.size()) {
+        game_to_user_mapping_saved.resize(port + 1);
     }
-    auto &gms = game_mapping_saved[port];
+    auto &gms = user_to_game_mapping_saved[port];
     if (!gms.empty()) {
         return;
     }
-    for (auto ite = game_mapping.begin(); ite != game_mapping.end();) {
+    for (auto ite = user_to_game_mapping.begin(); ite != user_to_game_mapping.end();) {
         if (ite->second->port == port) {
             gms[ite->first] = ite->second;
-            ite = game_mapping.erase(ite);
+            ite = user_to_game_mapping.erase(ite);
         } else {
             ++ite;
         }
     }
-    auto ite_begin = rev_game_mapping.lower_bound(static_cast<uint64_t>(port) << 32);
-    auto ite_end = rev_game_mapping.upper_bound((static_cast<uint64_t>(port) << 32) | 0xFFFFFFFFULL);
-    rev_game_mapping_saved[port].insert(ite_begin, ite_end);
-    rev_game_mapping.erase(ite_begin, ite_end);
+    auto ite_begin = game_to_user_mapping.lower_bound(static_cast<uint64_t>(port) << 32);
+    auto ite_end = game_to_user_mapping.upper_bound((static_cast<uint64_t>(port) << 32) | 0xFFFFFFFFULL);
+    game_to_user_mapping_saved[port].insert(ite_begin, ite_end);
+    game_to_user_mapping.erase(ite_begin, ite_end);
 }
 
 void input_base::restore_mapping(uint8_t port) {
-    if (port >= game_mapping_saved.size() || game_mapping_saved[port].empty()) {
+    if (port >= user_to_game_mapping_saved.size() || user_to_game_mapping_saved[port].empty()) {
         return;
     }
-    game_mapping.insert(game_mapping_saved[port].begin(), game_mapping_saved[port].end());
-    rev_game_mapping.insert(rev_game_mapping_saved[port].begin(), rev_game_mapping_saved[port].end());
-    game_mapping_saved[port].clear();
-    rev_game_mapping_saved[port].clear();
+    user_to_game_mapping.insert(user_to_game_mapping_saved[port].begin(), user_to_game_mapping_saved[port].end());
+    game_to_user_mapping.insert(game_to_user_mapping_saved[port].begin(), game_to_user_mapping_saved[port].end());
+    user_to_game_mapping_saved[port].clear();
+    game_to_user_mapping_saved[port].clear();
 }
 
 void input_base::on_input(uint64_t id, bool pressed) {
@@ -236,7 +236,7 @@ void input_base::on_input(uint64_t id, bool pressed) {
         last_input = id;
         return;
     }
-    auto &mapping = mode == mode_menu ? menu_mapping : game_mapping;
+    auto &mapping = mode == mode_menu ? user_to_menu_mapping : user_to_game_mapping;
     auto ite = mapping.find(id);
     if (ite == mapping.end()) return;
     auto *btn = ite->second;
