@@ -106,6 +106,9 @@ public:
     void save_to_cfg();
     void load_from_cfg();
 
+    void save_mapping(uint8_t port);
+    void restore_mapping(uint8_t port);
+
 private:
     void on_input(uint64_t id, bool pressed);
 
@@ -117,6 +120,8 @@ protected:
 protected:
     std::map<uint64_t, output_button_t*> game_mapping, menu_mapping;
     std::map<uint64_t, uint64_t> rev_game_mapping, rev_menu_mapping;
+    std::vector<std::map<uint64_t, output_button_t*>> game_mapping_saved;
+    std::vector<std::map<uint64_t, uint64_t>> rev_game_mapping_saved;
 
     std::array<output_port_t, 8> ports {};
     output_port_t port_menu {};

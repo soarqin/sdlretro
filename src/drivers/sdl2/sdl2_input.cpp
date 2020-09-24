@@ -9,23 +9,7 @@ namespace drivers {
 sdl2_input::sdl2_input() {
     if (!SDL_WasInit(SDL_INIT_GAMECONTROLLER))
         SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
-    auto sz = SDL_NumJoysticks();
-    gamepad.clear();
-    for (int i = 0; i < sz; ++i) {
-        if (!SDL_IsGameController(i)) continue;
-        auto handle = SDL_GameControllerOpen(i);
-        sdl2_game_pad pad;
-        if (handle) {
-            pad.handle = handle;
-            pad.device_id = SDL_JoystickGetDeviceInstanceID(i);
-            pad.name = SDL_GameControllerName(handle);
-        } else {
-            pad.handle = nullptr;
-            pad.device_id = 0;
-            pad.name.clear();
-        }
-        gamepad.emplace_back(pad);
-    }
+    SDL_GameControllerEventState(SDL_ENABLE);
 }
 
 sdl2_input::~sdl2_input() {
@@ -91,29 +75,26 @@ void sdl2_input::post_init() {
 }
 
 void sdl2_input::input_poll() {
-    /*
-    int numkeys;
-    const uint8_t *keys = SDL_GetKeyboardState(&numkeys);
-    uint16_t state = 0;
-     */
-
-    SDL_GameControllerUpdate();
     size_t pad_count = gamepad.size();
-    for (size_t z = 0; z < ports.size(); ++z) {
+    size_t port_count = ports.size();
+    for (size_t z = 0; z < port_count; ++z) {
         auto &port = ports[z];
         if (!port.enabled) continue;
-        /*
-        for (uint32_t i = 0; i < 16; ++i) {
-            if (keys[keymap[i]]) state |= 1U << i;
-        }
-        port.states = static_cast<int16_t>(state);
-         */
-
         if (z >= pad_count || !gamepad[z].handle) continue;
         port.analog_axis[0][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTX);
         port.analog_axis[0][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTY);
         port.analog_axis[1][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTX);
         port.analog_axis[1][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTY);
+        if (SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 0x4000) {
+            port.states |= 1U << RETRO_DEVICE_ID_JOYPAD_L2;
+        } else {
+            port.states &= ~(1U << RETRO_DEVICE_ID_JOYPAD_L2);
+        }
+        if (SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 0x4000) {
+            port.states |= 1U << RETRO_DEVICE_ID_JOYPAD_R2;
+        } else {
+            port.states &= ~(1U << RETRO_DEVICE_ID_JOYPAD_R2);
+        }
     }
 }
 
@@ -122,11 +103,14 @@ void sdl2_input::port_connected(int index) {
     auto handle = SDL_GameControllerOpen(index);
     if (!handle) return;
 
+    uint8_t port = 0;
     sdl2_game_pad *pad = nullptr;
     for (auto &p: gamepad) {
-        if (p.handle != nullptr) continue;
-        pad = &p;
-        break;
+        if (p.handle == nullptr) {
+            pad = &p;
+            break;
+        }
+        ++port;
     }
     if (pad == nullptr) {
         gamepad.resize(gamepad.size() + 1);
@@ -136,6 +120,21 @@ void sdl2_input::port_connected(int index) {
     pad->handle = handle;
     pad->device_id = SDL_JoystickGetDeviceInstanceID(index);
     pad->name = SDL_GameControllerName(handle);
+    save_mapping(port);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_A, port, RETRO_DEVICE_ID_JOYPAD_B);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_B, port, RETRO_DEVICE_ID_JOYPAD_A);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_X, port, RETRO_DEVICE_ID_JOYPAD_Y);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_Y, port, RETRO_DEVICE_ID_JOYPAD_X);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_BACK, port, RETRO_DEVICE_ID_JOYPAD_SELECT);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_START, port, RETRO_DEVICE_ID_JOYPAD_START);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_LEFTSTICK, port, RETRO_DEVICE_ID_JOYPAD_L3);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_RIGHTSTICK, port, RETRO_DEVICE_ID_JOYPAD_R3);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_LEFTSHOULDER, port, RETRO_DEVICE_ID_JOYPAD_L);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, port, RETRO_DEVICE_ID_JOYPAD_R);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_DPAD_UP, port, RETRO_DEVICE_ID_JOYPAD_UP);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_DPAD_DOWN, port, RETRO_DEVICE_ID_JOYPAD_DOWN);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_DPAD_LEFT, port, RETRO_DEVICE_ID_JOYPAD_LEFT);
+    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_DPAD_RIGHT, port, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 }
 
 void sdl2_input::port_disconnected(int device_id) {
@@ -152,14 +151,14 @@ void sdl2_input::port_disconnected(int device_id) {
         }
     }
     if (found_port < 0) return;
-    ++found_port;
     for (auto ite = game_mapping.begin(); ite != game_mapping.end();) {
-        if ((ite->first >> 16) == found_port) {
+        if ((ite->first >> 16) == device_id) {
             ite = game_mapping.erase(ite);
         } else {
             ++ite;
         }
     }
+    restore_mapping(found_port);
 }
 
 const char *INPUT_NAME_KEYBOARD = "keyboard";

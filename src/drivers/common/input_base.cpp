@@ -196,6 +196,41 @@ void input_base::load_from_cfg() {
     }
 }
 
+void input_base::save_mapping(uint8_t port) {
+    if (port >= game_mapping_saved.size()) {
+        game_mapping_saved.resize(port + 1);
+    }
+    if (port >= rev_game_mapping_saved.size()) {
+        rev_game_mapping_saved.resize(port + 1);
+    }
+    auto &gms = game_mapping_saved[port];
+    if (!gms.empty()) {
+        return;
+    }
+    for (auto ite = game_mapping.begin(); ite != game_mapping.end();) {
+        if (ite->second->port == port) {
+            gms[ite->first] = ite->second;
+            ite = game_mapping.erase(ite);
+        } else {
+            ++ite;
+        }
+    }
+    auto ite_begin = rev_game_mapping.lower_bound(static_cast<uint64_t>(port) << 32);
+    auto ite_end = rev_game_mapping.upper_bound((static_cast<uint64_t>(port) << 32) | 0xFFFFFFFFULL);
+    rev_game_mapping_saved[port].insert(ite_begin, ite_end);
+    rev_game_mapping.erase(ite_begin, ite_end);
+}
+
+void input_base::restore_mapping(uint8_t port) {
+    if (port >= game_mapping_saved.size() || game_mapping_saved[port].empty()) {
+        return;
+    }
+    game_mapping.insert(game_mapping_saved[port].begin(), game_mapping_saved[port].end());
+    rev_game_mapping.insert(rev_game_mapping_saved[port].begin(), rev_game_mapping_saved[port].end());
+    game_mapping_saved[port].clear();
+    rev_game_mapping_saved[port].clear();
+}
+
 void input_base::on_input(uint64_t id, bool pressed) {
     if (mode == mode_input) {
         last_input = id;

@@ -77,8 +77,6 @@ sdl2_video::sdl2_video(): saved_x(SDL_WINDOWPOS_CENTERED), saved_y(SDL_WINDOWPOS
         !init_video(true) && !init_video(false)
 #endif
         ) {
-
-        // TODO: correct exception type
         throw std::bad_exception();
     }
 }
@@ -410,6 +408,11 @@ bool sdl2_video::init_video(bool use_gles) {
 
     gl_renderer.use_gles = use_gles;
     context = SDL_GL_CreateContext(window);
+    if (context == nullptr) {
+        SDL_DestroyWindow(window);
+        window = nullptr;
+        return false;
+    }
     SDL_GL_MakeCurrent(window, context);
 
     if (gl_renderer.use_gles) {
@@ -418,11 +421,13 @@ bool sdl2_video::init_video(bool use_gles) {
         gladLoadGLLoader(SDL_GL_GetProcAddress);
     }
 
-    spdlog::trace("GL version: {}", glGetString(GL_VERSION));
-    spdlog::trace("Renderer: {}", glGetString(GL_RENDERER));
-    spdlog::trace("Shading Language version: {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    spdlog::trace("Created window with OpenGL context");
+    spdlog::trace("  GL version: {}", glGetString(GL_VERSION));
+    spdlog::trace("  Renderer: {}", glGetString(GL_RENDERER));
+    spdlog::trace("  Shading Language version: {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     glViewport(0, 0, curr_width, curr_height);
+    /* Try adaptive vsync first, and fallthrough to normal vsync */
     if (SDL_GL_SetSwapInterval(-1) < 0) {
         SDL_GL_SetSwapInterval(1);
     }
