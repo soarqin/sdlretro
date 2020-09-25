@@ -9,6 +9,7 @@ namespace drivers {
 sdl1_input::sdl1_input() {
     if (!SDL_WasInit(SDL_INIT_JOYSTICK))
         SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+    SDL_JoystickEventState(SDL_ENABLE);
     for (int i = 0; i < 2; ++i)
         joystick[i] = SDL_JoystickOpen(i);
 }
