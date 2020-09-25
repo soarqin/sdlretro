@@ -80,17 +80,19 @@ void sdl2_input::input_poll() {
     for (size_t z = 0; z < port_count; ++z) {
         auto &port = ports[z];
         if (!port.enabled) continue;
-        if (z >= pad_count || !gamepad[z].handle) continue;
-        port.analog_axis[0][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTX);
-        port.analog_axis[0][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_LEFTY);
-        port.analog_axis[1][0] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTX);
-        port.analog_axis[1][1] = SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_RIGHTY);
-        if (SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 0x4000) {
+        if (z >= pad_count) continue;
+        auto *handle = gamepad[z].handle;
+        if (!handle) continue;
+        port.analog_axis[0][0] = SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_LEFTX);
+        port.analog_axis[0][1] = SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_LEFTY);
+        port.analog_axis[1][0] = SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_RIGHTX);
+        port.analog_axis[1][1] = SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_RIGHTY);
+        if (SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 0x4000) {
             port.states |= 1U << RETRO_DEVICE_ID_JOYPAD_L2;
         } else {
             port.states &= ~(1U << RETRO_DEVICE_ID_JOYPAD_L2);
         }
-        if (SDL_GameControllerGetAxis(gamepad[z].handle, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 0x4000) {
+        if (SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 0x4000) {
             port.states |= 1U << RETRO_DEVICE_ID_JOYPAD_R2;
         } else {
             port.states &= ~(1U << RETRO_DEVICE_ID_JOYPAD_R2);
