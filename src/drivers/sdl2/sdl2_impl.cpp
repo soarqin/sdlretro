@@ -60,7 +60,7 @@ bool sdl2_impl::process_events() {
             if (btn.first == 0) break;
             auto analog_index = btn.first >> 8;
             if (analog_index > 0) {
-                input->on_axis_input(event.cbutton.which, ((analog_index - 1) << 1) + (btn.first & 0xFF), event.type == SDL_CONTROLLERBUTTONDOWN ? 0x7FFF : 0);
+                input->on_axis_input(event.cbutton.which, ((analog_index - 1) << 1) + (btn.first & 0xFF), event.type == SDL_CONTROLLERBUTTONDOWN ? (btn.second > 0 ? 0x7FFF : -0x8000) : 0);
             } else {
                 input->on_btn_input(event.cbutton.which, btn.first, event.type == SDL_CONTROLLERBUTTONDOWN);
             }
