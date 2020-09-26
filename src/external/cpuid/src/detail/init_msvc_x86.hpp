@@ -47,6 +47,15 @@ void init_cpuinfo(cpuinfo::impl& info)
         __cpuidex(registers, 7, 0);
         extract_x86_extended_flags(info, registers[1]);
     }
+
+    __cpuid(registers, 0x80000000U);
+    maximum_eax = registers[0];
+
+    if (maximum_eax >= 0x80000001U)
+    {
+        __cpuid(registers, 0x80000001U);
+        extract_x86_high_extended_flags(info, registers[2], registers[3]);
+    }
 }
 }
 }

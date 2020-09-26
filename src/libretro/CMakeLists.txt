@@ -19,8 +19,10 @@ add_library(libretro STATIC
     # cores
     core.c
     core_manager.cpp
+    perf.cpp
     include/core.h
     include/core_manager.h
+    include/perf.h
     include/libretro.h
     )
 

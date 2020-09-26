@@ -11,6 +11,7 @@
 #include <i18n.h>
 #include <core.h>
 #include <util.h>
+#include <perf.h>
 
 #include <spdlog/spdlog.h>
 
@@ -351,8 +352,8 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_GET_PERF_INTERFACE: {
-            // TODO: performance interface
-            return false;
+            libretro_get_perf_callback((retro_perf_callback*)data);
+            return true;
         }
         case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE:
         case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY:

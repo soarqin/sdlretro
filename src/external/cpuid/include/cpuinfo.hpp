@@ -29,6 +29,7 @@ public:
 
     /// Return true if the CPU supports MMX
     bool has_mmx() const;
+    bool has_mmx_ext() const;
 
     /// Return true if the CPU supports SSE
     bool has_sse() const;
@@ -60,8 +61,18 @@ public:
     /// Return true if the CPU supports F16C
     bool has_f16c() const;
 
+    bool has_vmx() const;
+    bool has_aes() const;
+    bool has_popcnt() const;
+    bool has_movbe() const;
+    bool has_cmov() const;
+
     /// Return true if the CPU supports NEON
     bool has_neon() const;
+    bool has_vfpu() const;
+    bool has_ps() const;
+    bool has_vfpv3() const;
+    bool has_vfpv4() const;
 
 public:
     /// Private implementation

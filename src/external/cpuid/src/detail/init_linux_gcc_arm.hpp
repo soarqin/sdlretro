@@ -27,7 +27,37 @@ void init_cpuinfo(cpuinfo::impl& info)
     // The Advanced SIMD (NEON) instruction set is required on AArch64
     // (64-bit ARM). Note that /proc/cpuinfo will display "asimd" instead of
     // "neon" in the Features list on a 64-bit ARM CPU.
-    info.m_has_neon = true;
+
+    auto cpufile = open("/proc/self/auxv", O_RDONLY);
+    assert(cpufile);
+
+    Elf64_auxv_t auxv;
+
+    if (cpufile >= 0)
+    {
+        const auto size_auxv_t = sizeof(Elf64_auxv_t);
+        while (read(cpufile, &auxv, size_auxv_t) == size_auxv_t)
+        {
+            if (auxv.a_type == AT_HWCAP)
+            {
+                info.m_has_vfpu = info.m_has_vfpv3 = info.m_has_vfpv4 = (auxv.a_un.a_val & (1 << 0)) != 0;
+                info.m_has_neon = (auxv.a_un.a_val & (1 << 1)) != 0;
+                info.m_has_aes = (auxv.a_un.a_val & (1 << 3)) != 0;
+                break;
+            }
+        }
+
+        close(cpufile);
+    }
+    else
+    {
+        info.m_has_aes = false;
+        info.m_has_neon = false;
+        info.m_has_vfpu = false;
+        info.m_has_vfpv3 = false;
+        info.m_has_vfpv4 = false;
+    }
+
 #else
     // Runtime detection of NEON is necessary on 32-bit ARM CPUs
     //
@@ -47,7 +77,15 @@ void init_cpuinfo(cpuinfo::impl& info)
         {
             if (auxv.a_type == AT_HWCAP)
             {
-                info.m_has_neon = (auxv.a_un.a_val & 4096) != 0;
+                info.m_has_neon = (auxv.a_un.a_val & (1 << 12)) != 0;
+                info.m_has_vfpu = (auxv.a_un.a_val & (1 << 6)) != 0;
+                info.m_has_vfpv3 = (auxv.a_un.a_val & (1 << 13)) != 0;
+                info.m_has_vfpv4 = (auxv.a_un.a_val & (1 << 16)) != 0;
+                break;
+            }
+            if (auxv.a_type == AT_HWCAP2)
+            {
+                info.m_has_aes = (auxv.a_un.a_val & (1 << 0)) != 0;
                 break;
             }
         }

@@ -49,6 +49,11 @@ bool cpuinfo::has_mmx() const
     return m_impl->m_has_mmx;
 }
 
+bool cpuinfo::has_mmx_ext() const
+{
+    return m_impl->m_has_mmx_ext;
+}
+
 bool cpuinfo::has_sse() const
 {
     return m_impl->m_has_sse;
@@ -99,10 +104,56 @@ bool cpuinfo::has_f16c() const
     return m_impl->m_has_f16c;
 }
 
+bool cpuinfo::has_vmx() const
+{
+    return m_impl->m_has_vmx;
+}
+
+bool cpuinfo::has_aes() const
+{
+    return m_impl->m_has_aes;
+}
+
+bool cpuinfo::has_popcnt() const
+{
+    return m_impl->m_has_popcnt;
+}
+
+bool cpuinfo::has_movbe() const
+{
+    return m_impl->m_has_movbe;
+}
+
+bool cpuinfo::has_cmov() const
+{
+    return m_impl->m_has_cmov;
+}
+
 // ARM member functions
 bool cpuinfo::has_neon() const
 {
     return m_impl->m_has_neon;
 }
+
+bool cpuinfo::has_vfpu() const
+{
+    return m_impl->m_has_vfpu;
+}
+
+bool cpuinfo::has_ps() const
+{
+    return m_impl->m_has_ps;
+}
+
+bool cpuinfo::has_vfpv3() const
+{
+    return m_impl->m_has_vfpv3;
+}
+
+bool cpuinfo::has_vfpv4() const
+{
+    return m_impl->m_has_vfpv4;
+}
+
 }
 }

@@ -28,6 +28,11 @@ void extract_x86_flags(cpuinfo::impl& info, uint32_t ecx, uint32_t edx)
     info.m_has_pclmulqdq = (ecx & (1 << 1)) != 0;
     info.m_has_avx = (ecx & (1 << 28)) != 0;
     info.m_has_f16c = (ecx & (1 << 29)) != 0;
+    info.m_has_vmx = (ecx & (1 << 5)) != 0;
+    info.m_has_aes = (ecx & (1 << 25)) != 0;
+    info.m_has_popcnt = (ecx & (1 << 23)) != 0;
+    info.m_has_movbe = (ecx & (1 << 22)) != 0;
+    info.m_has_cmov = (edx & (1 << 15)) != 0;
 }
 
 void extract_x86_extended_flags(cpuinfo::impl& info, uint32_t ebx)
@@ -35,6 +40,13 @@ void extract_x86_extended_flags(cpuinfo::impl& info, uint32_t ebx)
     // Extended instruction set flags
 
     info.m_has_avx2 = (ebx & (1 << 5)) != 0;
+}
+
+void extract_x86_high_extended_flags(cpuinfo::impl& info, uint32_t ecx, uint32_t edx)
+{
+    // Extended instruction set flags
+
+    info.m_has_mmx_ext = (edx & (1 << 22)) != 0;
 }
 }
 }

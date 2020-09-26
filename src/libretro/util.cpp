@@ -36,6 +36,18 @@ uint64_t get_ticks_usec_cache() {
     return ticks_usec_cache;
 }
 
+uint64_t get_ticks_perfcounter() {
+#ifdef _MSC_VER
+    LARGE_INTEGER counter, freq;
+    QueryPerformanceCounter(&counter);
+    return counter.QuadPart;
+#else
+    timespec ts = {};
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+#endif
+}
+
 #ifdef _WIN32
 static inline int mkdir_unicode(const wchar_t *wpath, bool recursive) {
     if (recursive) {

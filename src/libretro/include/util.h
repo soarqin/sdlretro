@@ -25,6 +25,7 @@ namespace util {
 
 uint64_t get_ticks_usec();
 uint64_t get_ticks_usec_cache();
+uint64_t get_ticks_perfcounter();
 int mkdir(const std::string &path, bool recursive = false);
 bool file_exists(const std::string &path);
 uint32_t utf8_to_ucs4(const char *&text);

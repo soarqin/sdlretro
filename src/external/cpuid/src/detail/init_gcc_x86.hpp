@@ -68,6 +68,15 @@ void init_cpuinfo(cpuinfo::impl& info)
         run_cpuid(7, 0, output);
         extract_x86_extended_flags(info, output[1]);
     }
+
+    run_cpuid(0x80000000U, 0, output);
+    maximum_index = output[0];
+
+    if (maximum_index >= 0x80000001U)
+    {
+        run_cpuid(0x80000001U, 0, output);
+        extract_x86_high_extended_flags(info, output[2], output[3]);
+    }
 }
 }
 }
