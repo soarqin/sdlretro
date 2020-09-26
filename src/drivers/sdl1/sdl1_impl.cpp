@@ -53,16 +53,19 @@ bool sdl1_impl::process_events() {
                         return true;
                 }
             } else {
-                input->on_key(event.key.keysym.sym, event.type == SDL_KEYDOWN);
+                input->on_km_input(event.key.keysym.sym, event.type == SDL_KEYDOWN);
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
-            input->on_mouse(event.button.button, event.type == SDL_MOUSEBUTTONDOWN);
+            input->on_km_input(event.button.button + 1024, event.type == SDL_MOUSEBUTTONDOWN);
             break;
         case SDL_JOYBUTTONDOWN:
         case SDL_JOYBUTTONUP:
-            input->on_joybtn(event.jbutton.which, event.jbutton.button, event.type == SDL_JOYBUTTONDOWN);
+            input->on_btn_input(event.jbutton.which, event.jbutton.button, event.type == SDL_JOYBUTTONDOWN);
+            break;
+        case SDL_JOYAXISMOTION:
+            input->on_axis_input(event.jaxis.which, event.jaxis.axis, event.jaxis.value);
             break;
         default: break;
         }

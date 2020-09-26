@@ -197,24 +197,21 @@ bool ui_menu::input_settings_menu(menu_base *parent) {
         menu.set_title(std::string("[") + "Input Settings"_i18n + "]");
 
         std::vector<menu_item> items;
-        input->foreach_mapping([&](const drivers::output_button_t &o, const drivers::input_button_t &i) {
+        input->foreach_km_mapping([&](const drivers::output_button_t &o, const drivers::input_button_t &i) {
             menu_item item = {menu_input, o.description, "", i.value};
             item.str = i.name;
             item.data = const_cast<void *>(static_cast<const void *>(&o));
             item.callback = [&menu, &input](const menu_item &item) -> bool {
                 const auto *o = static_cast<const drivers::output_button_t *>(item.data);
-                input->remove_mapping(o->port, o->id);
-                input->add_mapping(item.selected, o->port, o->id);
+                auto res = input->set_km_mapping(o->port, o->id);
+                if (res.first == 0) {
+                    return false;
+                }
                 for (auto &p: menu.get_items()) {
                     if (&p != &item && p.selected == item.selected) {
-                        p.selected = 0;
+                        p.selected = res.first;
                         std::string device_name;
                         input->get_input_name(p.selected, device_name, p.str);
-                        if (!device_name.empty()) {
-                            p.str += " (";
-                            p.str += device_name;
-                            p.str += ')';
-                        }
                     }
                 }
                 return false;

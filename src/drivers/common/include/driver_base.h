@@ -62,7 +62,6 @@ public:
 
     inline const std::string &get_system_dir() const { return system_dir; }
 
-    inline retro_core_t *get_core() { return core; }
     inline throttle *get_frame_throttle() { return frame_throttle.get(); }
     inline video_base *get_video() { return video.get(); }
     inline audio_base *get_audio() { return audio.get(); }
@@ -86,6 +85,9 @@ private:
 
     /* post processing for game load */
     void post_load();
+
+    /* init system av info */
+    void init_system_av_info();
 
 protected:
     /* virtual methods for cores init/deinit */
@@ -133,6 +135,7 @@ protected:
                                  * A frontend could override this setting,
                                  * if desired. */
     double   fps = 0.;
+    double   sample_rate = 0.;
 
     /* frame throttle */
     std::shared_ptr<throttle> frame_throttle;

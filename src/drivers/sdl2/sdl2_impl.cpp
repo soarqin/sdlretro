@@ -47,17 +47,36 @@ bool sdl2_impl::process_events() {
                         return true;
                 }
             } else {
-                input->on_key(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
+                input->on_km_input(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
-            input->on_mouse(event.button.button, event.type == SDL_MOUSEBUTTONDOWN);
+            input->on_km_input(event.button.button + 1024, event.type == SDL_MOUSEBUTTONDOWN);
             break;
         case SDL_CONTROLLERBUTTONDOWN:
-        case SDL_CONTROLLERBUTTONUP:
-            input->on_joybtn(event.cbutton.which, event.cbutton.button, event.type == SDL_CONTROLLERBUTTONDOWN);
+        case SDL_CONTROLLERBUTTONUP: {
+            auto btn = sdl2_input::controller_button_map(event.cbutton.button);
+            if (btn.first == 0) break;
+            auto analog_index = btn.first >> 8;
+            if (analog_index > 0) {
+                input->on_axis_input(event.cbutton.which, ((analog_index - 1) << 1) + (btn.first & 0xFF), event.type == SDL_CONTROLLERBUTTONDOWN ? 0x7FFF : 0);
+            } else {
+                input->on_btn_input(event.cbutton.which, btn.first, event.type == SDL_CONTROLLERBUTTONDOWN);
+            }
             break;
+        }
+        case SDL_CONTROLLERAXISMOTION: {
+            auto btn = sdl2_input::controller_axis_map(event.caxis.axis, event.caxis.value);
+            if (btn.first == 0) break;
+            auto analog_index = btn.first >> 8;
+            if (analog_index > 0) {
+                input->on_axis_input(event.cbutton.which, ((analog_index - 1) << 1) + (btn.first & 0xFF), btn.second);
+            } else {
+                input->on_btn_input(event.cbutton.which, btn.first, btn.second != 0);
+            }
+            break;
+        }
         case SDL_CONTROLLERDEVICEADDED:
             input->port_connected(event.cdevice.which);
             break;

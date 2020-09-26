@@ -131,7 +131,7 @@ void RETRO_CALLCONV log_printf(enum retro_log_level level, const char *fmt, ...)
 
 static void RETRO_CALLCONV retro_video_refresh_cb(const void *data, unsigned width, unsigned height, size_t pitch) {
     if (!data) return;
-    current_driver->get_video()->render(data, width, height, pitch);
+    current_driver->get_video()->render(data, (int)width, (int)height, pitch);
 }
 
 static void RETRO_CALLCONV retro_audio_sample_cb(int16_t left, int16_t right) {
@@ -270,7 +270,7 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             auto new_format = (unsigned)*(const enum retro_pixel_format *)data;
             if (new_format != pixel_format) {
                 pixel_format = new_format;
-                video->game_resolution_changed(base_width, base_height, pixel_format);
+                video->game_resolution_changed((int)base_width, (int)base_height, (int)max_width, (int)max_height, pixel_format);
             }
             return true;
         }
@@ -294,6 +294,11 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             return true;
         }
         case RETRO_ENVIRONMENT_SET_HW_RENDER: {
+            if (base_width == 0) {
+                init_system_av_info();
+                video->set_aspect_ratio(aspect_ratio);
+                video->game_resolution_changed((int)base_width, (int)base_height, (int)max_width, (int)max_height, pixel_format);
+            }
             auto hwr = (struct retro_hw_render_callback*)data;
             return video->init_hw_renderer(hwr);
         }
@@ -362,7 +367,11 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
                 fps = info->timing.fps;
                 restart_audio = true;
             }
-            if (restart_audio || audio->get_sample_rate_input() != info->timing.sample_rate) {
+            if (sample_rate != info->timing.sample_rate) {
+                sample_rate = info->timing.sample_rate;
+                restart_audio = true;
+            }
+            if (restart_audio) {
                 audio->stop();
                 audio->start(g_cfg.get_mono_audio(), info->timing.sample_rate, g_cfg.get_sample_rate(), info->timing.fps);
             }
@@ -389,7 +398,8 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
                 resolution_changed = true;
             }
             if (resolution_changed) {
-                video->game_resolution_changed(base_width, base_height, pixel_format);
+                video->set_aspect_ratio(aspect_ratio);
+                video->game_resolution_changed((int)base_width, (int)base_height, (int)max_width, (int)max_height, pixel_format);
             }
             return true;
         }
@@ -409,13 +419,32 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
         }
         case RETRO_ENVIRONMENT_SET_GEOMETRY: {
             const auto *geometry = (const retro_game_geometry*)data;
-            base_width = geometry->base_width;
-            base_height = geometry->base_height;
-            max_width = geometry->max_width;
-            max_height = geometry->max_height;
-            aspect_ratio = geometry->aspect_ratio;
-            video->set_aspect_ratio(aspect_ratio);
-            video->game_resolution_changed(base_width, base_height, pixel_format);
+            bool resolution_changed = false;
+            if (base_width != geometry->base_width) {
+                base_width = geometry->base_width;
+                resolution_changed = true;
+            }
+            if (base_height != geometry->base_height) {
+                base_height = geometry->base_height;
+                resolution_changed = true;
+            }
+            if (max_width != geometry->max_width) {
+                max_width = geometry->max_width;
+                resolution_changed = true;
+            }
+            if (max_height != geometry->max_height) {
+                max_height = geometry->max_height;
+                resolution_changed = true;
+            }
+            if (aspect_ratio != geometry->aspect_ratio) {
+                aspect_ratio = geometry->aspect_ratio;
+                video->set_aspect_ratio(aspect_ratio);
+                resolution_changed = true;
+            }
+            if (resolution_changed) {
+                video->set_aspect_ratio(aspect_ratio);
+                video->game_resolution_changed((int)base_width, (int)base_height, (int)max_width, (int)max_height, pixel_format);
+            }
             return true;
         }
         case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -640,6 +669,8 @@ void driver_base::check_single_ram(unsigned int id, std::vector<uint8_t> &data, 
 }
 
 void driver_base::post_load() {
+    init_system_av_info();
+
     video->inited_hw_renderer();
 
     game_base_name = get_base_name(game_path);
@@ -660,6 +691,21 @@ void driver_base::post_load() {
         if (sz) memcpy(core->retro_get_memory_data(RETRO_MEMORY_RTC), rtc_data.data(), sz);
     }
 
+    audio->start(g_cfg.get_mono_audio(), sample_rate, g_cfg.get_sample_rate(), fps);
+    frame_throttle->reset(fps);
+    core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
+    video->set_aspect_ratio(aspect_ratio);
+    video->game_resolution_changed((int)base_width, (int)base_height, (int)max_width, (int)max_height, pixel_format);
+
+    char library_message[256];
+    snprintf(library_message, 256, "Loaded core: %s"_i18n, library_name.c_str());
+    video->add_message(library_message, lround(fps * 5));
+}
+
+void driver_base::init_system_av_info() {
+    if (base_width != 0) {
+        return;
+    }
     retro_system_av_info av_info = {};
     core->retro_get_system_av_info(&av_info);
     base_width = av_info.geometry.base_width;
@@ -668,15 +714,7 @@ void driver_base::post_load() {
     max_height = av_info.geometry.max_height;
     aspect_ratio = av_info.geometry.aspect_ratio;
     fps = av_info.timing.fps;
-
-    audio->start(g_cfg.get_mono_audio(), av_info.timing.sample_rate, g_cfg.get_sample_rate(), av_info.timing.fps);
-    frame_throttle->reset(fps);
-    core->retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
-    video->game_resolution_changed(base_width, base_height, pixel_format);
-
-    char library_message[256];
-    snprintf(library_message, 256, "Loaded core: %s"_i18n, library_name.c_str());
-    video->add_message(library_message, lround(fps * 5));
+    sample_rate = av_info.timing.sample_rate;
 }
 
 bool driver_base::run_frame(std::function<void()> &in_game_menu_cb, bool check) {

@@ -23,7 +23,7 @@ public:
     void inited_hw_renderer() override;
     void uninit_hw_renderer() override;
     void window_resized(int width, int height, bool fullscreen) override;
-    bool game_resolution_changed(int width, int height, uint32_t pixel_format) override;
+    bool game_resolution_changed(int width, int height, int max_width, int max_height, uint32_t pixel_format) override;
     void render(const void *data, int width, int height, size_t pitch) override;
     void *get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
@@ -81,7 +81,7 @@ private:
 
     int curr_width = 0, curr_height = 0;
     size_t bpp = 2;
-    int game_width = 0, game_height = 0;
+    int game_width = 0, game_height = 0, game_max_width = 0, game_max_height = 0;
     uint32_t game_pixel_format = 0;
     int saved_x, saved_y;
 

@@ -9,7 +9,6 @@
 #include "util.h"
 
 #include "core.h"
-#include "libretro.h"
 
 #include <spdlog/spdlog.h>
 #include <glad/glad.h>
@@ -133,7 +132,6 @@ bool sdl2_video::init_hw_renderer(retro_hw_render_callback *hwr) {
     glGenFramebuffers(1, &hw_renderer.fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, hw_renderer.fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_renderer.texture_game, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
     hw_renderer.rb_ds = 0;
     gl_renderer.bottom_left = hwr->bottom_left_origin;
     if (hwr->depth) {
@@ -209,9 +207,11 @@ void sdl2_video::window_resized(int width, int height, bool fullscreen) {
     recalc_draw_rect();
 }
 
-bool sdl2_video::game_resolution_changed(int width, int height, uint32_t pixel_format) {
+bool sdl2_video::game_resolution_changed(int width, int height, int max_width, int max_height, uint32_t pixel_format) {
     game_width = width;
     game_height = height;
+    game_max_width = max_width;
+    game_max_height = max_height;
     bool pixel_format_changed = pixel_format != game_pixel_format;
     if (pixel_format_changed) {
         game_pixel_format = pixel_format;
@@ -710,10 +710,8 @@ bool sdl2_video::recalc_draw_rect(bool force_create_empty_texture) {
 }
 
 void sdl2_video::gl_renderer_update_texture_rect(bool force_create_empty_texture) {
-    retro_system_av_info info = {};
-    current_driver->get_core()->retro_get_system_av_info(&info);
-    auto new_w = pullup(info.geometry.max_width);
-    auto new_h = pullup(info.geometry.max_height);
+    auto new_w = pullup(game_max_width);
+    auto new_h = pullup(game_max_height);
     if (force_create_empty_texture || new_w != gl_renderer.texture_w || new_h != gl_renderer.texture_h) {
         gl_renderer.texture_w = new_w;
         gl_renderer.texture_h = new_h;

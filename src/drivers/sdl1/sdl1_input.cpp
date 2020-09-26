@@ -64,10 +64,12 @@ void sdl1_input::post_init() {
         SDLK_x, // RETRO_DEVICE_ID_JOYPAD_R3
     };
 #endif
-    for (size_t i = 0; i < keymap.size(); ++i) {
-        map_key(keymap[i], 0, i);
-        map_key(keymap[i], 0xFF, i);
+    if (game_to_km_mapping.empty()) {
+        for (size_t i = 0; i < keymap.size(); ++i) {
+            set_km_mapping(keymap[i], i);
+        }
     }
+    assign_port(0, 0);
 }
 
 void sdl1_input::input_poll() {

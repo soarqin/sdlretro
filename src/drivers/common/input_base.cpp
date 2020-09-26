@@ -1,6 +1,5 @@
 #include "input_base.h"
 
-#include <libretro.h>
 #include <util.h>
 #include <cfg.h>
 
@@ -16,7 +15,8 @@ void input_base::post_init() {
 }
 
 int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
-    auto &p = port == 0xFF ? port_menu : ports[port];
+    if (port >= ports.size()) return 0;
+    auto &p = ports[port];
     if (!p.enabled) return 0;
     switch (device) {
     case RETRO_DEVICE_JOYPAD:
@@ -28,8 +28,10 @@ int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, 
         return 0;
     case RETRO_DEVICE_ANALOG:
         if (index <= RETRO_DEVICE_INDEX_ANALOG_RIGHT) {
-            if (id <= RETRO_DEVICE_ID_ANALOG_Y)
-                return p.analog_axis[index][id];
+            auto axis_id = (index << 1) + id;
+            if (axis_id < 4) {
+                return p.analog_axis[axis_id];
+            }
         } else if (index == RETRO_DEVICE_INDEX_ANALOG_BUTTON) {
             if (id == RETRO_DEVICE_ID_JOYPAD_MASK) {
                 return p.states;
@@ -44,10 +46,10 @@ int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, 
 
 void input_base::add_button_desc(uint8_t port, uint8_t device, uint8_t index, uint16_t id, const std::string &desc) {
     output_button_t bt = {device, id, index, port, desc};
-    if (port < 0xFF && port >= ports.size()) {
+    if (port >= ports.size()) {
         return;
     }
-    auto &p = port == 0xFF ? port_menu : ports[port];
+    auto &p = ports[port];
     if (!p.available) {
         p.available = true;
     }
@@ -63,99 +65,25 @@ void input_base::add_button_desc(uint8_t port, uint8_t device, uint8_t index, ui
             index = 0;
         }
     }
-    auto value = button_packed_value(index, id);
-    p.available = true;
+    auto value = static_cast<uint16_t>(id) | (static_cast<uint16_t>(index) << 8);
     p.buttons[value] = std::move(bt);
-    auto &rev_mapping = port == 0xFFu ? menu_to_user_mapping : game_to_user_mapping;
-    auto ite = rev_mapping.find((static_cast<uint64_t>(port) << 32) | static_cast<uint64_t>(value));
-    if (ite != rev_mapping.end()) {
-        auto &mapping = port == 0xFFu ? user_to_menu_mapping : user_to_game_mapping;
-        mapping[ite->second] = &p.buttons[value];
-        if (!p.enabled) p.enabled = true;
-    }
 }
 
 void input_base::clear_button_desc() {
-    user_to_game_mapping.clear();
     for (auto &p: ports) {
-        p = output_port_t{};
+        p.buttons.clear();
     }
-}
-
-void input_base::clear_menu_button_desc() {
-    user_to_menu_mapping.clear();
-    port_menu.buttons.clear();
-    port_menu.states = 0;
-    port_menu.available = port_menu.enabled = false;
-}
-
-void input_base::foreach_mapping(const std::function<void(const output_button_t &output, const input_button_t &input)> &cb) const {
-    for (auto &p: ports) {
-        for (auto &pp: p.buttons) {
-            auto value = (static_cast<uint64_t>(pp.second.port) << 32) | static_cast<uint64_t>(button_packed_value(pp.second.index, pp.second.id));
-            auto ite = game_to_user_mapping.find(value);
-            input_button_t ib = {};
-            if (ite != game_to_user_mapping.end()) {
-                ib.value = ite->second;
-                std::string device_name;
-                get_input_name(ib.value, device_name, ib.name);
-                if (!device_name.empty()) {
-                    ib.name += " (";
-                    ib.name += device_name;
-                    ib.name += ')';
-                }
-            }
-            cb(pp.second, ib);
-        }
-    }
-}
-
-void input_base::add_mapping(uint64_t from, uint8_t to_port, uint16_t to_id) {
-    if (to_port == 0xFF || to_port < ports.size()) {
-        auto &port = to_port == 0xFF ? port_menu : ports[to_port];
-        auto ite = port.buttons.find(to_id);
-        if (ite != port.buttons.end()) {
-            auto &mapping = to_port == 0xFFu ? user_to_menu_mapping : user_to_game_mapping;
-            auto *& to_b = mapping[from];
-            if (to_b) {
-                auto to_value = (static_cast<uint64_t>(to_b->port) << 32) | static_cast<uint64_t>(to_b->id);
-                auto &rev_mapping = to_b->port == 0xFFu ? menu_to_user_mapping : game_to_user_mapping;
-                rev_mapping.erase(to_value);
-            }
-            to_b = &ite->second;
-            if (!port.enabled) port.enabled = true;
-        }
-    }
-    auto to_value = (static_cast<uint64_t>(to_port) << 32) | static_cast<uint64_t>(to_id);
-    auto &rev_mapping = to_port == 0xFFu ? menu_to_user_mapping : game_to_user_mapping;
-    rev_mapping[to_value] = from;
-}
-
-void input_base::remove_mapping(uint8_t to_port, uint16_t to_id) {
-    auto to_value = (static_cast<uint64_t>(to_port) << 32) | static_cast<uint64_t>(to_id);
-    auto &rev_mapping = to_port == 0xFFu ? menu_to_user_mapping : game_to_user_mapping;
-    auto rite = rev_mapping.find(to_value);
-    if (rite == rev_mapping.end()) return;
-    if (to_port == 0xFF || to_port < ports.size()) {
-        auto &port = to_port == 0xFF ? port_menu : ports[to_port];
-        auto ite = port.buttons.find(to_id);
-        if (ite != port.buttons.end()) {
-            auto &mapping = to_port == 0xFFu ? user_to_menu_mapping : user_to_game_mapping;
-            mapping.erase(rite->second);
-        }
-    }
-    rev_mapping.erase(rite);
 }
 
 void input_base::save_to_cfg() {
     json j;
-    for (auto &p: game_to_user_mapping) {
-        auto port = p.first >> 32;
-        auto id = p.first & 0xFFFF;
+    auto &kj = j["keyboard/mouse"];
+    for (auto &p: game_to_km_mapping) {
+        auto id = p.first;
 
         std::string device_name, name;
         get_input_name(p.second, device_name, name);
-        auto &sub = j[std::to_string(port)][std::to_string(id)];
+        auto &sub = kj[std::to_string(id)];
         sub["device"] = device_name;
         sub["name"] = name;
     }
@@ -183,88 +111,215 @@ void input_base::load_from_cfg() {
         spdlog::error("failed to read input config from {}", filename);
         return;
     }
-    for (auto &pt: j.items()) {
-        auto port = std::stoi(pt.key());
-        for (auto &bt: pt.value().items()) {
+    auto &kj = j["keyboard/mouse"];
+    if (kj.is_object()) {
+        for (auto &bt: kj.items()) {
             auto btid = std::stoi(bt.key());
             auto &from = bt.value();
             auto fromid = get_input_from_name(from["device"], from["name"]);
             if (fromid) {
-                add_mapping(fromid, port, btid);
+                set_km_mapping(fromid, btid);
             }
         }
     }
 }
 
-void input_base::save_mapping(uint8_t port) {
-    if (port >= user_to_game_mapping_saved.size()) {
-        user_to_game_mapping_saved.resize(port + 1);
+const char *libretro_button_name(uint16_t id) {
+    auto index = id >> 8;
+    switch(index) {
+    case 0: {
+        const char *name[16] = {
+            "B",
+            "Y",
+            "SELECT",
+            "START",
+            "UP",
+            "DOWN",
+            "LEFT",
+            "RIGHT",
+            "A",
+            "X",
+            "L",
+            "R",
+            "L2",
+            "R2",
+            "L3",
+            "R3",
+        };
+        auto btn_id = id & 0xFF;
+        return btn_id < 16 ? name[btn_id] : "";
     }
-    if (port >= game_to_user_mapping_saved.size()) {
-        game_to_user_mapping_saved.resize(port + 1);
+    case 1:
+    case 2: {
+        const char *analog_name[2][2] = {
+            {"L-Axis X", "L-Axis Y"},
+            {"R-Axis X", "R-Axis Y"},
+        };
+        auto axis_id = id & 0xFF;
+        return axis_id < 2 ? analog_name[index - 1][axis_id] : "";
+        break;
     }
-    auto &gms = user_to_game_mapping_saved[port];
-    if (!gms.empty()) {
+    default:
+        return "";
+    }
+}
+
+void input_base::set_input_mode(input_base::input_mode m) {
+    if (mode == m) {
         return;
     }
-    for (auto ite = user_to_game_mapping.begin(); ite != user_to_game_mapping.end();) {
-        if (ite->second->port == port) {
-            gms[ite->first] = ite->second;
-            ite = user_to_game_mapping.erase(ite);
-        } else {
-            ++ite;
+    if (mode == mode_game || m == mode_game) {
+        /* clear inputs on enter/leave menu */
+        for (auto &p: ports) {
+            p.states = 0;
+            memset(p.analog_axis, 0, sizeof(p.analog_axis));
         }
     }
-    auto ite_begin = game_to_user_mapping.lower_bound(static_cast<uint64_t>(port) << 32);
-    auto ite_end = game_to_user_mapping.upper_bound((static_cast<uint64_t>(port) << 32) | 0xFFFFFFFFULL);
-    game_to_user_mapping_saved[port].insert(ite_begin, ite_end);
-    game_to_user_mapping.erase(ite_begin, ite_end);
+    mode = m;
 }
 
-void input_base::restore_mapping(uint8_t port) {
-    if (port >= user_to_game_mapping_saved.size() || user_to_game_mapping_saved[port].empty()) {
+void input_base::foreach_km_mapping(const std::function<void(const output_button_t &, const input_button_t &)> &cb) const {
+    const uint16_t buttons[] = {
+        RETRO_DEVICE_ID_JOYPAD_UP,
+        RETRO_DEVICE_ID_JOYPAD_DOWN,
+        RETRO_DEVICE_ID_JOYPAD_LEFT,
+        RETRO_DEVICE_ID_JOYPAD_RIGHT,
+        RETRO_DEVICE_ID_JOYPAD_A,
+        RETRO_DEVICE_ID_JOYPAD_B,
+        RETRO_DEVICE_ID_JOYPAD_X,
+        RETRO_DEVICE_ID_JOYPAD_Y,
+        RETRO_DEVICE_ID_JOYPAD_SELECT,
+        RETRO_DEVICE_ID_JOYPAD_START,
+        RETRO_DEVICE_ID_JOYPAD_L,
+        RETRO_DEVICE_ID_JOYPAD_R,
+        RETRO_DEVICE_ID_JOYPAD_L2,
+        RETRO_DEVICE_ID_JOYPAD_R2,
+        RETRO_DEVICE_ID_JOYPAD_L3,
+        RETRO_DEVICE_ID_JOYPAD_R3,
+        RETRO_DEVICE_ID_ANALOG_LX,
+        RETRO_DEVICE_ID_ANALOG_LY,
+        RETRO_DEVICE_ID_ANALOG_RX,
+        RETRO_DEVICE_ID_ANALOG_RY,
+    };
+    for (auto &b: buttons) {
+        auto ite = game_to_km_mapping.find(b);
+        if (ite == game_to_km_mapping.end()) {
+            continue;
+        }
+        output_button_t ob = {};
+        ob.id = ite->first;
+        ob.description = libretro_button_name(ob.id);
+        input_button_t ib = {};
+        ib.value = ite->second;
+        std::string device_name;
+        get_input_name(ib.value, device_name, ib.name);
+        cb(ob, ib);
+    }
+}
+
+std::pair<uint16_t, uint16_t> input_base::set_km_mapping(uint16_t from, uint16_t to_id) {
+    std::pair<uint16_t, uint16_t> result = {0, 0};
+    auto ite = km_to_game_mapping.find(from);
+    uint16_t old_to_id = 0;
+    if (ite != km_to_game_mapping.end()) {
+        if (ite->second == to_id) {
+            return result;
+        }
+        old_to_id = ite->second;
+        game_to_km_mapping.erase(old_to_id);
+    }
+    auto ite2 = game_to_km_mapping.find(to_id);
+    if (ite2 != game_to_km_mapping.end()) {
+        if (old_to_id == 0) {
+            km_to_game_mapping.erase(ite2->second);
+        } else {
+            /* swap old key and new mapped key */
+            km_to_game_mapping[ite2->second] = old_to_id;
+            game_to_km_mapping[old_to_id] = ite2->second;
+            result = std::make_pair(ite2->second, old_to_id);
+        }
+    }
+    km_to_game_mapping[from] = to_id;
+    game_to_km_mapping[to_id] = from;
+    return result;
+}
+
+void input_base::assign_port(uint32_t device_id, uint8_t port) {
+    if (port >= ports.size() || ports[port].device_id == device_id) {
         return;
     }
-    user_to_game_mapping.insert(user_to_game_mapping_saved[port].begin(), user_to_game_mapping_saved[port].end());
-    game_to_user_mapping.insert(game_to_user_mapping_saved[port].begin(), game_to_user_mapping_saved[port].end());
-    user_to_game_mapping_saved[port].clear();
-    game_to_user_mapping_saved[port].clear();
+    port_mapping.erase(ports[port].device_id);
+    port_mapping[device_id] = port;
+    ports[port].enabled = true;
+    ports[port].device_id = device_id;
 }
 
-void input_base::on_input(uint64_t id, bool pressed) {
+void input_base::unassign_port(uint8_t port) {
+    if (port >= ports.size()) {
+        return;
+    }
+    ports[port].enabled = false;
+    ports[port].device_id = 0xFFFFFFFFu;
+}
+
+void input_base::on_km_input(uint16_t id, bool pressed) {
     if (mode == mode_input) {
         last_input = id;
         return;
     }
-    auto &mapping = mode == mode_menu ? user_to_menu_mapping : user_to_game_mapping;
-    auto ite = mapping.find(id);
-    if (ite == mapping.end()) return;
-    auto *btn = ite->second;
-    if (btn == nullptr) return;
-    auto &port = btn->port == 0xFF ? port_menu : ports[btn->port];
-    switch(btn->device) {
-    case RETRO_DEVICE_JOYPAD:
-        if (pressed)
-            port.states |= 1U << btn->id;
-        else
-            port.states &= ~(1U << btn->id);
-        break;
-    case RETRO_DEVICE_ANALOG:
-        /* process remapped index */
-        if (btn->index == 0) {
-            if (pressed)
-                port.states |= 1U << btn->id;
-            else
-                port.states &= ~(1U << btn->id);
+
+    auto ite = port_mapping.find(0);
+    if (ite == port_mapping.end()) {
+        return;
+    }
+
+    auto &p = ports[ite->second];
+    auto ite2 = km_to_game_mapping.find(id);
+    if (ite2 == km_to_game_mapping.end()) return;
+    auto index = ite2->second >> 8;
+    auto btn_id = ite2->second & 0xFFu;
+    switch (index) {
+    case 0:
+        if (pressed) {
+            p.states |= 1 << btn_id;
         } else {
-            if (btn->index <= RETRO_DEVICE_INDEX_ANALOG_BUTTON) {
-                port.analog_axis[btn->index - 1][btn->id & 1] = pressed ? ((btn->id >> 1) ? -0x8000 : 0x7FFF) : 0;
-            }
+            p.states &= ~(1 << btn_id);
+        }
+        break;
+    case 1:
+    case 2:
+        if (btn_id < 2) {
+            p.analog_axis[((index - 1) << 1) + btn_id] = pressed ? 0x7FFF : -0x8000;
         }
         break;
     default:
         break;
     }
+}
+
+void input_base::on_btn_input(uint32_t device_id, uint8_t id, bool pressed) {
+    auto ite = port_mapping.find(device_id);
+    if (ite == port_mapping.end()) {
+        return;
+    }
+    auto &p = ports[ite->second];
+    if (pressed) {
+        p.states |= 1 << id;
+    } else {
+        p.states &= ~(1 << id);
+    }
+}
+
+void input_base::on_axis_input(uint32_t device_id, uint8_t id, int16_t value) {
+    if (id >= 4) {
+        return;
+    }
+    auto ite = port_mapping.find(device_id);
+    if (ite == port_mapping.end()) {
+        return;
+    }
+    auto &p = ports[ite->second];
+    p.analog_axis[id] = value;
 }
 
 }

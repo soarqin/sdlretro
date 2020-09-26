@@ -65,39 +65,13 @@ void sdl2_input::post_init() {
     };
 #endif
 
-    bool do_default_mapping = game_to_user_mapping.empty();
-    for (size_t i = 0; i < keymap.size(); ++i) {
-        if (do_default_mapping) {
-            map_key(keymap[i], 0, i);
-        }
-        map_key(keymap[i], 0xFF, i);
-    }
-}
-
-void sdl2_input::input_poll() {
-    size_t pad_count = gamepad.size();
-    size_t port_count = ports.size();
-    for (size_t z = 0; z < port_count; ++z) {
-        auto &port = ports[z];
-        if (!port.enabled) continue;
-        if (z >= pad_count) continue;
-        auto *handle = gamepad[z].handle;
-        if (!handle) continue;
-        port.analog_axis[0][0] = SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_LEFTX);
-        port.analog_axis[0][1] = SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_LEFTY);
-        port.analog_axis[1][0] = SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_RIGHTX);
-        port.analog_axis[1][1] = SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_RIGHTY);
-        if (SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 0x4000) {
-            port.states |= 1U << RETRO_DEVICE_ID_JOYPAD_L2;
-        } else {
-            port.states &= ~(1U << RETRO_DEVICE_ID_JOYPAD_L2);
-        }
-        if (SDL_GameControllerGetAxis(handle, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 0x4000) {
-            port.states |= 1U << RETRO_DEVICE_ID_JOYPAD_R2;
-        } else {
-            port.states &= ~(1U << RETRO_DEVICE_ID_JOYPAD_R2);
+    bool do_default_mapping = game_to_km_mapping.empty();
+    if (do_default_mapping) {
+        for (size_t i = 0; i < keymap.size(); ++i) {
+            set_km_mapping(keymap[i], i);
         }
     }
+    assign_port(0, 0);
 }
 
 void sdl2_input::port_connected(int index) {
@@ -122,21 +96,10 @@ void sdl2_input::port_connected(int index) {
     pad->handle = handle;
     pad->device_id = SDL_JoystickGetDeviceInstanceID(index);
     pad->name = SDL_GameControllerName(handle);
-    save_mapping(port);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_A, port, RETRO_DEVICE_ID_JOYPAD_B);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_B, port, RETRO_DEVICE_ID_JOYPAD_A);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_X, port, RETRO_DEVICE_ID_JOYPAD_Y);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_Y, port, RETRO_DEVICE_ID_JOYPAD_X);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_BACK, port, RETRO_DEVICE_ID_JOYPAD_SELECT);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_START, port, RETRO_DEVICE_ID_JOYPAD_START);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_LEFTSTICK, port, RETRO_DEVICE_ID_JOYPAD_L3);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_RIGHTSTICK, port, RETRO_DEVICE_ID_JOYPAD_R3);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_LEFTSHOULDER, port, RETRO_DEVICE_ID_JOYPAD_L);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, port, RETRO_DEVICE_ID_JOYPAD_R);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_DPAD_UP, port, RETRO_DEVICE_ID_JOYPAD_UP);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_DPAD_DOWN, port, RETRO_DEVICE_ID_JOYPAD_DOWN);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_DPAD_LEFT, port, RETRO_DEVICE_ID_JOYPAD_LEFT);
-    map_joybtn(pad->device_id, SDL_CONTROLLER_BUTTON_DPAD_RIGHT, port, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+
+    if (port < ports.size()) {
+        assign_port(pad->device_id, port);
+    }
 }
 
 void sdl2_input::port_disconnected(int device_id) {
@@ -153,21 +116,18 @@ void sdl2_input::port_disconnected(int device_id) {
         }
     }
     if (found_port < 0) return;
-    for (auto ite = user_to_game_mapping.begin(); ite != user_to_game_mapping.end();) {
-        if ((ite->first >> 16) == device_id) {
-            ite = user_to_game_mapping.erase(ite);
-        } else {
-            ++ite;
-        }
+    if (found_port == 0) {
+        assign_port(0, 0);
+    } else {
+        unassign_port(found_port);
     }
-    restore_mapping(found_port);
 }
 
 const char *INPUT_NAME_KEYBOARD = "keyboard";
 const char *INPUT_NAME_MOUSE = "mouse";
-const char *INPUT_NAME_MOUSE_LEFT = "Left";
-const char *INPUT_NAME_MOUSE_RIGHT = "Right";
-const char *INPUT_NAME_MOUSE_MIDDLE = "Middle";
+const char *INPUT_NAME_MOUSE_LEFT = "LMButton";
+const char *INPUT_NAME_MOUSE_RIGHT = "RMButton";
+const char *INPUT_NAME_MOUSE_MIDDLE = "MMButton";
 
 void sdl2_input::get_input_name(uint64_t input, std::string &device_name, std::string &name) const {
     if (input == 0) {
@@ -231,6 +191,38 @@ uint64_t sdl2_input::get_input_from_name(const std::string &device_name, const s
         return (static_cast<uint64_t>(gamepad[0].device_id) << 16) | static_cast<uint64_t>(SDL_GameControllerGetButtonFromString(name.c_str()));
     }
     return 0;
+}
+
+std::pair<uint16_t, int16_t> sdl2_input::controller_button_map(uint16_t id) {
+    switch (id) {
+    case SDL_CONTROLLER_BUTTON_A: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_B, 0);
+    case SDL_CONTROLLER_BUTTON_B: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_A, 0);
+    case SDL_CONTROLLER_BUTTON_X: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_Y, 0);
+    case SDL_CONTROLLER_BUTTON_Y: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_X, 0);
+    case SDL_CONTROLLER_BUTTON_BACK: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_SELECT, 0);
+    case SDL_CONTROLLER_BUTTON_START: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_START, 0);
+    case SDL_CONTROLLER_BUTTON_LEFTSTICK: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_L3, 0);
+    case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_R3, 0);
+    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_L, 0);
+    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_R, 0);
+    case SDL_CONTROLLER_BUTTON_DPAD_UP: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_UP, 0);
+    case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_DOWN, 0);
+    case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_LEFT, 0);
+    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_RIGHT, 0);
+    default: return std::make_pair(0, 0);
+    }
+}
+
+std::pair<uint16_t, int16_t> sdl2_input::controller_axis_map(uint16_t index, int16_t value) {
+    switch (index) {
+    case SDL_CONTROLLER_AXIS_LEFTX: return std::make_pair(RETRO_DEVICE_ID_ANALOG_LX, value);
+    case SDL_CONTROLLER_AXIS_LEFTY: return std::make_pair(RETRO_DEVICE_ID_ANALOG_LY, value);
+    case SDL_CONTROLLER_AXIS_RIGHTX: return std::make_pair(RETRO_DEVICE_ID_ANALOG_RX, value);
+    case SDL_CONTROLLER_AXIS_RIGHTY: return std::make_pair(RETRO_DEVICE_ID_ANALOG_RY, value);
+    case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_L2, value >= 0x4000);
+    case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return std::make_pair(RETRO_DEVICE_ID_JOYPAD_R2, value >= 0x4000);
+    default: return std::make_pair(0, 0);
+    }
 }
 
 }

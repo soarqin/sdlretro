@@ -23,7 +23,7 @@ public:
     virtual void window_resized(int width, int height, bool fullscreen) = 0;
 
     /* pixel_format follows libretro: RGB1555=0 XRGB8888=1 RGB565=2 */
-    virtual bool game_resolution_changed(int width, int height, uint32_t pixel_format) = 0;
+    virtual bool game_resolution_changed(int width, int height, int max_width, int max_height, uint32_t pixel_format) = 0;
     virtual void render(const void *data, int width, int height, size_t pitch) = 0;
 
     virtual void enter_menu() {}

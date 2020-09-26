@@ -39,7 +39,7 @@ sdl1_video::~sdl1_video() {
     SDL_UnlockSurface(screen);
 }
 
-bool sdl1_video::game_resolution_changed(int width, int height, unsigned pixel_format) {
+bool sdl1_video::game_resolution_changed(int width, int height, int max_width, int max_height, unsigned pixel_format) {
     if (g_cfg.get_scaling_mode() == 0) {
         SDL_UnlockSurface(screen);
         usleep(10000);
@@ -76,7 +76,7 @@ void sdl1_video::render(const void *data, int width, int height, size_t pitch) {
     drawn = true;
 
     if (curr_width != width || curr_height != height) {
-        game_resolution_changed(width, height, curr_pixel_format);
+        game_resolution_changed(width, height, 0, 0, curr_pixel_format);
     }
     int h = static_cast<int>(height);
     auto scale = g_cfg.get_scale();
@@ -373,7 +373,7 @@ void sdl1_video::enter_menu() {
 }
 
 void sdl1_video::leave_menu() {
-    game_resolution_changed(saved_width, saved_height, saved_pixel_format);
+    game_resolution_changed(saved_width, saved_height, 0, 0, saved_pixel_format);
 }
 
 }
