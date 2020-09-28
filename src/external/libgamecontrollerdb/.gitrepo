@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:soarqin/libgamecontrollerdb.git
+	branch = master
+	commit = ac350d4bf0031642e18d136e644c84138356137f
+	parent = c1061d93608c1f7af56571dd6b25bac4b0a7f31d
+	method = merge
+	cmdver = 0.4.1
