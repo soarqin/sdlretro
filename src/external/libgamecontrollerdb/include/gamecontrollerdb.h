@@ -7,7 +7,7 @@
 
 namespace gamecontrollerdb {
 
-enum {
+enum Platform {
     PlatformInvalid = -1,
     PlatformAny = 0,
     PlatformWindows,
@@ -15,10 +15,11 @@ enum {
     PlatformLinux,
     PlatformiOS,
     PlatformAndroid,
+    PlatformEmscripten,
     PlatformMax,
 };
 
-enum {
+enum Button {
     ButtonInvalid = -1,
     ButtonA,
     ButtonB,
@@ -44,13 +45,6 @@ enum {
 };
 
 enum {
-    HatUp = 1,
-    HatRight = 2,
-    HatDown = 4,
-    HatLeft = 8,
-};
-
-enum {
     ButtonInput = 0,
     HatInput,
     AxisInput,
@@ -62,30 +56,38 @@ struct HashGUID {
     size_t operator()(const gamecontrollerdb::GUID&) const noexcept;
 };
 
-struct ControllerButtonOrAxis {
-    uint8_t inputType;
-
-    /* ButtonInput: button id
-     * HatInput: hat index
-     * AxisInput: axis index
-     */
-    uint8_t id;
-
-    /* ButtonInput: unused
-     * HatInput: hat value
-     * AxisInput:
-     *    0 - process -max to +max
-     *   -1 - process -max to 0
-     *    1 - process 0 to +max
-     */
-    int8_t value;
+struct InputResult {
+    /* Button or Axis id, check enum ButtonOrAxis */
+    int id;
+    /* Button: 1 for pressed, 0 for unpressed
+     * Axis:   value (-0x8000~0x7FFF) */
+    int16_t value;
 };
 
 class Controller {
     friend class DB;
 
+    struct MappedInput {
+        /* check enum ButtonOrAxis
+         * id[0]: positive mapped id
+         * id[1]: negative mapped id
+         * */
+        int id[2];
+
+        /* for inputType of ControllerButtonOrAxis:
+         *   ButtonInput: unused
+         *   HatInput: unused
+         *   AxisInput:
+         *      0 - process -max to +max
+         *     -1 - process -max to 0
+         *      1 - process 0 to +max
+         */
+        int direction;
+    };
+
 public:
-    int inputMapping(const ControllerButtonOrAxis &cboa) const;
+    InputResult getButton(int id, bool pressed) const;
+    InputResult getAxis(int id, int16_t value) const;
 
 private:
     bool processToken(int index, const std::string &token);
@@ -94,7 +96,9 @@ private:
     GUID guid;
     std::string name;
     int platform = PlatformAny;
-    std::unordered_map<int, int> buttonOrAxisMapping;
+
+    std::unordered_map<int, MappedInput> btnMapping, axisMapping;
+    std::unordered_map<int, std::array<MappedInput, 4>> hatMapping;
 };
 
 class DB {
@@ -103,6 +107,8 @@ public:
 
     bool addFromFile(const std::string &filename);
     int addFromString(const std::string &content);
+
+    const Controller *matchController(const GUID &guid) const;
 
 private:
     bool addFromLine(const std::string &line);

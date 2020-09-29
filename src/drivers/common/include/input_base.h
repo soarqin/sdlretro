@@ -1,9 +1,10 @@
 #pragma once
 
+#include <gamecontrollerdb.h>
+
 #include <libretro.h>
 
 #include <string>
-#include <vector>
 #include <map>
 #include <array>
 #include <functional>
@@ -100,6 +101,12 @@ public:
     void on_btn_input(uint32_t device_id, uint8_t id, bool pressed);
     void on_axis_input(uint32_t device_id, uint8_t id, int16_t value);
 
+    bool on_device_connected(uint32_t device_id, const gamecontrollerdb::GUID &guid);
+    void on_device_disconnected(uint32_t device_id);
+    void on_joybtn_input(uint32_t device_id, uint8_t id, bool pressed);
+    void on_joyhat_input(uint32_t device_id, uint8_t id, uint8_t value);
+    void on_joyaxis_input(uint32_t device_id, uint8_t id, int16_t value);
+
 protected:
     std::array<output_port_t, 8> ports {};
 
@@ -109,6 +116,9 @@ protected:
 
     input_mode mode = mode_game;
     uint64_t last_input = 0;
+
+    gamecontrollerdb::DB gcdb;
+    std::map<uint32_t, const gamecontrollerdb::Controller*> gcontrollers;
 };
 
 }

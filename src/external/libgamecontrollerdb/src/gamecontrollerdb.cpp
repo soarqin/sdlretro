@@ -1,5 +1,6 @@
 #include "gamecontrollerdb.h"
 
+#include <map>
 #include <fstream>
 #include <cstdlib>
 
@@ -28,18 +29,72 @@ inline bool convertGUID(GUID &guid, const std::string &guidStr) {
     return true;
 }
 
-inline int convertControllerButtonOrAxisToInt(const ControllerButtonOrAxis &cboa) {
-    return static_cast<int>(cboa.inputType)
-           | (static_cast<int>(cboa.id) << 8)
-           | (static_cast<int>(cboa.value) << 16);
+InputResult Controller::getButton(int id, bool pressed) const {
+    auto ite = btnMapping.find(id);
+    if (ite == btnMapping.end()) {
+        return InputResult {-1, 0};
+    }
+    InputResult r = { ite->second.id[0], 0 };
+    if (!pressed) {
+        return r;
+    }
+    switch (ite->second.id[0]) {
+    case AxisLeftX:
+    case AxisLeftY:
+    case AxisRightX:
+    case AxisRightY:
+        if (ite->second.direction >= 0) {
+            r.value = 0x7FFF;
+        } else {
+            r.value = -0x8000;
+        }
+        break;
+    default:
+        r.value = 1;
+        break;
+    }
+    return r;
 }
 
-int Controller::inputMapping(const ControllerButtonOrAxis &cboa) const {
-    auto ite = buttonOrAxisMapping.find(convertControllerButtonOrAxisToInt(cboa));
-    if (ite == buttonOrAxisMapping.end()) {
-        return -1;
+InputResult Controller::getAxis(int id, int16_t value) const {
+    int direction = value >= 0x2000 ? 1 : (value <= -0x2000 ? -1 : 0);
+    auto ite = axisMapping.find(id);
+    if (ite == axisMapping.end()) {
+        return InputResult{-1, 0};
     }
-    return ite->second;
+    if (direction >= 0 && ite->second.id[0] >= 0) {
+        InputResult r = { ite->second.id[0], 0 };
+        switch (ite->second.id[0]) {
+        case AxisLeftX:
+        case AxisLeftY:
+        case AxisRightX:
+        case AxisRightY:
+            r.value = ite->second.direction >= 0 ? value : -value;
+            break;
+        default: {
+            r.value = direction > 0 ? 1 : 0;
+            break;
+        }
+        }
+        return r;
+    }
+    if (direction <= 0 && ite->second.id[1] >= 0) {
+        InputResult r = { ite->second.id[1], 0 };
+        switch (ite->second.id[1]) {
+        case AxisLeftX:
+        case AxisLeftY:
+        case AxisRightX:
+        case AxisRightY:
+            r.value = (ite->second.direction > 0 && direction < 0) ? -value : value;
+            break;
+        default: {
+            r.value = direction > 0 ? 1 : 0;
+            break;
+        }
+        }
+        return r;
+    }
+    return InputResult{-1, 0};
 }
 
 bool Controller::processToken(int index, const std::string &token) {
@@ -71,6 +126,7 @@ bool Controller::processToken(int index, const std::string &token) {
         { "Linux", PlatformLinux },
         { "iOS", PlatformiOS },
         { "Android", PlatformAndroid },
+        { "Emscripten", PlatformEmscripten }
     };
 
     if (index == 0) {
@@ -93,50 +149,66 @@ bool Controller::processToken(int index, const std::string &token) {
     if (value.empty()) {
         return false;
     }
+    int keyDirection = 0;
+    if (key[0] == '+' || key[0] == '-') {
+        keyDirection = key[0] == '+' ? 1 : -1;
+        key.erase(0, 1);
+    }
     auto ite = _buttonNameMap.find(key);
     if (ite != _buttonNameMap.end()) {
-        ControllerButtonOrAxis cboa {};
+        if (keyDirection != 0 && (ite->second < ButtonMax || ite->second >= AxisMax)) {
+            return false;
+        }
         switch (value[0]) {
         case '+':
-        case '-':
+        case '-': {
             if (value.length() < 3 || value[1] != 'a') {
                 return false;
             }
-            cboa.inputType = AxisInput;
-            cboa.id = std::strtol(value.c_str() + 2, nullptr, 10);
-            cboa.value = value[0] == '+' ? 1 : -1;
+            auto &a = axisMapping[std::strtol(value.c_str() + 2, nullptr, 10)];
+            a = MappedInput {{-1, -1}, keyDirection};
+            a.id[value[0] == '+' ? 0 : 1] = static_cast<uint8_t>(ite->second);
             break;
+        }
         case 'a':
             if (value.length() < 2) {
                 return false;
             }
-            cboa.inputType = AxisInput;
-            cboa.id = std::strtol(value.c_str() + 1, nullptr, 10);
-            cboa.value = 0;
+            axisMapping[std::strtol(value.c_str() + 1, nullptr, 10)] = MappedInput {{static_cast<uint8_t>(ite->second), static_cast<uint8_t>(ite->second)}, keyDirection};
             break;
         case 'b':
             if (value.length() < 2) {
                 return false;
             }
-            cboa.inputType = ButtonInput;
-            cboa.id = std::strtol(value.c_str() + 1, nullptr, 10);
-            cboa.value = 0;
+            btnMapping[std::strtol(value.c_str() + 1, nullptr, 10)] = MappedInput {{static_cast<uint8_t>(ite->second), -1}, keyDirection};
             break;
         case 'h': {
             if (value.length() < 4) {
                 return false;
             }
-            cboa.inputType = HatInput;
             char *endptr;
-            cboa.id = std::strtol(value.c_str() + 1, &endptr, 10);
+            auto hatIndex = std::strtol(value.c_str() + 1, &endptr, 10);
             if (endptr == nullptr || *endptr != '.') {
                 return false;
             }
-            cboa.value = std::strtol(endptr + 1, nullptr, 10);;
+            auto hatValue = std::strtol(endptr + 1, nullptr, 10);
+            auto &m = hatMapping[hatIndex];
+            MappedInput mi {{static_cast<uint8_t>(ite->second), 0}, keyDirection};
+            if (hatValue & 1) {
+                m[0] = mi;
+            }
+            if (hatValue & 2) {
+                m[1] = mi;
+            }
+            if (hatValue & 4) {
+                m[2] = mi;
+            }
+            if (hatValue & 8) {
+                m[3] = mi;
+            }
             break;
         }
         }
-        buttonOrAxisMapping[convertControllerButtonOrAxisToInt(cboa)] = ite->second;
         return true;
     }
     if (key == "platform") {
@@ -205,6 +277,51 @@ bool DB::addFromLine(const std::string &line) {
     }
     controllers[c.guid][c.platform] = std::move(c);
     return true;
+}
+
+const Controller *DB::matchController(const GUID &guid) const {
+    auto ite = controllers.find(guid);
+    if (ite == controllers.end()) {
+        return nullptr;
+    }
+
+    auto &cp = ite->second;
+#if defined(_WIN32)
+    if (!cp[PlatformWindows].name.empty()) {
+        return &cp[PlatformWindows];
+    }
+#endif
+#if defined(__linux__)
+#if defined(__ANDROID__)
+    if (!cp[PlatformAndroid].name.empty()) {
+        return &cp[PlatformAndroid];
+    }
+#else
+    if (!cp[PlatformLinux].name.empty()) {
+        return &cp[PlatformLinux];
+    }
+#endif
+#endif
+#if defined(__APPLE__)
+#if defined(IPHONE)
+    if (!cp[PlatformAny].name.empty()) {
+        return &cp[PlatformiOS];
+    }
+#elif defined(__MACH__)
+    if (!cp[PlatformMacOS].name.empty()) {
+        return &cp[PlatformMacOS];
+    }
+#endif
+#endif
+#if defined(__EMSCRIPTEN__)
+    if (!cp[PlatformEmscripten].name.empty()) {
+        return &cp[PlatformEmscripten];
+    }
+#endif
+    if (!cp[PlatformAny].name.empty()) {
+        return &cp[PlatformAny];
+    }
+    return nullptr;
 }
 
 }

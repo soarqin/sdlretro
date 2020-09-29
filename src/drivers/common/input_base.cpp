@@ -11,6 +11,7 @@ using json = nlohmann::json;
 namespace drivers {
 
 void input_base::post_init() {
+    gcdb.addFromString("");
     load_from_cfg();
 }
 
@@ -320,6 +321,42 @@ void input_base::on_axis_input(uint32_t device_id, uint8_t id, int16_t value) {
     }
     auto &p = ports[ite->second];
     p.analog_axis[id] = value;
+}
+
+bool input_base::on_device_connected(uint32_t device_id, const gamecontrollerdb::GUID &guid) {
+    const auto *controller = gcdb.matchController(guid);
+    if (!controller) {
+        return false;
+    }
+    gcontrollers[device_id] = controller;
+    return true;
+}
+
+void input_base::on_device_disconnected(uint32_t device_id) {
+    gcontrollers.erase(device_id);
+}
+
+void input_base::on_joybtn_input(uint32_t device_id, uint8_t id, bool pressed) {
+    auto ite = gcontrollers.find(device_id);
+    if (ite == gcontrollers.end()) {
+        return;
+    }
+
+    auto m = ite->second->getButton(id, pressed);
+}
+
+void input_base::on_joyhat_input(uint32_t device_id, uint8_t id, uint8_t value) {
+    auto ite = gcontrollers.find(device_id);
+    if (ite == gcontrollers.end()) {
+        return;
+    }
+}
+
+void input_base::on_joyaxis_input(uint32_t device_id, uint8_t id, int16_t value) {
+    auto ite = gcontrollers.find(device_id);
+    if (ite == gcontrollers.end()) {
+        return;
+    }
 }
 
 }
