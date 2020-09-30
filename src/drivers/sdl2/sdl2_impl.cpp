@@ -10,15 +10,21 @@
 namespace drivers {
 
 sdl2_impl::sdl2_impl() {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) != 0) {
         return;
     }
     video = std::make_shared<sdl2_video>();
     input = std::make_shared<sdl2_input>();
     input->post_init();
+    SDL_JoystickEventState(SDL_ENABLE);
 }
 
 sdl2_impl::~sdl2_impl() {
+    for (auto &p: joysticks) {
+        SDL_JoystickClose(p.second);
+    }
+    joysticks.clear();
+
     video.reset();
     input.reset();
     audio.reset();
@@ -54,35 +60,38 @@ bool sdl2_impl::process_events() {
         case SDL_MOUSEBUTTONUP:
             input->on_km_input(event.button.button + 1024, event.type == SDL_MOUSEBUTTONDOWN);
             break;
-        case SDL_CONTROLLERBUTTONDOWN:
-        case SDL_CONTROLLERBUTTONUP: {
-            auto btn = sdl2_input::controller_button_map(event.cbutton.button);
-            if (btn.first == 0) break;
-            auto analog_index = btn.first >> 8;
-            if (analog_index > 0) {
-                input->on_axis_input(event.cbutton.which, ((analog_index - 1) << 1) + (btn.first & 0xFF), event.type == SDL_CONTROLLERBUTTONDOWN ? (btn.second > 0 ? 0x7FFF : -0x8000) : 0);
-            } else {
-                input->on_btn_input(event.cbutton.which, btn.first, event.type == SDL_CONTROLLERBUTTONDOWN);
-            }
+        case SDL_JOYDEVICEADDED: {
+            auto *joystick = SDL_JoystickOpen(event.jdevice.which);
+            auto device_id = SDL_JoystickInstanceID(joystick);
+            joysticks[device_id] = joystick;
+            auto device_guid = SDL_JoystickGetDeviceGUID(event.jdevice.which);
+            gamecontrollerdb::GUID guid;
+            memcpy(guid.data(), device_guid.data, sizeof(device_guid.data));
+            input->on_device_connected(device_id, guid);
             break;
         }
-        case SDL_CONTROLLERAXISMOTION: {
-            auto btn = sdl2_input::controller_axis_map(event.caxis.axis, event.caxis.value);
-            if (btn.first == 0) break;
-            auto analog_index = btn.first >> 8;
-            if (analog_index > 0) {
-                input->on_axis_input(event.cbutton.which, ((analog_index - 1) << 1) + (btn.first & 0xFF), btn.second);
-            } else {
-                input->on_btn_input(event.cbutton.which, btn.first, btn.second != 0);
+        case SDL_JOYDEVICEREMOVED: {
+            auto ite = joysticks.find(event.jdevice.which);
+            if (ite != joysticks.end()) {
+                SDL_JoystickClose(ite->second);
+                joysticks.erase(ite);
             }
+            input->on_device_disconnected(event.jdevice.which);
             break;
         }
-        case SDL_CONTROLLERDEVICEADDED:
-            input->port_connected(event.cdevice.which);
+        case SDL_JOYBUTTONDOWN:
+        case SDL_JOYBUTTONUP: {
+            input->on_joybtn_input(event.jbutton.which, event.jbutton.button, event.type == SDL_JOYBUTTONDOWN);
             break;
-        case SDL_CONTROLLERDEVICEREMOVED:
-            input->port_disconnected(event.cdevice.which);
+        }
+        case SDL_JOYHATMOTION: {
+            input->on_joyhat_input(event.jbutton.which, event.jhat.hat, event.jhat.value);
             break;
+        }
+        case SDL_JOYAXISMOTION: {
+            input->on_joyaxis_input(event.jaxis.which, event.jaxis.axis, event.jaxis.value);
+            break;
+        }
         default: break;
         }
     }

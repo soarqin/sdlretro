@@ -3,13 +3,154 @@
 #include <map>
 #include <fstream>
 #include <cstdlib>
+#include <cstring>
 
 namespace gamecontrollerdb {
 
-size_t HashGUID::operator()(const GUID &guid) const noexcept {
-    std::hash<uint64_t> h;
-    return h(*reinterpret_cast<const uint64_t*>(guid.data()))
-           ^ h(*reinterpret_cast<const uint64_t*>(guid.data() + 8));
+enum {
+    AxisThreshold = 0x2000,
+};
+
+void ControllerState::reset() {
+    state = 0;
+    std::memset(axisState, 0, sizeof(axisState));
+}
+
+void ControllerState::buttonInput(int id, bool pressed) {
+    const auto *mi = controller->btnMap(id);
+    if (mi == nullptr || mi->id[0] < 0 || mi->id[0] >= AxisMax) {
+        return;
+    }
+    switch (mi->id[0]) {
+    case AxisLeftX:
+    case AxisLeftY:
+    case AxisRightX:
+    case AxisRightY:
+        if (pressed) {
+            if (mi->direction >= 0) {
+                axisState[mi->id[0] - AxisFirst] = 0x7FFF;
+            } else {
+                axisState[mi->id[0] - AxisFirst] = -0x8000;
+            }
+        } else {
+            axisState[mi->id[0] - AxisFirst] = 0;
+        }
+        break;
+    default:
+        if (pressed) {
+            state |= 1u << mi->id[0];
+        } else {
+            state &= ~(1u << mi->id[0]);
+        }
+        break;
+    }
+}
+
+void ControllerState::axisInput(int id, int16_t value) {
+    const auto *mi = controller->axisMap(id);
+    if (mi == nullptr) {
+        return;
+    }
+    int direction = value >= AxisThreshold ? 1 : (value <= -AxisThreshold ? -1 : 0);
+    if (direction >= 0 && mi->id[0] >= 0 & mi->id[0] <= AxisMax) {
+        switch (mi->id[0]) {
+        case AxisLeftX:
+        case AxisLeftY:
+        case AxisRightX:
+        case AxisRightY:
+            axisState[mi->id[0] - AxisFirst] = mi->direction >= 0 ? value : -value;
+            break;
+        default:
+            if (direction > 0) {
+                state |= 1u << mi->id[0];
+            } else {
+                state &= ~(1u << mi->id[0]);
+            }
+            break;
+        }
+    }
+    if (direction <= 0 && mi->id[0] != mi->id[1] && mi->id[1] >= 0 && mi->id[1] <= AxisMax) {
+        switch (mi->id[1]) {
+        case AxisLeftX:
+        case AxisLeftY:
+        case AxisRightX:
+        case AxisRightY:
+            axisState[mi->id[1] - AxisFirst] = mi->direction <= 0 ? value : -value;
+            break;
+        default:
+            if (mi->id[1] == mi->id[0]) {
+                break;
+            }
+            if (direction > 0) {
+                state |= 1u << mi->id[1];
+            } else {
+                state &= ~(1u << mi->id[1]);
+            }
+            break;
+        }
+    }
+}
+
+void ControllerState::hatInput(int id, uint32_t value) {
+    const auto *mia = controller->hatMap(id);
+    if (mia == nullptr) {
+        return;
+    }
+    const uint32_t flag[4] = {1, 2, 4, 8};
+    for (int i = 0; i < 4; ++i) {
+        auto &mi = (*mia)[i];
+        auto inputId = mi.id[0];
+        if (inputId < 0 || inputId >= AxisMax) {
+            continue;
+        }
+        switch (inputId) {
+        case AxisLeftX:
+        case AxisLeftY:
+        case AxisRightX:
+        case AxisRightY:
+            if (value & flag[i]) {
+                if (mi.direction >= 0) {
+                    axisState[inputId - AxisFirst] = 0x7FFF;
+                } else {
+                    axisState[inputId - AxisFirst] = -0x8000;
+                }
+            } else {
+                axisState[inputId - AxisFirst] = 0;
+            }
+            break;
+        default:
+            if (value & flag[i]) {
+                state |= 1u << inputId;
+            } else {
+                state &= ~(1u << inputId);
+            }
+            break;
+        }
+    }
+}
+
+const Controller::MappedInput *Controller::btnMap(int id) const {
+    const auto ite = btnMapping.find(id);
+    if (ite == btnMapping.end()) {
+        return nullptr;
+    }
+    return &ite->second;
+}
+
+const Controller::MappedInput *Controller::axisMap(int id) const {
+    const auto ite = axisMapping.find(id);
+    if (ite == axisMapping.end()) {
+        return nullptr;
+    }
+    return &ite->second;
+}
+
+const std::array<Controller::MappedInput, 4> *Controller::hatMap(int id) const {
+    const auto ite = hatMapping.find(id);
+    if (ite == hatMapping.end()) {
+        return nullptr;
+    }
+    return &ite->second;
 }
 
 inline bool convertGUID(GUID &guid, const std::string &guidStr) {
@@ -27,74 +168,6 @@ inline bool convertGUID(GUID &guid, const std::string &guidStr) {
         }
     }
     return true;
-}
-
-InputResult Controller::getButton(int id, bool pressed) const {
-    auto ite = btnMapping.find(id);
-    if (ite == btnMapping.end()) {
-        return InputResult {-1, 0};
-    }
-    InputResult r = { ite->second.id[0], 0 };
-    if (!pressed) {
-        return r;
-    }
-    switch (ite->second.id[0]) {
-    case AxisLeftX:
-    case AxisLeftY:
-    case AxisRightX:
-    case AxisRightY:
-        if (ite->second.direction >= 0) {
-            r.value = 0x7FFF;
-        } else {
-            r.value = -0x8000;
-        }
-        break;
-    default:
-        r.value = 1;
-        break;
-    }
-    return r;
-}
-
-InputResult Controller::getAxis(int id, int16_t value) const {
-    int direction = value >= 0x2000 ? 1 : (value <= -0x2000 ? -1 : 0);
-    auto ite = axisMapping.find(id);
-    if (ite == axisMapping.end()) {
-        return InputResult{-1, 0};
-    }
-    if (direction >= 0 && ite->second.id[0] >= 0) {
-        InputResult r = { ite->second.id[0], 0 };
-        switch (ite->second.id[0]) {
-        case AxisLeftX:
-        case AxisLeftY:
-        case AxisRightX:
-        case AxisRightY:
-            r.value = ite->second.direction >= 0 ? value : -value;
-            break;
-        default: {
-            r.value = direction > 0 ? 1 : 0;
-            break;
-        }
-        }
-        return r;
-    }
-    if (direction <= 0 && ite->second.id[1] >= 0) {
-        InputResult r = { ite->second.id[1], 0 };
-        switch (ite->second.id[1]) {
-        case AxisLeftX:
-        case AxisLeftY:
-        case AxisRightX:
-        case AxisRightY:
-            r.value = (ite->second.direction > 0 && direction < 0) ? -value : value;
-            break;
-        default: {
-            r.value = direction > 0 ? 1 : 0;
-            break;
-        }
-        }
-        return r;
-    }
-    return InputResult{-1, 0};
 }
 
 bool Controller::processToken(int index, const std::string &token) {
@@ -221,6 +294,13 @@ bool Controller::processToken(int index, const std::string &token) {
     return true;
 }
 
+
+size_t HashGUID::operator()(const GUID &guid) const noexcept {
+    std::hash<uint64_t> h;
+    return h(*reinterpret_cast<const uint64_t*>(guid.data()))
+        ^ h(*reinterpret_cast<const uint64_t*>(guid.data() + 8));
+}
+
 bool DB::addFromFile(const std::string &filename) {
     std::ifstream fs(filename);
     if (!fs.is_open()) {
@@ -323,5 +403,4 @@ const Controller *DB::matchController(const GUID &guid) const {
     }
     return nullptr;
 }
-
 }

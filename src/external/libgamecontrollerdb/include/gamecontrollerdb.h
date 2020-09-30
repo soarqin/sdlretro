@@ -37,7 +37,8 @@ enum Button {
     ButtonDpadLeft,
     ButtonDpadRight,
     ButtonMax,
-    AxisLeftX = ButtonMax,
+    AxisFirst = ButtonMax,
+    AxisLeftX = AxisFirst,
     AxisLeftY,
     AxisRightX,
     AxisRightY,
@@ -52,21 +53,36 @@ enum {
 
 using GUID = std::array<uint8_t, 16>;
 
-struct HashGUID {
-    size_t operator()(const gamecontrollerdb::GUID&) const noexcept;
-};
+class Controller;
 
-struct InputResult {
-    /* Button or Axis id, check enum ButtonOrAxis */
-    int id;
-    /* Button: 1 for pressed, 0 for unpressed
-     * Axis:   value (-0x8000~0x7FFF) */
-    int16_t value;
+class ControllerState {
+public:
+    inline explicit ControllerState(const Controller *c): controller(c) {}
+
+    inline uint32_t getState() const { return state; }
+    inline int16_t getAxisState(int id) const {
+        if (id < AxisFirst || id >= AxisMax) {
+            return 0;
+        }
+        return axisState[id - AxisFirst];
+    }
+
+    void reset();
+    void buttonInput(int id, bool pressed);
+    void axisInput(int id, int16_t value);
+    void hatInput(int id, uint32_t value);
+
+private:
+    const Controller *controller;
+
+    uint32_t state = 0;
+    int16_t axisState[AxisMax - AxisFirst] = {0};
 };
 
 class Controller {
     friend class DB;
 
+public:
     struct MappedInput {
         /* check enum ButtonOrAxis
          * id[0]: positive mapped id
@@ -85,9 +101,12 @@ class Controller {
         int direction;
     };
 
-public:
-    InputResult getButton(int id, bool pressed) const;
-    InputResult getAxis(int id, int16_t value) const;
+    const GUID &getGUID() const { return guid; }
+    const std::string &getName() const { return name; }
+    int getPlatform() const { return platform; }
+    const MappedInput *btnMap(int id) const;
+    const MappedInput *axisMap(int id) const;
+    const std::array<MappedInput, 4> *hatMap(int id) const;
 
 private:
     bool processToken(int index, const std::string &token);
@@ -101,10 +120,14 @@ private:
     std::unordered_map<int, std::array<MappedInput, 4>> hatMapping;
 };
 
+struct HashGUID {
+    size_t operator()(const gamecontrollerdb::GUID&) const noexcept;
+};
+
 class DB {
     using ControllersByPlatform = std::array<Controller, PlatformMax>;
-public:
 
+public:
     bool addFromFile(const std::string &filename);
     int addFromString(const std::string &content);
 

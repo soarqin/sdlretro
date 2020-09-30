@@ -13,6 +13,8 @@ namespace drivers {
 void input_base::post_init() {
     gcdb.addFromString("");
     load_from_cfg();
+
+    assign_port(0, 0);
 }
 
 int16_t input_base::input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
@@ -158,7 +160,6 @@ const char *libretro_button_name(uint16_t id) {
         };
         auto axis_id = id & 0xFF;
         return axis_id < 2 ? analog_name[index - 1][axis_id] : "";
-        break;
     }
     default:
         return "";
@@ -174,6 +175,9 @@ void input_base::set_input_mode(input_base::input_mode m) {
         for (auto &p: ports) {
             p.states = 0;
             memset(p.analog_axis, 0, sizeof(p.analog_axis));
+            if (p.cstate) {
+                p.cstate->reset();
+            }
         }
     }
     mode = m;
@@ -245,24 +249,6 @@ std::pair<uint16_t, uint16_t> input_base::set_km_mapping(uint16_t from, uint16_t
     return result;
 }
 
-void input_base::assign_port(uint32_t device_id, uint8_t port) {
-    if (port >= ports.size() || ports[port].device_id == device_id) {
-        return;
-    }
-    port_mapping.erase(ports[port].device_id);
-    port_mapping[device_id] = port;
-    ports[port].enabled = true;
-    ports[port].device_id = device_id;
-}
-
-void input_base::unassign_port(uint8_t port) {
-    if (port >= ports.size()) {
-        return;
-    }
-    ports[port].enabled = false;
-    ports[port].device_id = 0xFFFFFFFFu;
-}
-
 void input_base::on_km_input(uint16_t id, bool pressed) {
     if (mode == mode_input) {
         last_input = id;
@@ -298,42 +284,36 @@ void input_base::on_km_input(uint16_t id, bool pressed) {
     }
 }
 
-void input_base::on_btn_input(uint32_t device_id, uint8_t id, bool pressed) {
-    auto ite = port_mapping.find(device_id);
-    if (ite == port_mapping.end()) {
-        return;
-    }
-    auto &p = ports[ite->second];
-    if (pressed) {
-        p.states |= 1 << id;
-    } else {
-        p.states &= ~(1 << id);
-    }
-}
-
-void input_base::on_axis_input(uint32_t device_id, uint8_t id, int16_t value) {
-    if (id >= 4) {
-        return;
-    }
-    auto ite = port_mapping.find(device_id);
-    if (ite == port_mapping.end()) {
-        return;
-    }
-    auto &p = ports[ite->second];
-    p.analog_axis[id] = value;
-}
-
 bool input_base::on_device_connected(uint32_t device_id, const gamecontrollerdb::GUID &guid) {
     const auto *controller = gcdb.matchController(guid);
     if (!controller) {
         return false;
     }
-    gcontrollers[device_id] = controller;
+    gcontrollers.emplace(device_id, gamecontrollerdb::ControllerState(controller));
+    for (auto &p: ports) {
+        if (p.device_id == device_id) {
+            return true;
+        }
+    }
+    for (size_t i = 0; i < ports.size(); ++i) {
+        auto &p = ports[i];
+        if (p.device_id == 0xFFFFFFFFu) {
+            assign_port(device_id, i);
+            break;
+        }
+    }
     return true;
 }
 
 void input_base::on_device_disconnected(uint32_t device_id) {
     gcontrollers.erase(device_id);
+    auto ite = port_mapping.find(device_id);
+    if (ite != port_mapping.end()) {
+        auto port = ite->second;
+        unassign_port(port);
+        if (port == 0)
+            assign_port(0, port);
+    }
 }
 
 void input_base::on_joybtn_input(uint32_t device_id, uint8_t id, bool pressed) {
@@ -341,8 +321,7 @@ void input_base::on_joybtn_input(uint32_t device_id, uint8_t id, bool pressed) {
     if (ite == gcontrollers.end()) {
         return;
     }
-
-    auto m = ite->second->getButton(id, pressed);
+    ite->second.buttonInput(id, pressed);
 }
 
 void input_base::on_joyhat_input(uint32_t device_id, uint8_t id, uint8_t value) {
@@ -350,6 +329,7 @@ void input_base::on_joyhat_input(uint32_t device_id, uint8_t id, uint8_t value) 
     if (ite == gcontrollers.end()) {
         return;
     }
+    ite->second.hatInput(id, value);
 }
 
 void input_base::on_joyaxis_input(uint32_t device_id, uint8_t id, int16_t value) {
@@ -357,6 +337,33 @@ void input_base::on_joyaxis_input(uint32_t device_id, uint8_t id, int16_t value)
     if (ite == gcontrollers.end()) {
         return;
     }
+    ite->second.axisInput(id, value);
+}
+
+void input_base::assign_port(uint32_t device_id, uint8_t port) {
+    if (port >= ports.size() || ports[port].device_id == device_id) {
+        return;
+    }
+    if (device_id != 0) {
+        auto ite = gcontrollers.find(device_id);
+        if (ite == gcontrollers.end()) {
+            return;
+        }
+        ports[port].cstate = &ite->second;
+    }
+    port_mapping.erase(ports[port].device_id);
+    port_mapping[device_id] = port;
+    ports[port].enabled = true;
+    ports[port].device_id = device_id;
+}
+
+void input_base::unassign_port(uint8_t port) {
+    if (port >= ports.size()) {
+        return;
+    }
+    port_mapping.erase(ports[port].device_id);
+    ports[port].enabled = false;
+    ports[port].device_id = 0xFFFFFFFFu;
 }
 
 }

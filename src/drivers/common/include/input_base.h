@@ -36,8 +36,13 @@ struct output_port_t {
 
     /* 0 for keyboard and mouse, otherwise device id for joystick */
     uint32_t device_id = 0xFFFFFFFFu;
+
+    /* keyboard and mouse state */
     int16_t states = 0;
     int16_t analog_axis[4] = {};
+
+    /* game controller state */
+    gamecontrollerdb::ControllerState *cstate = nullptr;
 };
 
 struct input_button_t {
@@ -62,15 +67,9 @@ public:
      * implement it if not handling input events. */
     virtual void input_poll() { }
 
-    /* virtual method called on gamepad connected */
-    virtual void port_connected(int index) = 0;
-
-    /* virtual method called on gamepad disconnected */
-    virtual void port_disconnected(int device_id) = 0;
-
     /* virtual methods to translate name <-> code */
-    virtual void get_input_name(uint64_t input, std::string &device_name, std::string &name) const = 0;
-    virtual uint64_t get_input_from_name(const std::string &device_name, const std::string &name) const = 0;
+    virtual void get_input_name(uint16_t id, std::string &device_name, std::string &name) const = 0;
+    virtual uint16_t get_input_from_name(const std::string &device_name, const std::string &name) const = 0;
 
     inline uint64_t get_last_input() const {
         return last_input;
@@ -90,16 +89,11 @@ public:
     void foreach_km_mapping(const std::function<void(const output_button_t &output, const input_button_t &input)> &cb) const;
 
     std::pair<uint16_t, uint16_t> set_km_mapping(uint16_t from, uint16_t to_id);
-    void assign_port(uint32_t device_id, uint8_t port);
-    void unassign_port(uint8_t port);
 
     void save_to_cfg();
     void load_from_cfg();
 
     void on_km_input(uint16_t id, bool pressed);
-
-    void on_btn_input(uint32_t device_id, uint8_t id, bool pressed);
-    void on_axis_input(uint32_t device_id, uint8_t id, int16_t value);
 
     bool on_device_connected(uint32_t device_id, const gamecontrollerdb::GUID &guid);
     void on_device_disconnected(uint32_t device_id);
@@ -107,7 +101,11 @@ public:
     void on_joyhat_input(uint32_t device_id, uint8_t id, uint8_t value);
     void on_joyaxis_input(uint32_t device_id, uint8_t id, int16_t value);
 
-protected:
+private:
+    void assign_port(uint32_t device_id, uint8_t port);
+    void unassign_port(uint8_t port);
+
+private:
     std::array<output_port_t, 8> ports {};
 
     std::map<uint32_t, uint8_t> port_mapping;
@@ -118,7 +116,7 @@ protected:
     uint64_t last_input = 0;
 
     gamecontrollerdb::DB gcdb;
-    std::map<uint32_t, const gamecontrollerdb::Controller*> gcontrollers;
+    std::map<uint32_t, gamecontrollerdb::ControllerState> gcontrollers;
 };
 
 }
