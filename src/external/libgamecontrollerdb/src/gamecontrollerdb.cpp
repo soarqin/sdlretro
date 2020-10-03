@@ -12,8 +12,8 @@ enum {
 };
 
 void ControllerState::reset() {
-    state = 0;
-    std::memset(axisState, 0, sizeof(axisState));
+    *state = 0;
+    axisState->fill(0);
 }
 
 void ControllerState::buttonInput(int id, bool pressed) {
@@ -26,21 +26,27 @@ void ControllerState::buttonInput(int id, bool pressed) {
     case AxisLeftY:
     case AxisRightX:
     case AxisRightY:
+        if (!axisState) {
+            break;
+        }
         if (pressed) {
             if (mi->direction >= 0) {
-                axisState[mi->id[0] - AxisFirst] = 0x7FFF;
+                (*axisState)[mi->id[0] - AxisFirst] = 0x7FFF;
             } else {
-                axisState[mi->id[0] - AxisFirst] = -0x8000;
+                (*axisState)[mi->id[0] - AxisFirst] = -0x8000;
             }
         } else {
-            axisState[mi->id[0] - AxisFirst] = 0;
+            (*axisState)[mi->id[0] - AxisFirst] = 0;
         }
         break;
     default:
+        if (!state) {
+            break;
+        }
         if (pressed) {
-            state |= 1u << mi->id[0];
+            *state |= 1u << mi->id[0];
         } else {
-            state &= ~(1u << mi->id[0]);
+            *state &= ~(1u << mi->id[0]);
         }
         break;
     }
@@ -58,13 +64,20 @@ void ControllerState::axisInput(int id, int16_t value) {
         case AxisLeftY:
         case AxisRightX:
         case AxisRightY:
-            axisState[mi->id[0] - AxisFirst] = mi->direction >= 0 ? value : -value;
+            if (!axisState) {
+                break;
+            }
+            /* TODO: is this logic correct? */
+            (*axisState)[mi->id[0] - AxisFirst] = mi->direction >= 0 ? value : -value;
             break;
         default:
+            if (!state) {
+                break;
+            }
             if (direction > 0) {
-                state |= 1u << mi->id[0];
+                *state |= 1u << mi->id[0];
             } else {
-                state &= ~(1u << mi->id[0]);
+                *state &= ~(1u << mi->id[0]);
             }
             break;
         }
@@ -75,16 +88,20 @@ void ControllerState::axisInput(int id, int16_t value) {
         case AxisLeftY:
         case AxisRightX:
         case AxisRightY:
-            axisState[mi->id[1] - AxisFirst] = mi->direction <= 0 ? value : -value;
+            if (!axisState) {
+                break;
+            }
+            /* TODO: is this logic correct? */
+            (*axisState)[mi->id[1] - AxisFirst] = mi->direction <= 0 ? value : -value;
             break;
         default:
-            if (mi->id[1] == mi->id[0]) {
+            if (!state) {
                 break;
             }
             if (direction > 0) {
-                state |= 1u << mi->id[1];
+                *state |= 1u << mi->id[1];
             } else {
-                state &= ~(1u << mi->id[1]);
+                *state &= ~(1u << mi->id[1]);
             }
             break;
         }
@@ -108,21 +125,31 @@ void ControllerState::hatInput(int id, uint32_t value) {
         case AxisLeftY:
         case AxisRightX:
         case AxisRightY:
+            if (!axisState) {
+                break;
+            }
             if (value & flag[i]) {
                 if (mi.direction >= 0) {
-                    axisState[inputId - AxisFirst] = 0x7FFF;
+                    (*axisState)[inputId - AxisFirst] = 0x7FFF;
                 } else {
-                    axisState[inputId - AxisFirst] = -0x8000;
+                    (*axisState)[inputId - AxisFirst] = -0x8000;
                 }
             } else {
-                axisState[inputId - AxisFirst] = 0;
+                if (mi.direction == 0) {
+                    (*axisState)[inputId - AxisFirst] = -0x8000;
+                } else {
+                    (*axisState)[inputId - AxisFirst] = 0;
+                }
             }
             break;
         default:
+            if (!state) {
+                break;
+            }
             if (value & flag[i]) {
-                state |= 1u << inputId;
+                *state |= 1u << inputId;
             } else {
-                state &= ~(1u << inputId);
+                *state &= ~(1u << inputId);
             }
             break;
         }

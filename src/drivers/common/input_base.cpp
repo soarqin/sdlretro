@@ -174,7 +174,7 @@ void input_base::set_input_mode(input_base::input_mode m) {
         /* clear inputs on enter/leave menu */
         for (auto &p: ports) {
             p.states = 0;
-            memset(p.analog_axis, 0, sizeof(p.analog_axis));
+            p.analog_axis.fill(0);
             if (p.cstate) {
                 p.cstate->reset();
             }
@@ -292,6 +292,11 @@ bool input_base::on_device_connected(uint32_t device_id, const gamecontrollerdb:
     gcontrollers.emplace(device_id, gamecontrollerdb::ControllerState(controller));
     for (auto &p: ports) {
         if (p.device_id == device_id) {
+            auto ite = gcontrollers.find(device_id);
+            if (ite != gcontrollers.end()) {
+                p.cstate = &ite->second;
+                p.cstate->assign(&p.states, &p.analog_axis);
+            }
             return true;
         }
     }
@@ -349,7 +354,11 @@ void input_base::assign_port(uint32_t device_id, uint8_t port) {
         if (ite == gcontrollers.end()) {
             return;
         }
+        if (ports[port].cstate) {
+            ports[port].cstate->assign(nullptr, nullptr);
+        }
         ports[port].cstate = &ite->second;
+        ports[port].cstate->assign(&ports[port].states, &ports[port].analog_axis);
     }
     port_mapping.erase(ports[port].device_id);
     port_mapping[device_id] = port;
@@ -360,6 +369,10 @@ void input_base::assign_port(uint32_t device_id, uint8_t port) {
 void input_base::unassign_port(uint8_t port) {
     if (port >= ports.size()) {
         return;
+    }
+    if (ports[port].cstate) {
+        ports[port].cstate->assign(nullptr, nullptr);
+        ports[port].cstate = nullptr;
     }
     port_mapping.erase(ports[port].device_id);
     ports[port].enabled = false;

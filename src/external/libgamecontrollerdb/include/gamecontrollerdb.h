@@ -46,9 +46,7 @@ enum Button {
 };
 
 enum {
-    ButtonInput = 0,
-    HatInput,
-    AxisInput,
+    AxisCount = AxisMax - AxisFirst,
 };
 
 using GUID = std::array<uint8_t, 16>;
@@ -57,16 +55,12 @@ class Controller;
 
 class ControllerState {
 public:
-    inline explicit ControllerState(const Controller *c): controller(c) {}
-
-    inline uint32_t getState() const { return state; }
-    inline int16_t getAxisState(int id) const {
-        if (id < AxisFirst || id >= AxisMax) {
-            return 0;
-        }
-        return axisState[id - AxisFirst];
+    inline explicit ControllerState(const Controller *c, uint16_t *stateVal = nullptr, std::array<int16_t, AxisCount> *axisStateVal = nullptr):
+                                    controller(c), state(stateVal), axisState(axisStateVal) {}
+    inline void assign(uint16_t *stateVal, std::array<int16_t, AxisCount> *axisStateVal) {
+        state = stateVal;
+        axisState = axisStateVal;
     }
-
     void reset();
     void buttonInput(int id, bool pressed);
     void axisInput(int id, int16_t value);
@@ -75,8 +69,25 @@ public:
 private:
     const Controller *controller;
 
-    uint32_t state = 0;
-    int16_t axisState[AxisMax - AxisFirst] = {0};
+    uint16_t *state;
+    std::array<int16_t, AxisCount> *axisState;
+};
+
+class ControllerStateManaged: public ControllerState {
+public:
+    inline explicit ControllerStateManaged(const Controller *c):
+                    ControllerState(c, &stateVal, &axisStateVal) {}
+    inline uint16_t getState() const { return stateVal; }
+    inline int16_t getAxisState(int id) const {
+        if (id < AxisFirst || id >= AxisMax) {
+            return 0;
+        }
+        return axisStateVal[id - AxisFirst];
+    }
+
+private:
+    uint16_t stateVal = 0;
+    std::array<int16_t, AxisCount> axisStateVal = {};
 };
 
 class Controller {

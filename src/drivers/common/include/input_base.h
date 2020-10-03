@@ -38,8 +38,8 @@ struct output_port_t {
     uint32_t device_id = 0xFFFFFFFFu;
 
     /* keyboard and mouse state */
-    int16_t states = 0;
-    int16_t analog_axis[4] = {};
+    uint16_t states = 0;
+    std::array<int16_t, 4> analog_axis = {};
 
     /* game controller state */
     gamecontrollerdb::ControllerState *cstate = nullptr;
