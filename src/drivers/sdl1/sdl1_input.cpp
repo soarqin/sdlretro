@@ -79,10 +79,10 @@ void sdl1_input::input_poll() {
         if (!port.enabled) continue;
 
         if (joystick[z]) {
-            port.analog_axis[0][0] = SDL_JoystickGetAxis(joystick[z], 0);
-            port.analog_axis[0][1] = SDL_JoystickGetAxis(joystick[z], 1);
-            port.analog_axis[1][0] = SDL_JoystickGetAxis(joystick[z], 2);
-            port.analog_axis[1][1] = SDL_JoystickGetAxis(joystick[z], 3);
+            port.analog_axis[0] = SDL_JoystickGetAxis(joystick[z], 0);
+            port.analog_axis[1] = SDL_JoystickGetAxis(joystick[z], 1);
+            port.analog_axis[2] = SDL_JoystickGetAxis(joystick[z], 2);
+            port.analog_axis[3] = SDL_JoystickGetAxis(joystick[z], 3);
         }
     }
 }

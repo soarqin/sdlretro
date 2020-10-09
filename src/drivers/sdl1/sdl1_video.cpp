@@ -134,7 +134,6 @@ void sdl1_video::render(const void *data, int width, int height, size_t pitch) {
             y += lh;
         }
     }
-    flip();
 }
 
 void *sdl1_video::get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) {

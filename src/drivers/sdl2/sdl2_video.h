@@ -25,6 +25,7 @@ public:
     void window_resized(int width, int height, bool fullscreen) override;
     bool game_resolution_changed(int width, int height, int max_width, int max_height, uint32_t pixel_format) override;
     void render(const void *data, int width, int height, size_t pitch) override;
+    void frame_render() override;
     void *get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
     void get_resolution(int &width, int &height) override {
@@ -51,7 +52,6 @@ private:
     bool init_video(bool use_gles);
     void uninit_video();
     void init_fonts();
-    void do_render();
     void init_opengl();
     void uninit_opengl();
     void gl_set_ortho();

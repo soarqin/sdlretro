@@ -242,8 +242,29 @@ void sdl2_video::render(const void *data, int width, int height, size_t pitch) {
         }
     }
     drawn = true;
-    do_render();
-    SDL_GL_SwapWindow(window);
+}
+
+void sdl2_video::frame_render() {
+    clear();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glViewport(0, 0, curr_width, curr_height);
+    glUseProgram(gl_renderer.program_texture);
+    glBindVertexArray(gl_renderer.vao_texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    if (messages.empty()) return;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    uint32_t lh = ttf[0]->get_font_size() + 2;
+    uint32_t y = curr_height - 5 - (messages.size() - 1) * lh;
+    for (auto &m: messages) {
+        draw_text(5, y, m.first.c_str(), 0, true);
+        y += lh;
+    }
 }
 
 void *sdl2_video::get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format) {
@@ -475,29 +496,6 @@ void sdl2_video::init_fonts() {
     ttf[0]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "regular.ttf", 0);
     ttf[1]->init(size, 0);
     ttf[1]->add(g_cfg.get_data_dir() + PATH_SEPARATOR_CHAR + "fonts" + PATH_SEPARATOR_CHAR + "bold.ttf", 0);
-}
-
-void sdl2_video::do_render() {
-    clear();
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    glViewport(0, 0, curr_width, curr_height);
-    glUseProgram(gl_renderer.program_texture);
-    glBindVertexArray(gl_renderer.vao_texture);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    if (messages.empty()) return;
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    uint32_t lh = ttf[0]->get_font_size() + 2;
-    uint32_t y = curr_height - 5 - (messages.size() - 1) * lh;
-    for (auto &m: messages) {
-        draw_text(5, y, m.first.c_str(), 0, true);
-        y += lh;
-    }
 }
 
 void sdl2_video::init_opengl() {

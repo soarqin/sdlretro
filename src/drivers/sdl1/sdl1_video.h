@@ -19,6 +19,7 @@ public:
     void window_resized(int width, int height, bool fullscreen) {}
     bool game_resolution_changed(int width, int height, int max_width, int max_height, unsigned pixel_format) override;
     void render(const void *data, int width, int height, size_t pitch) override;
+    void frame_render() override {}
     void *get_framebuffer(unsigned *width, unsigned *height, size_t *pitch, int *format) override;
     bool frame_drawn() override { return drawn; }
     void get_resolution(int &width, int &height) override { width = curr_width; height = curr_height; }

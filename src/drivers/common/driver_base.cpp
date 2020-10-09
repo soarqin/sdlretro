@@ -81,8 +81,33 @@ driver_base::~driver_base() {
     current_driver = nullptr;
 }
 
-void driver_base::run(std::function<void()> in_game_menu_cb) {
-    while (!shutdown_driver && run_frame(in_game_menu_cb, video->frame_drawn())) {
+void driver_base::run(const std::function<void()> &in_game_menu_cb) {
+    while (!shutdown_driver && !process_events()) {
+        if (menu_button_pressed) {
+            audio->pause(true);
+            in_game_menu_cb();
+            audio->pause(false);
+            frame_throttle->reset(fps);
+            menu_button_pressed = false;
+        }
+
+        core->retro_run();
+        if (video->frame_drawn()) {
+            int64_t usecs = frame_throttle->check_wait();
+            if (usecs > 0) {
+                do {
+                    usleep(usecs);
+                    usecs = frame_throttle->check_wait();
+                } while (usecs > 0);
+            } else {
+                video->set_skip_frame();
+            }
+            video->message_frame_pass();
+            video->frame_render();
+            video->flip();
+        } else
+            frame_throttle->skip_check();
+
         auto check = g_cfg.get_save_check();
         if (check) {
             if (!save_check_countdown) {
@@ -92,8 +117,6 @@ void driver_base::run(std::function<void()> in_game_menu_cb) {
                 save_check_countdown--;
             }
         }
-        core->retro_run();
-        video->message_frame_pass();
     }
 }
 
@@ -716,30 +739,6 @@ void driver_base::init_system_av_info() {
     aspect_ratio = av_info.geometry.aspect_ratio;
     fps = av_info.timing.fps;
     sample_rate = av_info.timing.sample_rate;
-}
-
-bool driver_base::run_frame(std::function<void()> &in_game_menu_cb, bool check) {
-    if (process_events()) return false;
-    if (menu_button_pressed) {
-        audio->pause(true);
-        in_game_menu_cb();
-        audio->pause(false);
-        frame_throttle->reset(fps);
-        menu_button_pressed = false;
-    }
-    if (check) {
-        int64_t usecs = frame_throttle->check_wait();
-        if (usecs > 0) {
-            do {
-                usleep(usecs);
-                usecs = frame_throttle->check_wait();
-            } while (usecs > 0);
-        } else {
-            video->set_skip_frame();
-        }
-    } else
-        frame_throttle->skip_check();
-    return true;
 }
 
 }

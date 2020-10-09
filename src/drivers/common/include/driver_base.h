@@ -39,7 +39,7 @@ public:
     virtual ~driver_base();
 
     /* enter core main loop */
-    void run(std::function<void()> in_game_menu_cb);
+    void run(const std::function<void()> &in_game_menu_cb);
 
     /* shutdown the driver */
     inline void shutdown() { shutdown_driver = true; }
@@ -94,9 +94,6 @@ protected:
     virtual bool init() = 0;
     virtual void deinit() = 0;
     virtual void unload() = 0;
-
-    /* frame runner for the core */
-    virtual bool run_frame(std::function<void()> &in_game_menu_cb, bool check);
 
 protected:
     /* core struct, check libretro/include/core.h */

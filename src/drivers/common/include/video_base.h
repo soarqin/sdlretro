@@ -25,6 +25,7 @@ public:
     /* pixel_format follows libretro: RGB1555=0 XRGB8888=1 RGB565=2 */
     virtual bool game_resolution_changed(int width, int height, int max_width, int max_height, uint32_t pixel_format) = 0;
     virtual void render(const void *data, int width, int height, size_t pitch) = 0;
+    virtual void frame_render() = 0;
 
     virtual void enter_menu() {}
     virtual void leave_menu() {}
