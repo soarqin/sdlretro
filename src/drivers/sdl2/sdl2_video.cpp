@@ -265,6 +265,8 @@ void sdl2_video::frame_render() {
         draw_text(5, y, m.first.c_str(), 0, true);
         y += lh;
     }
+
+    flip();
 }
 
 void *sdl2_video::get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format) {

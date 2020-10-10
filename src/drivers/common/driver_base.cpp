@@ -104,7 +104,6 @@ void driver_base::run(const std::function<void()> &in_game_menu_cb) {
             }
             video->message_frame_pass();
             video->frame_render();
-            video->flip();
         } else
             frame_throttle->skip_check();
 
