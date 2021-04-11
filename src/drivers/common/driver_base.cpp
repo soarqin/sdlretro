@@ -19,12 +19,6 @@
 #include <cstring>
 #include <cstdarg>
 #include <cmath>
-#ifdef _MSC_VER
-#include <windows.h>
-#define usleep(n) Sleep((n) / 1000)
-#else
-#include <unistd.h>
-#endif
 
 namespace drivers {
 
@@ -238,7 +232,7 @@ void driver_base::unload_game() {
     check_save_ram();
     core->retro_unload_game();
     audio->stop();
-    video->uninit_hw_renderer();
+    video->deinit_hw_renderer();
     unload();
 
     if (!temp_file.empty()) {

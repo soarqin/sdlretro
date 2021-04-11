@@ -1,3 +1,8 @@
+if(SDLRETRO_CORE_DOWNLOADER)
+    message(STATUS "Found libcurl version: ${CURL_VERSION_STRING}")
+    set(EXTRA_SRC downloader.cpp include/downloader.h)
+endif()
+
 add_library(libretro STATIC
     # config
     cfg.cpp
@@ -24,6 +29,8 @@ add_library(libretro STATIC
     include/core_manager.h
     include/perf.h
     include/libretro.h
+
+    ${EXTRA_SRC}
     )
 
 if(WIN32)
@@ -32,10 +39,20 @@ elseif(UNIX)
     target_compile_definitions(libretro PRIVATE VFS_UNIX)
 endif()
 
+if(SDLRETRO_CORE_DOWNLOADER)
+    target_compile_definitions(libretro PUBLIC CORE_DOWNLOADER)
+endif()
+
 target_include_directories(libretro PUBLIC include)
-target_link_libraries(libretro spdlog::spdlog nlohmann::json xxhash::xxhash steinwurf::cpuid)
+
+target_link_libraries(libretro
+    PUBLIC  spdlog::spdlog nlohmann::json
+    PRIVATE xxhash::xxhash steinwurf::cpuid)
+if(CURL_FOUND)
+    target_link_libraries(libretro PRIVATE CURL::libcurl)
+endif()
 if(WIN32)
-    target_link_libraries(libretro shlwapi)
+    target_link_libraries(libretro PUBLIC shlwapi)
 else()
-    target_link_libraries(libretro dl)
+    target_link_libraries(libretro PUBLIC dl)
 endif()

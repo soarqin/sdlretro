@@ -12,7 +12,70 @@ enum {
     slider_width = 10,
 };
 
-void sdl_menu::enter() {
+void sdl_menu::draw() {
+    auto *video = driver->get_video();
+    auto font_size = video->get_font_size();
+    int x = key_x, y = menu_y + font_size;
+    video->clear();
+    video->gui_predraw();
+    if (!title.empty()) {
+        video->draw_text(title_x, y, title.c_str(), 0, true);
+        y += line_height + font_size / 2;
+    }
+    int top_y = y - font_size;
+    size_t end_index = top_index + page_size;
+    auto item_size = items.size();
+    if (end_index > item_size) end_index = item_size;
+    for (size_t i = top_index; i < end_index; ++i) {
+        auto &item = items[i];
+        if (i == selected) {
+            video->set_draw_color(0x60, 0x80, 0xA0, 0xFF);
+            video->fill_rectangle(x - 3, y + top_most - 3, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 6, bot_most - top_most + 6);
+        }
+        video->draw_text(x, y, item.text.c_str(), item_width, true);
+        switch (item.type) {
+        case menu_boolean:
+            video->draw_text(value_x, y, item.selected ? "on"_i18n : "off"_i18n, value_width, true);
+            break;
+        case menu_values:
+            video->draw_text(value_x, y, item.values[item.selected].c_str(), value_width, true);
+            break;
+        case menu_input:
+            video->draw_text(value_x, y, item.str.c_str(), value_width, true);
+            break;
+        default:
+            break;
+        }
+        y += line_height;
+    }
+    if (need_slider) {
+        int end_y = y - font_size;
+        int top_pos = top_y + (end_y - top_y) * (int)top_index / (int)item_size;
+        int end_pos = top_y + (end_y - top_y) * (int)end_index / (int)item_size;
+        video->set_draw_color(0xC0, 0xC0, 0xC0, 0xFF);
+        video->draw_rectangle(menu_x, top_y, slider_width, end_y - top_y);
+        video->fill_rectangle(menu_x, top_pos, slider_width, end_pos - top_pos);
+    }
+    if (in_input_mode) {
+        const char *dialog_text = "Press a key/button..."_i18n;
+        int tw;
+        int tt, tb;
+        video->get_text_width_and_height(dialog_text, tw, tt, tb);
+
+        int ww, wh;
+        video->get_resolution(ww, wh);
+
+        int dx = (ww - (int)tw) / 2;
+        int dy = (wh - (tb - tt)) / 2 + font_size;
+
+        video->set_draw_color(0x20, 0x20, 0x20, 0xC0);
+        video->fill_rectangle(dx - 2, dy + tt - 2, (int)tw + 2, tb - tt + 4);
+        video->draw_text(dx, dy, dialog_text, 0, false);
+    }
+    video->flip();
+}
+
+void sdl_menu::init() {
     auto *video = driver->get_video();
     auto font_size = video->get_font_size();
     line_height = font_size + font_size / 4 + line_spacing;
@@ -90,71 +153,8 @@ void sdl_menu::enter() {
     value_x = key_x + item_width + gap_between_key_and_value;
 }
 
-void sdl_menu::leave() {
+void sdl_menu::deinit() {
     driver->get_video()->clear();
-}
-
-void sdl_menu::draw() {
-    auto *video = driver->get_video();
-    auto font_size = video->get_font_size();
-    int x = key_x, y = menu_y + font_size;
-    video->clear();
-    video->predraw_menu();
-    if (!title.empty()) {
-        video->draw_text(title_x, y, title.c_str(), 0, true);
-        y += line_height + font_size / 2;
-    }
-    int top_y = y - font_size;
-    size_t end_index = top_index + page_size;
-    auto item_size = items.size();
-    if (end_index > item_size) end_index = item_size;
-    for (size_t i = top_index; i < end_index; ++i) {
-        auto &item = items[i];
-        if (i == selected) {
-            video->set_draw_color(0x60, 0x80, 0xA0, 0xFF);
-            video->fill_rectangle(x - 3, y + top_most - 3, item_width + (value_width ? (gap_between_key_and_value + value_width) : 0) + 6, bot_most - top_most + 6);
-        }
-        video->draw_text(x, y, item.text.c_str(), item_width, true);
-        switch (item.type) {
-        case menu_boolean:
-            video->draw_text(value_x, y, item.selected ? "on"_i18n : "off"_i18n, value_width, true);
-            break;
-        case menu_values:
-            video->draw_text(value_x, y, item.values[item.selected].c_str(), value_width, true);
-            break;
-        case menu_input:
-            video->draw_text(value_x, y, item.str.c_str(), value_width, true);
-            break;
-        default:
-            break;
-        }
-        y += line_height;
-    }
-    if (need_slider) {
-        int end_y = y - font_size;
-        int top_pos = top_y + (end_y - top_y) * (int)top_index / (int)item_size;
-        int end_pos = top_y + (end_y - top_y) * (int)end_index / (int)item_size;
-        video->set_draw_color(0xC0, 0xC0, 0xC0, 0xFF);
-        video->draw_rectangle(menu_x, top_y, slider_width, end_y - top_y);
-        video->fill_rectangle(menu_x, top_pos, slider_width, end_pos - top_pos);
-    }
-    if (in_input_mode) {
-        const char *dialog_text = "Press a key/button..."_i18n;
-        int tw;
-        int tt, tb;
-        video->get_text_width_and_height(dialog_text, tw, tt, tb);
-
-        int ww, wh;
-        video->get_resolution(ww, wh);
-
-        int dx = (ww - (int)tw) / 2;
-        int dy = (wh - (tb - tt)) / 2 + font_size;
-
-        video->set_draw_color(0x20, 0x20, 0x20, 0xC0);
-        video->fill_rectangle(dx - 2, dy + tt - 2, (int)tw + 2, tb - tt + 4);
-        video->draw_text(dx, dy, dialog_text, 0, false);
-    }
-    video->flip();
 }
 
 }

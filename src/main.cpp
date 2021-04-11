@@ -9,7 +9,7 @@
 #include <i18n.h>
 #include <core_manager.h>
 #include <util.h>
-#include <ui_menu.h>
+#include <ui_host.h>
 #include <cfg.h>
 
 #include <spdlog/spdlog.h>
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    gui::ui_menu menu(impl);
+    gui::ui_host ui(impl);
 
     std::vector<uint8_t> unzipped_data;
     std::string rom_ext;
@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
         }
         int index = 0;
         if (core_list.size() > 1) {
-            index = menu.select_core_menu(core_list);
+            index = ui.select_core_menu(core_list);
             if (index < 0 || index >= core_list.size()) {
                 return 1;
             }
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
     } else {
         impl->load_game_from_mem(rom_filename, rom_ext, unzipped_data);
     }
-    impl->run([&menu] { menu.in_game_menu(); });
+    impl->run([&ui] { ui.in_game_menu(); });
     impl->unload_game();
 
     return 0;

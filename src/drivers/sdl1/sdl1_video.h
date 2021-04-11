@@ -38,8 +38,8 @@ private:
     void draw_text_pixel(int x, int y, const char *text, int width, bool shadow);
 
 public:
-    void enter_menu() override;
-    void leave_menu() override;
+    void gui_popup() override;
+    void gui_leave() override;
 
 private:
     SDL_Surface *screen = nullptr;

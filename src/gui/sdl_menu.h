@@ -8,10 +8,11 @@ class sdl_menu: public menu_base {
 public:
     using menu_base::menu_base;
 
-protected:
-    void enter() override;
-    void leave() override;
     void draw() override;
+
+protected:
+    void init() override;
+    void deinit() override;
     size_t page_count() override { return page_size; }
 
 private:

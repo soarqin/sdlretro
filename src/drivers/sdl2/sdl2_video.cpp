@@ -81,7 +81,7 @@ sdl2_video::sdl2_video(): saved_x(SDL_WINDOWPOS_CENTERED), saved_y(SDL_WINDOWPOS
 }
 
 sdl2_video::~sdl2_video() {
-    uninit_video();
+    deinit_video();
 }
 
 int sdl2_video::get_renderer_type() {
@@ -111,7 +111,7 @@ retro_proc_address_t RETRO_CALLCONV hw_get_proc_address(const char *sym) {
 }
 
 bool sdl2_video::init_hw_renderer(retro_hw_render_callback *hwr) {
-    uninit_hw_renderer();
+    deinit_hw_renderer();
 
     if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3 || hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION) {
         if (!init_video(true)) {
@@ -174,7 +174,7 @@ void sdl2_video::inited_hw_renderer() {
     }
 }
 
-void sdl2_video::uninit_hw_renderer() {
+void sdl2_video::deinit_hw_renderer() {
     if (hw_renderer.rb_ds) {
         glDeleteRenderbuffers(1, &hw_renderer.rb_ds);
         hw_renderer.rb_ds = 0;
@@ -367,7 +367,7 @@ void sdl2_video::get_text_width_and_height(const char *text, int &w, int &t, int
     }
 }
 
-void sdl2_video::predraw_menu() {
+void sdl2_video::gui_predraw() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -394,7 +394,7 @@ void sdl2_video::config_changed() {
 }
 
 bool sdl2_video::init_video(bool use_gles) {
-    uninit_video();
+    deinit_video();
 
     if (use_gles) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -461,14 +461,14 @@ bool sdl2_video::init_video(bool use_gles) {
     return true;
 }
 
-void sdl2_video::uninit_video() {
+void sdl2_video::deinit_video() {
     if (ttf[0]) {
         ttf[0].reset();
     }
     if (ttf[1]) {
         ttf[1].reset();
     }
-    uninit_opengl();
+    deinit_opengl();
     if (context) {
         SDL_GL_DeleteContext(context);
         context = nullptr;
@@ -595,7 +595,7 @@ void sdl2_video::init_opengl() {
     gl_set_ortho();
 }
 
-void sdl2_video::uninit_opengl() {
+void sdl2_video::deinit_opengl() {
     if (gl_renderer.texture_game) {
         glDeleteTextures(1, &gl_renderer.texture_game);
         gl_renderer.texture_game = 0;

@@ -7,7 +7,6 @@
 #include <windows.h>
 #include <shlwapi.h>
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 struct retro_vfs_file_handle {

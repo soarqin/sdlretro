@@ -21,7 +21,7 @@ public:
     int get_renderer_type() override;
     bool init_hw_renderer(retro_hw_render_callback*) override;
     void inited_hw_renderer() override;
-    void uninit_hw_renderer() override;
+    void deinit_hw_renderer() override;
     void window_resized(int width, int height, bool fullscreen) override;
     bool game_resolution_changed(int width, int height, int max_width, int max_height, uint32_t pixel_format) override;
     void render(const void *data, int width, int height, size_t pitch) override;
@@ -43,17 +43,17 @@ public:
     void draw_text(int x, int y, const char *text, int width, bool shadow) override;
     void get_text_width_and_height(const char *text, int &w, int &t, int &b) const override;
 
-    void predraw_menu() override;
+    void gui_predraw() override;
     void config_changed() override;
 
     inline uintptr_t get_hw_fbo() const { return hw_renderer.fbo; }
 
 private:
     bool init_video(bool use_gles);
-    void uninit_video();
+    void deinit_video();
     void init_fonts();
     void init_opengl();
-    void uninit_opengl();
+    void deinit_opengl();
     void gl_set_ortho();
     bool recalc_draw_rect(bool force_create_empty_texture = false);
 

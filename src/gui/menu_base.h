@@ -1,15 +1,13 @@
 #pragma once
 
+#include "gui_base.h"
+
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 #include <functional>
 #include <cstdint>
-
-namespace drivers {
-class driver_base;
-}
 
 namespace gui {
 
@@ -38,7 +36,7 @@ struct menu_item {
     std::vector<std::string> values;
 
     /* for menu_static:
-     *   if this is null, enter_menu_loop() will return true if button A is pressed
+     *   if this is null, event_loop() will return true if button A is pressed
      *   if this is not null, this function will be called on button A pressed
      *   return true to close all levels of menu
      * for menu_boolean and menu_values:
@@ -58,9 +56,9 @@ struct menu_item {
     std::string str;
 };
 
-class menu_base {
+class menu_base: public gui_base<menu_base> {
 public:
-    menu_base(std::shared_ptr<drivers::driver_base> d, menu_base *p, std::function<void(menu_base&)> init_func);
+    menu_base(const std::shared_ptr<drivers::driver_base> &d, menu_base *p, std::function<void(menu_base&)> init_func);
     virtual ~menu_base() = default;
 
     inline void set_title(const std::string &text) { title = text; }
@@ -70,11 +68,8 @@ public:
     inline void set_line_spacing(int s) { line_spacing = s; }
     inline void set_item_width(int w) { item_width = w; }
 
-    /* enter menu loop
-     * return if `OK` is pressed and use get_selected() to fetch index*/
-    bool enter_menu_loop(size_t sel = 0);
-    /* call this to leave menu loop */
-    void leave_menu_loop();
+    void event_loop() override;
+
     /* regular operations */
     void move_up();
     void move_down();
@@ -91,30 +86,24 @@ public:
         if (recursive && parent != nullptr) parent->force_refresh();
     }
 
+    inline bool get_ok_pressed() const { return ok_pressed; }
     inline size_t get_selected() const { return selected; }
     void set_selected(size_t sel);
+    inline void set_init_sel(size_t sel) { init_sel = sel; }
     inline std::vector<menu_item> &get_items() { return items; }
 
 protected:
-    inline void set_ok_pressed(bool b) { ok_pressed = b; }
+    /* poll all inputs, return true if any changes to the menu (aka redraw is required) */
+    bool poll_input();
 
-protected:
-    /* called when entering menu, doing initialization here */
-    virtual void enter() = 0;
-    /* called when leaving menu, doing deinitialization here */
-    virtual void leave() = 0;
-    /* draw menu items */
-    virtual void draw() = 0;
+    inline void set_ok_pressed(bool b) { ok_pressed = b; }
     /* return maximum count for items for a page */
     virtual size_t page_count() = 0;
-    /* poll all inputs, return true if any changes to the menu (aka redraw is required) */
-    virtual bool poll_input();
 
 protected:
-    std::shared_ptr<drivers::driver_base> driver;
-    menu_base *parent = nullptr;
     size_t top_index = 0;
     size_t selected = 0;
+    size_t init_sel = 0;
     std::string title;
     std::vector<menu_item> items;
     int menu_x = 0, menu_y = 0;
@@ -124,7 +113,6 @@ protected:
     bool in_input_mode = false;
 
 private:
-    bool running = false;
     bool ok_pressed = false;
     bool force_refreshing = false;
 

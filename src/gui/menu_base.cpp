@@ -4,26 +4,21 @@
 #include "input_base.h"
 #include "video_base.h"
 
+#include <util.h>
 #include <libretro.h>
-
-#ifdef _MSC_VER
-#include <windows.h>
-#define usleep(n) Sleep((n) / 1000)
-#else
-#include <unistd.h>
-#endif
 
 namespace gui {
 
-menu_base::menu_base(std::shared_ptr<drivers::driver_base> d, menu_base *p, std::function<void(menu_base&)> init_func) : driver(std::move(d)), parent(p), init_fn(std::move(init_func)) {
+menu_base::menu_base(const std::shared_ptr<drivers::driver_base> &d, menu_base *p, std::function<void(menu_base&)> init_func) : gui_base(d, p), init_fn(std::move(init_func)) {
 }
 
-bool menu_base::enter_menu_loop(size_t sel) {
+void menu_base::event_loop() {
     auto *input = driver->get_input();
     if (!parent) {
-        driver->get_video()->enter_menu();
+        driver->get_video()->gui_popup();
     }
 
+    auto sel = init_sel;
     do {
         force_refreshing = false;
         if (init_fn)
@@ -32,7 +27,7 @@ bool menu_base::enter_menu_loop(size_t sel) {
         do {
             if (driver->process_events()) {
                 ok_pressed = false;
-                leave_menu_loop();
+                leave_event_loop();
                 driver->shutdown();
                 break;
             }
@@ -42,14 +37,14 @@ bool menu_base::enter_menu_loop(size_t sel) {
         if (!running) {
             break;
         }
-        enter();
+        init();
         set_selected(sel);
         draw();
         while (running && !force_refreshing) {
             usleep(50000);
             if (driver->process_events()) {
                 ok_pressed = false;
-                leave_menu_loop();
+                leave_event_loop();
                 driver->shutdown();
                 break;
             }
@@ -59,22 +54,14 @@ bool menu_base::enter_menu_loop(size_t sel) {
             }
         }
         sel = selected;
-        leave();
+        deinit();
     } while (force_refreshing);
 
     if (!parent) {
-        driver->get_video()->leave_menu();
+        driver->get_video()->gui_leave();
         input->set_input_mode(drivers::input_base::mode_game);
     }
     running = false;
-    return ok_pressed;
-}
-
-void menu_base::leave_menu_loop() {
-    running = false;
-    if (parent) {
-        parent->leave_menu_loop();
-    }
 }
 
 void menu_base::move_up() {

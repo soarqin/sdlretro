@@ -18,7 +18,7 @@ public:
     virtual int get_renderer_type() { return 0; }
     virtual bool init_hw_renderer(retro_hw_render_callback*) { return false; }
     virtual void inited_hw_renderer() {}
-    virtual void uninit_hw_renderer() {}
+    virtual void deinit_hw_renderer() {}
 
     virtual void window_resized(int width, int height, bool fullscreen) = 0;
 
@@ -27,9 +27,9 @@ public:
     virtual void render(const void *data, int width, int height, size_t pitch) = 0;
     virtual void frame_render() = 0;
 
-    virtual void enter_menu() {}
-    virtual void leave_menu() {}
-    virtual void predraw_menu() {}
+    virtual void gui_popup() {}
+    virtual void gui_leave() {}
+    virtual void gui_predraw() {}
     virtual void config_changed() {}
 
     virtual void *get_framebuffer(uint32_t *width, uint32_t *height, size_t *pitch, int *format)

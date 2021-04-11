@@ -1,10 +1,15 @@
 add_library(gui STATIC
+    gui_base.h
+    elem_base.cpp
+    elem_base.h
+    sdl_elem.cpp
+    sdl_elem.h
     menu_base.cpp
     menu_base.h
     sdl_menu.cpp
     sdl_menu.h
-    ui_menu.cpp
-    include/ui_menu.h
+    ui_host.cpp
+    include/ui_host.h
     )
 if(SDLRETRO_FRONTEND STREQUAL "SDL1")
     target_compile_definitions(gui PRIVATE SDLRETRO_FRONTEND=1)

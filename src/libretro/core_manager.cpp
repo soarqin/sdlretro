@@ -2,10 +2,9 @@
 
 #include "cfg.h"
 
-#include <util.h>
+#include "util.h"
 
 #include "dlfcn_compat.h"
-
 #include <cstring>
 
 namespace libretro {

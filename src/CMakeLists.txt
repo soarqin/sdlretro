@@ -3,6 +3,11 @@ if(OPENDINGUX)
 else()
     set(DEFAULT_FRONTEND SDL2)
 endif()
+if(WIN32)
+    set(DEFAULT_CORE_DOWNLOADER OFF)
+else()
+    set(DEFAULT_CORE_DOWNLOADER ON)
+endif()
 
 if(WIN32)
     # use stb_truetype by default on windows
@@ -17,6 +22,11 @@ endif()
 option(SDLRETRO_USE_STATIC_CRT "Use static C Runtime" ${DEFAULT_STATIC_CRT})
 set(SDLRETRO_FRONTEND "${DEFAULT_FRONTEND}" CACHE STRING "Select frontend (SDL1, SDL2)")
 option(SDLRETRO_USE_STB_TRUETYPE "Use stb truetype (aka build w/o FreeType)" ${DEFAULT_STB_TRUETYPE})
+option(SDLRETRO_CORE_DOWNLOADER "Enable core downloader" ${DEFAULT_CORE_DOWNLOADER})
+
+if(SDLRETRO_CORE_DOWNLOADER)
+    find_package(CURL REQUIRED)
+endif()
 
 if(SDLRETRO_USE_STATIC_CRT)
     if(CMAKE_COMPILER_IS_GNUCXX)

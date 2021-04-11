@@ -1,4 +1,4 @@
-#include "ui_menu.h"
+#include "ui_host.h"
 
 #include "cfg.h"
 
@@ -8,6 +8,7 @@
 #include "input_base.h"
 #include "video_base.h"
 
+#include "util.h"
 #include "libretro.h"
 #include "variables.h"
 #include "core_manager.h"
@@ -16,11 +17,11 @@ namespace gui {
 
 std::vector<::libretro::language_info> global_language_list;
 
-ui_menu::ui_menu(std::shared_ptr<drivers::driver_base> drv): driver(std::move(drv)) {
+ui_host::ui_host(std::shared_ptr<drivers::driver_base> drv): driver(std::move(drv)) {
     ::libretro::i18n::get_language_list(global_language_list);
 }
 
-int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
+int ui_host::select_core_menu(const std::vector<const libretro::core_info *> &core_list) {
     sdl_menu menu(driver, nullptr, [&core_list, this](menu_base &menu) {
         menu.set_title(std::string("[") + "Select Core to Use"_i18n + "]");
 
@@ -35,11 +36,14 @@ int ui_menu::select_core_menu(const std::vector<const libretro::core_info *> &co
         auto border = w / 16;
         menu.set_rect(border, border, w - border * 2, h - border * 2);
     });
-    if (!menu.enter_menu_loop()) return -1;
+    menu.event_loop();
+    if (!menu.get_ok_pressed()) {
+        return -1;
+    }
     return menu.get_selected();
 }
 
-void ui_menu::in_game_menu() {
+void ui_host::in_game_menu() {
     sdl_menu topmenu(driver, nullptr, [this](menu_base &menu) {
         menu.set_title(std::string("[") + "In-Game Menu"_i18n + "]");
 
@@ -79,10 +83,10 @@ void ui_menu::in_game_menu() {
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
     });
-    topmenu.enter_menu_loop();
+    topmenu.event_loop();
 }
 
-bool ui_menu::global_settings_menu(menu_base *parent) {
+bool ui_host::global_settings_menu(menu_base *parent) {
     enum :size_t {
         check_secs_count = 4
     };
@@ -146,12 +150,12 @@ bool ui_menu::global_settings_menu(menu_base *parent) {
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
     });
-    menu.enter_menu_loop();
+    menu.event_loop();
     g_cfg.save();
     return false;
 }
 
-bool ui_menu::core_settings_menu(menu_base *parent) {
+bool ui_host::core_settings_menu(menu_base *parent) {
     auto *vari = driver->get_variables();
     const auto &vars = vari->get_variables();
     if (vars.empty()) return false;
@@ -186,12 +190,12 @@ bool ui_menu::core_settings_menu(menu_base *parent) {
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
     });
-    menu.enter_menu_loop();
+    menu.event_loop();
     driver->save_variables_to_cfg();
     return false;
 }
 
-bool ui_menu::input_settings_menu(menu_base *parent) {
+bool ui_host::input_settings_menu(menu_base *parent) {
     auto *input = driver->get_input();
     sdl_menu menu(driver, parent, [this, input](menu_base &menu) {
         menu.set_title(std::string("[") + "Input Settings"_i18n + "]");
@@ -226,13 +230,13 @@ bool ui_menu::input_settings_menu(menu_base *parent) {
         menu.set_rect(border, border, w - border * 2, h - border * 2);
         menu.set_item_width(w - border * 2 - 90);
     });
-    menu.enter_menu_loop();
+    menu.event_loop();
 
     input->save_to_cfg();
     return false;
 }
 
-bool ui_menu::language_settings_menu(menu_base *parent) {
+bool ui_host::language_settings_menu(menu_base *parent) {
     sdl_menu menu(driver, parent, [this](menu_base &menu) {
         menu.set_title(std::string("[") + "Language"_i18n + "]");
 
@@ -260,12 +264,34 @@ bool ui_menu::language_settings_menu(menu_base *parent) {
     for (auto &l: global_language_list) {
         if (l.id == lang) {
             lindex = idx;
+            break;
         }
         ++idx;
     }
-    menu.enter_menu_loop(lindex);
-    menu.force_refresh();
+    menu.set_init_sel(lindex);
+    menu.event_loop();
+    if (menu.get_ok_pressed()) {
+        menu.force_refresh();
+    }
     return false;
 }
+
+#ifdef CORE_DOWNLOADER
+std::string ui_host::download_bar(const std::string &url) {
+    downloader.add("url", [](int, int64_t now, int64_t total) {
+        printf("%llu %llu\n", now, total);
+    });
+    uint64_t time_to_sleep = 0;
+    util::Downloader::Data data;
+    while (downloader.get_running()) {
+        usleep(time_to_sleep);
+        time_to_sleep = downloader.process(util::get_ticks_usec());
+        while (downloader.pop_response(data)) {
+            printf("%lu %zu\n", data.response_code, data.content.length());
+        }
+    }
+    return data.response_code == 200 ? data.content : "";
+}
+#endif
 
 }

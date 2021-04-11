@@ -30,4 +30,3 @@ else()
 endif()
 
 target_link_libraries(driver_sdl2 glad)
-target_link_libraries(driver_sdl2 glad)

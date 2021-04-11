@@ -7,7 +7,6 @@
 #include "util.h"
 
 #include <SDL.h>
-#include <unistd.h>
 
 namespace drivers {
 
@@ -364,7 +363,7 @@ void sdl1_video::draw_text_pixel(int x, int y, const char *text, int width, bool
     }
 }
 
-void sdl1_video::enter_menu() {
+void sdl1_video::gui_popup() {
     SDL_UnlockSurface(screen);
     usleep(10000);
     saved_width = curr_width;
@@ -377,7 +376,7 @@ void sdl1_video::enter_menu() {
     screen_ptr = screen->pixels;
 }
 
-void sdl1_video::leave_menu() {
+void sdl1_video::gui_leave() {
     game_resolution_changed(saved_width, saved_height, 0, 0, saved_pixel_format);
 }
 

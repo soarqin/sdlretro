@@ -6,7 +6,11 @@
 #include <cstdint>
 
 #ifdef _MSC_VER
+#include <windows.h>
 #define strcasecmp _stricmp
+#define usleep(n) Sleep((n) / 1000)
+#else
+#include <unistd.h>
 #endif
 
 namespace libretro {
