@@ -256,16 +256,16 @@ void sdl2_video::frame_render() {
     glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    if (messages.empty()) return;
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    uint32_t lh = ttf[0]->get_font_size() + 2;
-    uint32_t y = curr_height - 5 - (messages.size() - 1) * lh;
-    for (auto &m: messages) {
-        draw_text(5, y, m.first.c_str(), 0, true);
-        y += lh;
+    if (!messages.empty()) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        uint32_t lh = ttf[0]->get_font_size() + 2;
+        uint32_t y = curr_height - 5 - (messages.size() - 1) * lh;
+        for (auto &m: messages) {
+            draw_text(5, y, m.first.c_str(), 0, true);
+            y += lh;
+        }
     }
-
     flip();
 }
 
@@ -782,6 +782,7 @@ bool sdl2_video::gl_renderer_gen_texture(const void *data, size_t pitch) const {
     }
     glBindTexture(GL_TEXTURE_2D, gl_renderer.texture_game);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch);
+    glBlendFunc(GL_ONE, GL_ZERO);
     switch (game_pixel_format) {
     case 0:
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, game_width, game_height, GL_BGRA, GL_UNSIGNED_SHORT_5_5_5_1, data);
