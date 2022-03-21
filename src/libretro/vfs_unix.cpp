@@ -70,9 +70,9 @@ int RETRO_CALLCONV unix_vfs_close(struct retro_vfs_file_handle *stream) {
 }
 
 int64_t RETRO_CALLCONV unix_vfs_size(struct retro_vfs_file_handle *stream) {
-    auto off = lseek64(stream->file_handle, 0, SEEK_CUR);
-    auto res = lseek64(stream->file_handle, 0, SEEK_END);
-    lseek64(stream->file_handle, off, SEEK_SET);
+    auto off = lseek(stream->file_handle, 0, SEEK_CUR);
+    auto res = lseek(stream->file_handle, 0, SEEK_END);
+    lseek(stream->file_handle, off, SEEK_SET);
     return res;
 }
 
@@ -81,11 +81,11 @@ int64_t RETRO_CALLCONV unix_vfs_truncate(struct retro_vfs_file_handle *stream, i
 }
 
 int64_t RETRO_CALLCONV unix_vfs_tell(struct retro_vfs_file_handle *stream) {
-    return lseek64(stream->file_handle, 0, SEEK_CUR);
+    return lseek(stream->file_handle, 0, SEEK_CUR);
 }
 
 int64_t unix_vfs_seek(struct retro_vfs_file_handle *stream, int64_t offset, int seek_position) {
-    return lseek64(stream->file_handle, offset, seek_position);
+    return lseek(stream->file_handle, offset, seek_position);
 }
 
 int64_t RETRO_CALLCONV unix_vfs_read(struct retro_vfs_file_handle *stream, void *s, uint64_t len) {
