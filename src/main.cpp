@@ -1,5 +1,7 @@
 #include "miniz.h"
 
+#include <logger.h>
+
 #if SDLRETRO_FRONTEND == 1
 #include <sdl1_impl.h>
 #endif
@@ -8,11 +10,9 @@
 #endif
 #include <i18n.h>
 #include <core_manager.h>
-#include <util.h>
+#include <helper.h>
 #include <ui_host.h>
 #include <cfg.h>
-
-#include <spdlog/spdlog.h>
 
 #include <cstdio>
 #include <cstring>
@@ -26,14 +26,7 @@
 #define DEFAULT_STORE_DIR "."
 #endif
 
-int main(int argc, char *argv[]) {
-    setvbuf(stdout, nullptr, _IONBF, 0);
-    setvbuf(stderr, nullptr, _IONBF, 0);
-
-#ifndef NDEBUG
-    spdlog::set_level(spdlog::level::trace);
-#endif
-
+int program(int argc, char *argv[]) {
     const char *core_filename = nullptr;
     const char *config_filename = nullptr;
     static struct option long_options[] = {
@@ -55,16 +48,16 @@ int main(int argc, char *argv[]) {
             break;
         case '?':
             if (optopt)
-                spdlog::error("Bad option '-{}'", optopt);
+                LOG(ERROR, "Bad option '-{}'", optopt);
             else
-                spdlog::error("Bad option '{}'", argv[optind - 1]);
+                LOG(ERROR, "Bad option '{}'", argv[optind - 1]);
             return 1;
         default:
             break;
         }
     }
     if (optind >= argc) {
-        spdlog::error("ROM filename missing.");
+        LOG(ERROR, "ROM filename missing.");
         return 1;
     }
     const char *rom_filename = argv[optind];
@@ -92,7 +85,7 @@ int main(int argc, char *argv[]) {
     auto impl = drivers::create_driver<drivers::sdl2_impl>();
 #endif
     if (!impl) {
-        spdlog::error("Unable to create driver!");
+        LOG(ERROR, "Unable to create driver!");
         return 1;
     }
 
@@ -104,36 +97,36 @@ int main(int argc, char *argv[]) {
     std::string core_filepath;
     if (core_filename) {
         core_filepath = core_filename;
-        if (!util::file_exists(core_filepath)) {
+        if (!helper::file_exists(core_filepath)) {
             std::vector<std::string> dirs;
             g_cfg.get_core_dirs(dirs);
             bool found = false;
             for (auto &d: dirs) {
                 core_filepath = d + PATH_SEPARATOR_CHAR + core_filename;
-                if (util::file_exists(core_filepath)) {
+                if (helper::file_exists(core_filepath)) {
                     found = true;
                     break;
                 }
                 core_filepath = d + PATH_SEPARATOR_CHAR + core_filename + "." DYNLIB_EXTENSION;
-                if (util::file_exists(core_filepath)) {
+                if (helper::file_exists(core_filepath)) {
                     found = true;
                     break;
                 }
                 core_filepath = d + PATH_SEPARATOR_CHAR + core_filename + "_libretro." DYNLIB_EXTENSION;
-                if (util::file_exists(core_filepath)) {
+                if (helper::file_exists(core_filepath)) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                spdlog::error("Unable to load core '{}'!", core_filename);
+                LOG(ERROR, "Unable to load core '{}'!", core_filename);
                 return 1;
             }
         }
     } else {
         const char *ptr = strrchr(rom_filename, '.');
         if (ptr == nullptr) {
-            spdlog::error("Cannot find core for file w/o extension!");
+            LOG(ERROR, "Cannot find core for file w/o extension!");
             return 1;
         }
 
@@ -144,7 +137,7 @@ int main(int argc, char *argv[]) {
                 if (!mz_zip_reader_init_file(&arc, rom_filename, 0)) break;
                 auto num_files = mz_zip_reader_get_num_files(&arc);
                 if (num_files == 0) {
-                    spdlog::error("Empty zip file!");
+                    LOG(ERROR, "Empty zip file!");
                     mz_zip_reader_end(&arc);
                     return 1;
                 }
@@ -170,7 +163,7 @@ int main(int argc, char *argv[]) {
             rom_ext = ptr + 1;
             core_list = coreman.match_cores_by_extension(rom_ext);
             if (core_list.empty()) {
-                spdlog::error("Cannot find core for file extension {}!", rom_ext.c_str());
+                LOG(ERROR, "Cannot find core for file extension {}!", rom_ext.c_str());
                 return 1;
             }
         }
@@ -184,7 +177,7 @@ int main(int argc, char *argv[]) {
         core_filepath = core_list[index]->filepath;
     }
     if (!impl->load_core(core_filepath)) {
-        spdlog::error("Unable to load core from '{}'!", core_filepath);
+        LOG(ERROR, "Unable to load core from '{}'!", core_filepath);
         return 1;
     }
     if (unzipped_data.empty()) {
@@ -196,6 +189,20 @@ int main(int argc, char *argv[]) {
     impl->unload_game();
 
     return 0;
+}
+
+int main(int argc, char *argv[]) {
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stderr, nullptr, _IONBF, 0);
+
+#ifdef NDEBUG
+    util::logInit(stdout, util::LogLevel::INFO);
+#else
+    util::logInit(stdout, util::LogLevel::TRACE);
+#endif
+    int res = program(argc, argv);
+    util::logUninit();
+    return res;
 }
 
 #ifdef _MSC_VER

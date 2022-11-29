@@ -1,9 +1,9 @@
 #include "input_base.h"
 
-#include <util.h>
+#include "logger.h"
+#include <helper.h>
 #include <cfg.h>
 
-#include <spdlog/spdlog.h>
 #include <json.hpp>
 
 using json = nlohmann::json;
@@ -90,25 +90,25 @@ void input_base::save_to_cfg() {
     auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "input.json";
     try {
         auto content = j.dump(4);
-        if (!util::write_file(filename, content))
+        if (!helper::write_file(filename, content))
             throw std::bad_exception();
     } catch(...) {
-        spdlog::error("failed to write input config to {}", filename);
+        LOG(ERROR, "failed to write input config to {}", filename);
     }
 }
 
 void input_base::load_from_cfg() {
     json j;
     auto filename = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "input.json";
-    if (!util::file_exists(filename)) return;
+    if (!helper::file_exists(filename)) return;
     try {
         std::string content;
-        if (!util::read_file(filename, content)) {
+        if (!helper::read_file(filename, content)) {
             throw std::bad_exception();
         }
         j = json::parse(content);
     } catch(...) {
-        spdlog::error("failed to read input config from {}", filename);
+        LOG(ERROR, "failed to read input config from {}", filename);
         return;
     }
     auto &kj = j["keyboard/mouse"];

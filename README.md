@@ -31,3 +31,4 @@ This is a lightweight libretro frontend written for SDL, aims to write simple co
 * [xxHash](https://github.com/Cyan4973/xxHash)
 * [cpuid](https://github.com/steinwurf/cpuid)
 * [wingetopt](https://github.com/alex85k/wingetopt)
+* [fmtlib](https://github.com/fmtlib/fmt)

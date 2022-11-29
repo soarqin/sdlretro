@@ -1,6 +1,6 @@
 #ifdef VFS_WIN32
 
-#include "util.h"
+#include "helper.h"
 
 #include <libretro.h>
 
@@ -172,7 +172,7 @@ int RETRO_CALLCONV win32_vfs_stat(const char *path, int32_t *size) {
 }
 
 int RETRO_CALLCONV win32_vfs_mkdir(const char *dir) {
-    return util::mkdir(dir);
+    return helper::mkdir(dir);
 }
 
 struct retro_vfs_dir_handle *RETRO_CALLCONV win32_vfs_opendir(const char *dir, bool include_hidden) {

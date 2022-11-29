@@ -4,7 +4,7 @@
 
 #include "cfg.h"
 
-#include "util.h"
+#include "helper.h"
 
 #include <SDL.h>
 

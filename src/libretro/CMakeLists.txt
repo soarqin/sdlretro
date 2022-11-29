@@ -12,10 +12,12 @@ add_library(libretro STATIC
     include/i18n.h
     include/variables.h
 
-    # utils
-    util.cpp
-    include/util.h
-    dlfcn_compat.h # dlfcn compatible header for win32
+    # helper
+    helper.cpp
+    include/helper.h
+
+    # dlfcn compatible header for win32
+    dlfcn_compat.h
 
     # vfs
     vfs_win32.cpp
@@ -46,7 +48,7 @@ endif()
 target_include_directories(libretro PUBLIC include)
 
 target_link_libraries(libretro
-    PUBLIC  spdlog::spdlog nlohmann::json
+    PUBLIC  util nlohmann::json
     PRIVATE xxhash::xxhash steinwurf::cpuid)
 if(CURL_FOUND)
     target_link_libraries(libretro PRIVATE CURL::libcurl)

@@ -1,6 +1,6 @@
 #include "sdl2_ttf.h"
 
-#include "util.h"
+#include "helper.h"
 
 #include <glad/glad.h>
 #include <SDL.h>
@@ -59,7 +59,7 @@ void sdl2_ttf::render(int x, int y, const char *text, int width, int height, boo
     glUseProgram(program_font);
     glBindVertexArray(vao_font);
     while (*text != 0) {
-        uint32_t ch = util::utf8_to_ucs4(text);
+        uint32_t ch = helper::utf8_to_ucs4(text);
         if (ch == 0 || ch > 0xFFFFu) continue;
 
         const font_data *fd;

@@ -1,11 +1,11 @@
 #include "i18n.h"
 
-#include "util.h"
+#include "logger.h"
+#include "helper.h"
 #include "cfg.h"
 
 #include <json.hpp>
 #include <xxhash.h>
-#include <spdlog/spdlog.h>
 
 #include <cstring>
 
@@ -52,7 +52,7 @@ void i18n::get_language_list(std::vector<language_info> &info_list) {
             continue;
         }
         auto filename = g_cfg.get_data_dir() + "/lang/" + li.code + ".json";
-        if (util::file_exists(filename)) info_list.push_back(li);
+        if (helper::file_exists(filename)) info_list.push_back(li);
     }
 }
 
@@ -61,15 +61,15 @@ bool i18n::load_language_file(int lang) {
 
     json j;
     auto filename = g_cfg.get_data_dir() + "/lang/" + languages[lang].code + ".json";
-    if (!util::file_exists(filename)) return false;
+    if (!helper::file_exists(filename)) return false;
     try {
         std::string content;
-        if (!util::read_file(filename, content)) {
+        if (!helper::read_file(filename, content)) {
             throw std::bad_exception();
         }
         j = json::parse(content);
     } catch(...) {
-        spdlog::error("failed to read input config from {}", filename);
+        LOG(ERROR, "failed to read input config from {}", filename);
         return false;
     }
     auto &l = localized_text[lang];

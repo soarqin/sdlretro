@@ -4,7 +4,7 @@
 
 #ifdef USE_STB_TRUETYPE
 #include "stb_truetype.h"
-#include <util.h>
+#include <helper.h>
 #include <cstring>
 #else
 #include <ft2build.h>
@@ -60,7 +60,7 @@ void ttf_font_base::deinit() {
 bool ttf_font_base::add(const std::string &filename, int index) {
     font_info fi;
 #ifdef USE_STB_TRUETYPE
-    if (!util::read_file(filename, fi.ttf_buffer)) {
+    if (!helper::read_file(filename, fi.ttf_buffer)) {
         return false;
     }
     auto *info = new stbtt_fontinfo;

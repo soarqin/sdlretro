@@ -8,6 +8,7 @@ endif()
 project(sdlretro)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
+add_subdirectory(external)
 add_subdirectory(src)

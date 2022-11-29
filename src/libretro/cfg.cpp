@@ -1,9 +1,9 @@
 #include "cfg.h"
 
-#include "util.h"
+#include "logger.h"
+#include "helper.h"
 
 #include <json.hpp>
-#include <spdlog/spdlog.h>
 
 #include <cstdlib>
 
@@ -35,7 +35,7 @@ void cfg::set_store_dir(const std::string &dir) {
         store_dir = dir;
     else
         store_dir = n;
-    util::mkdir(store_dir, true);
+    helper::mkdir(store_dir, true);
 #else
     util::mkdir(dir, true);
     if (realpath(dir.c_str(), n) == nullptr)
@@ -44,7 +44,7 @@ void cfg::set_store_dir(const std::string &dir) {
         store_dir = n;
 #endif
     config_dir = store_dir + PATH_SEPARATOR_CHAR + "cfg";
-    util::mkdir(config_dir);
+    helper::mkdir(config_dir);
 }
 
 void cfg::set_extra_core_dirs(const std::vector<std::string> &dirs) {
@@ -91,15 +91,15 @@ inline bool get_value(json &j, const std::string &key, T &val) {
 void cfg::load(const std::string &cfgfile) {
     json j;
     config_filename = cfgfile.empty() ? config_dir + PATH_SEPARATOR_CHAR + "sdlretro.json" : cfgfile;
-    if (!util::file_exists(config_filename)) return;
+    if (!helper::file_exists(config_filename)) return;
     try {
         std::string content;
-        if (!util::read_file(config_filename, content)) {
+        if (!helper::read_file(config_filename, content)) {
             throw std::bad_exception();
         }
         j = json::parse(content);
     } catch(...) {
-        spdlog::error("failed to read config from {}", config_filename);
+        LOG(Error, "failed to read config from {}", config_filename);
         return;
     }
 
@@ -150,9 +150,9 @@ void cfg::save() {
 #undef JWRITE
     try {
         auto content = j.dump(4);
-        if (!util::write_file(config_filename, content))
+        if (!helper::write_file(config_filename, content))
             throw std::bad_exception();
     } catch(...) {
-        spdlog::error("failed to write config to {}", config_filename);
+        LOG(Error, "failed to write config to {}", config_filename);
     }
 }

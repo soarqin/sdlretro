@@ -1,11 +1,11 @@
 #include "variables.h"
 
 #include "libretro.h"
-#include "util.h"
+#include "logger.h"
+#include "helper.h"
 #include "cfg.h"
 
 #include <json.hpp>
-#include <spdlog/spdlog.h>
 
 namespace libretro {
 
@@ -90,15 +90,15 @@ void retro_variables::load_variables(const retro_variable *vars) {
 }
 
 void retro_variables::load_variables_from_cfg(const std::string &filename) {
-    if (!util::file_exists(filename)) return;
+    if (!helper::file_exists(filename)) return;
     nlohmann::json j;
     try {
         std::string content;
-        if (!util::read_file(filename, content))
+        if (!helper::read_file(filename, content))
             throw std::bad_exception();
         j = nlohmann::json::parse(content);
     } catch(...) {
-        spdlog::error("failed to read core config from {}", filename);
+        LOG(ERROR, "failed to read core config from {}", filename);
         return;
     }
     if (!j.is_object()) return;
@@ -126,10 +126,10 @@ void retro_variables::save_variables_to_cfg(const std::string &filename) {
     }
     try {
         auto content = j.dump(4);
-        if (!util::write_file(filename, content))
+        if (!helper::write_file(filename, content))
             throw std::bad_exception();
     } catch(...) {
-        spdlog::error("failed to write config to {}", filename);
+        LOG(ERROR, "failed to write config to {}", filename);
     }
 }
 

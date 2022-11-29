@@ -4,13 +4,13 @@
 
 #include "driver_base.h"
 
+#include "logger.h"
 #include "cfg.h"
 
-#include "util.h"
+#include "helper.h"
 
 #include "core.h"
 
-#include <spdlog/spdlog.h>
 #include <glad/glad.h>
 #include <SDL.h>
 
@@ -29,7 +29,7 @@ inline uint32_t compile_shader(const std::string &vertex_shader_source,
     if (!success)
     {
         glGetShaderInfoLog(vertex_shader, 512, nullptr, info_log);
-        spdlog::error("vertex shader compilation failed: {}", info_log);
+        LOG(ERROR, "vertex shader compilation failed: {}", info_log);
         glDeleteShader(vertex_shader);
         return 0;
     }
@@ -43,7 +43,7 @@ inline uint32_t compile_shader(const std::string &vertex_shader_source,
     if (!success)
     {
         glGetShaderInfoLog(fragment_shader, 512, nullptr, info_log);
-        spdlog::error("fragment shader compilation failed: {}", info_log);
+        LOG(ERROR, "fragment shader compilation failed: {}", info_log);
         glDeleteShader(fragment_shader);
         glDeleteShader(vertex_shader);
         return 0;
@@ -57,7 +57,7 @@ inline uint32_t compile_shader(const std::string &vertex_shader_source,
     glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
     if (!success) {
         glGetProgramInfoLog(shader_program, 512, nullptr, info_log);
-        spdlog::error("shader program linking failed: {}", info_log);
+        LOG(ERROR, "shader program linking failed: {}", info_log);
         glDeleteProgram(shader_program);
         shader_program = 0;
     }
@@ -149,7 +149,7 @@ bool sdl2_video::init_hw_renderer(retro_hw_render_callback *hwr) {
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        spdlog::error("Framebuffer is not complete.");
+        LOG(ERROR, "Framebuffer is not complete.");
         return false;
     }
 
@@ -354,7 +354,7 @@ void sdl2_video::get_text_width_and_height(const char *text, int &w, int &t, int
     t = 255;
     b = -255;
     while (*text != 0) {
-        uint32_t ch = util::utf8_to_ucs4(text);
+        uint32_t ch = helper::utf8_to_ucs4(text);
         if (ch == 0 || ch > 0xFFFFu) continue;
         uint8_t width;
         int8_t tt, tb;
@@ -444,10 +444,10 @@ bool sdl2_video::init_video(bool use_gles) {
         gladLoadGLLoader(SDL_GL_GetProcAddress);
     }
 
-    spdlog::trace("Created window with OpenGL context");
-    spdlog::trace("  GL version: {}", glGetString(GL_VERSION));
-    spdlog::trace("  Renderer: {}", glGetString(GL_RENDERER));
-    spdlog::trace("  Shading Language version: {}", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    LOG(TRACE, "Created window with OpenGL context");
+    LOG(TRACE, "  GL version: {}", (const char*)glGetString(GL_VERSION));
+    LOG(TRACE, "  Renderer: {}", (const char*)glGetString(GL_RENDERER));
+    LOG(TRACE, "  Shading Language version: {}", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     glViewport(0, 0, curr_width, curr_height);
     /* Try adaptive vsync first, and fallthrough to normal vsync */

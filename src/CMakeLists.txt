@@ -61,10 +61,10 @@ elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 endif()
 
+add_subdirectory(util)
 add_subdirectory(libretro)
 add_subdirectory(drivers)
 add_subdirectory(gui)
-add_subdirectory(external)
 
 if((NOT WIN32) OR CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_executable(sdlretro main.cpp)
@@ -87,3 +87,5 @@ if(MSVC)
     # implementation of getopt for MSVC
     target_link_libraries(sdlretro wingetopt)
 endif()
+
+set_target_properties(sdlretro PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

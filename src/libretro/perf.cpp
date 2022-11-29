@@ -1,17 +1,17 @@
 #include "perf.h"
 
-#include "util.h"
+#include "helper.h"
 #include "libretro.h"
+#include "logger.h"
 
 #include <cpuinfo.hpp>
-#include <spdlog/spdlog.h>
 
 namespace {
 /* Returns current time in microseconds.
  * Tries to use the most accurate timer available.
  */
 extern "C" retro_time_t retro_perf_get_time_usec() {
-    return util::get_ticks_usec();
+    return helper::get_ticks_usec();
 }
 
 /* A simple counter. Usually nanoseconds, but can also be CPU cycles.
@@ -19,7 +19,7 @@ extern "C" retro_time_t retro_perf_get_time_usec() {
  * performance counter system).
  * */
 extern "C" retro_perf_tick_t retro_perf_get_counter() {
-    return util::get_ticks_perfcounter();
+    return helper::get_ticks_perfcounter();
 }
 
 /* Returns a bit-mask of detected CPU features (RETRO_SIMD_*). */
@@ -75,7 +75,7 @@ retro_perf_counter *counters[MAX_COUNTERS];
  */
 extern "C" void retro_perf_log() {
     for (int i = 0; i < curr_counters; ++i) {
-        spdlog::trace("Performance counter {}: {} / {}", counters[i]->ident, counters[i]->total / counters[i]->call_cnt, counters[i]->total);
+        LOG(TRACE, "Performance counter {}: {} / {}", counters[i]->ident, counters[i]->total / counters[i]->call_cnt, counters[i]->total);
     }
 }
 
@@ -94,13 +94,13 @@ extern "C" void retro_perf_register(struct retro_perf_counter *counter) {
 
 /* Starts a registered counter. */
 extern "C" void retro_perf_start(struct retro_perf_counter *counter) {
-    counter->start = util::get_ticks_perfcounter();
+    counter->start = helper::get_ticks_perfcounter();
 }
 
 /* Stops a registered counter. */
 extern "C" void retro_perf_stop(struct retro_perf_counter *counter) {
     counter->call_cnt++;
-    counter->total += util::get_ticks_perfcounter() - counter->start;
+    counter->total += helper::get_ticks_perfcounter() - counter->start;
 }
 
 }

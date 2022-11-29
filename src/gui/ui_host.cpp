@@ -8,7 +8,7 @@
 #include "input_base.h"
 #include "video_base.h"
 
-#include "util.h"
+#include "helper.h"
 #include "libretro.h"
 #include "variables.h"
 #include "core_manager.h"

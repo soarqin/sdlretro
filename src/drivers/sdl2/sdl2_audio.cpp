@@ -1,6 +1,6 @@
 #include "sdl2_audio.h"
 
-#include <util.h>
+#include <helper.h>
 
 #include <SDL.h>
 
@@ -38,7 +38,7 @@ void sdl2_audio::pause(bool b) {
 
 void sdl2_audio::on_input(const int16_t *samples, size_t count) {
     /* check queue overflow every 250ms */
-    uint64_t now = util::get_ticks_usec_cache();
+    uint64_t now = helper::get_ticks_usec_cache();
     if (now >= next_check) {
         if (SDL_GetQueuedAudioSize(device_id) > max_queued_samples) {
             SDL_ClearQueuedAudio(device_id);

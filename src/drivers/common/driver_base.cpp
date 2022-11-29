@@ -1,6 +1,7 @@
 #include "driver_base.h"
 
 #include "cfg.h"
+#include "logger.h"
 
 #include "video_base.h"
 #include "audio_base.h"
@@ -10,10 +11,8 @@
 #include <variables.h>
 #include <i18n.h>
 #include <core.h>
-#include <util.h>
+#include <helper.h>
 #include <perf.h>
-
-#include <spdlog/spdlog.h>
 
 #include <memory>
 #include <cstring>
@@ -46,14 +45,13 @@ inline std::string get_base_name(const std::string &path) {
 driver_base *current_driver = nullptr;
 
 driver_base::driver_base() {
-    spdlog::set_pattern("[%m-%d %H:%M:%S %L] %v");
     frame_throttle = std::make_shared<throttle>();
     variables = std::make_unique<libretro::retro_variables>();
 
     system_dir = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "system";
-    util::mkdir(system_dir);
+    helper::mkdir(system_dir);
     save_dir = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "saves";
-    util::mkdir(save_dir);
+    helper::mkdir(save_dir);
 }
 
 driver_base::~driver_base() {
@@ -118,18 +116,18 @@ bool RETRO_CALLCONV retro_environment_cb(unsigned cmd, void *data) {
     return current_driver->env_callback(cmd, data);
 }
 
-static spdlog::level::level_enum log_level_convert(retro_log_level level) {
+static util::LogLevel log_level_convert(retro_log_level level) {
     switch(level) {
     case RETRO_LOG_DEBUG:
-        return spdlog::level::debug;
+        return util::LogLevel::DEBUG;
     case RETRO_LOG_INFO:
-        return spdlog::level::info;
+        return util::LogLevel::INFO;
     case RETRO_LOG_WARN:
-        return spdlog::level::warn;
+        return util::LogLevel::WARN;
     case RETRO_LOG_ERROR:
-        return spdlog::level::err;
+        return util::LogLevel::ERROR;
     default:
-        return spdlog::level::trace;
+        return util::LogLevel::TRACE;
     }
 }
 
@@ -143,7 +141,7 @@ void RETRO_CALLCONV log_printf(enum retro_log_level level, const char *fmt, ...)
     va_start(l, fmt);
     vsnprintf(s, 1024, fmt, l);
     va_end(l);
-    spdlog::log(log_level_convert(level), "{}", s);
+    util::vlogMessage(log_level_convert(level), "{}", s);
 }
 
 static void RETRO_CALLCONV retro_video_refresh_cb(const void *data, unsigned width, unsigned height, size_t pitch) {
@@ -180,8 +178,8 @@ bool driver_base::load_game(const std::string &path) {
     retro_game_info info = {};
     info.path = path.c_str();
     if (!need_fullpath) {
-        if (!util::read_file(path, game_data)) {
-            spdlog::error("Unable to load file {}", path);
+        if (!helper::read_file(path, game_data)) {
+            LOG(ERROR, "Unable to load file {}", path);
             return false;
         }
         info.data = &game_data[0];
@@ -189,7 +187,7 @@ bool driver_base::load_game(const std::string &path) {
     }
     serialization_quirks = 0;
     if (!core->retro_load_game(&info)) {
-        spdlog::error("The core was unable to load {}", path);
+        LOG(ERROR, "The core was unable to load {}", path);
         return false;
     }
 
@@ -208,9 +206,9 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
     } else {
         std::string basename = get_base_name(path);
         temp_file = g_cfg.get_store_dir() + PATH_SEPARATOR_CHAR "tmp";
-        util::mkdir(temp_file);
+        helper::mkdir(temp_file);
         temp_file = temp_file + PATH_SEPARATOR_CHAR + basename + "." + ext;
-        if (!util::write_file(temp_file, data)) {
+        if (!helper::write_file(temp_file, data)) {
             remove(temp_file.c_str());
             temp_file.clear();
             return false;
@@ -218,7 +216,7 @@ bool driver_base::load_game_from_mem(const std::string &path, const std::string 
         info.path = temp_file.c_str();
     }
     if (!core->retro_load_game(&info)) {
-        spdlog::error("The core was unable to load {}", path);
+        LOG(ERROR, "The core was unable to load {}", path);
         return false;
     }
 
@@ -575,9 +573,9 @@ bool driver_base::env_callback(unsigned cmd, void *data) {
             break;
     }
     if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) {
-        spdlog::info("Unhandled env: 0x{0:X} (EXPERIMENTAL)", (cmd & 0xFFFFU));
+        LOG(INFO, "Unhandled env: 0x{0:X} (EXPERIMENTAL)", (cmd & 0xFFFFU));
     } else {
-        spdlog::info("Unhandled env: 0x{0:X}", (cmd & 0xFFFFU));
+        LOG(INFO, "Unhandled env: 0x{0:X}", (cmd & 0xFFFFU));
     }
     return false;
 }
@@ -601,10 +599,10 @@ bool driver_base::load_core(const std::string &path) {
     std::string name = sysinfo.library_name;
     lowered_string(name);
     core_cfg_path = g_cfg.get_config_dir() + PATH_SEPARATOR_CHAR + "cores";
-    util::mkdir(core_cfg_path);
+    helper::mkdir(core_cfg_path);
     core_cfg_path += PATH_SEPARATOR_CHAR + name + ".json";
     core_save_dir = save_dir + PATH_SEPARATOR_CHAR + name;
-    util::mkdir(core_save_dir);
+    helper::mkdir(core_save_dir);
 
     init_internal();
     return true;
@@ -672,16 +670,16 @@ void driver_base::check_single_ram(unsigned int id, std::vector<uint8_t> &data, 
             if (size <= pos) pos = 0;
         }
         size_t check_size = (pos + 65536) > size ? size - pos : 65536;
-        spdlog::trace("Checking RAM block {}: from 0x{:x}, length 0x{:x}/0x{:x}", id, pos, check_size, size);
+        LOG(TRACE, "Checking RAM block {}: from 0x{:x}, length 0x{:x}/0x{:x}", id, pos, check_size, size);
         if (memcmp((uint8_t*)ram + pos, data.data() + pos, check_size) == 0) {
             pos += check_size;
             if (pos >= size) pos = 0;
             return;
         }
         pos = 0;
-        spdlog::trace("RAM changed, saving to {}", filename);
+        LOG(TRACE, "RAM changed, saving to {}", filename);
         data.assign((uint8_t*)ram, (uint8_t*)ram + size);
-        util::write_file(filename, data);
+        helper::write_file(filename, data);
     }
 }
 
@@ -694,8 +692,8 @@ void driver_base::post_load() {
     game_save_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".sav";
     game_rtc_path = (core_save_dir.empty() ? "" : (core_save_dir + PATH_SEPARATOR_CHAR)) + game_base_name + ".rtc";
 
-    util::read_file(game_save_path, save_data);
-    util::read_file(game_rtc_path, rtc_data);
+    helper::read_file(game_save_path, save_data);
+    helper::read_file(game_rtc_path, rtc_data);
 
     if (!save_data.empty()) {
         size_t sz = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
